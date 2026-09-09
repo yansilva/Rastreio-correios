@@ -1,0 +1,15 @@
+# Ambiente virtual Python
+venv/
+__pycache__/
+
+# Variáveis de ambiente com segredos
+.env
+
+# Relatórios gerados
+*.csv
+relatorio_rastreio.html
+pedidos_atrasados.html
+opcoes_frete.html
+
+# Relatórios de segurança
+gitguard-report-*.md

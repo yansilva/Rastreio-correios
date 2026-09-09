@@ -1,7 +1,12 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-TOKEN = "7ee0ee3913d3b55a68e234889da94aa5a4af6d5d"
+# Carrega variáveis do .env
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+TOKEN = os.getenv("TOKEN_TINY")
 
 # Buscar o pedido 39546 pela pesquisa
 r = requests.get("https://api.tiny.com.br/api2/pedidos.pesquisa.php", params={

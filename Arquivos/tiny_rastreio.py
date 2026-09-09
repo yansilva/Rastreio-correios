@@ -3,9 +3,13 @@ import csv
 from datetime import datetime, timedelta
 import time
 import os
+from dotenv import load_dotenv
+
+# Carrega variáveis do .env
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 # Configurações
-TOKEN = "7ee0ee3913d3b55a68e234889da94aa5a4af6d5d"
+TOKEN = os.getenv("TOKEN_TINY")
 URL_PESQUISA = "https://api.tiny.com.br/api2/pedidos.pesquisa.php"
 FORMATO = "json"
 DIAS_ATRAS = 30

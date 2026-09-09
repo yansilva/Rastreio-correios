@@ -4,11 +4,15 @@ import base64
 import time
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
-# Credenciais Correios
-ID_CORREIOS = "42715476000159"
-CONTRATO = "9912705835"
-CODIGO_ACESSO = "NuiZ79ZpfkGyzTzNnrDjv3iT0ufEVApjpmA4tROT"
+# Carrega variáveis do .env
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+# Credenciais Correios (via .env)
+ID_CORREIOS = os.getenv("ID_CORREIOS")
+CONTRATO = os.getenv("CONTRATO")
+CODIGO_ACESSO = os.getenv("CODIGO_ACESSO")
 
 # Endpoints
 URL_TOKEN = "https://api.correios.com.br/token/v1/autentica/contrato"

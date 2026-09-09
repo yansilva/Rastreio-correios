@@ -1,14 +1,19 @@
 import requests
 import json
 import time
+import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
-TOKEN = "7ee0ee3913d3b55a68e234889da94aa5a4af6d5d"
+# Carrega variáveis do .env
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+TOKEN = os.getenv("TOKEN_TINY")
 
 # Correios credentials
-ID_CORREIOS = "42715476000159"
-CONTRATO = "9912705835"
-CODIGO_ACESSO = "NuiZ79ZpfkGyzTzNnrDjv3iT0ufEVApjpmA4tROT"
+ID_CORREIOS = os.getenv("ID_CORREIOS")
+CONTRATO = os.getenv("CONTRATO")
+CODIGO_ACESSO = os.getenv("CODIGO_ACESSO")
 URL_TOKEN = "https://api.correios.com.br/token/v1/autentica/contrato"
 URL_PRAZO = "https://api.correios.com.br/prazo/v1/nacional/{coProduto}"
 
