@@ -3,58 +3,51 @@ import csv
 import base64
 import time
 import os
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Garante que o diretório Arquivos/ esteja no PYTHONPATH
+_dir_atual = os.path.dirname(os.path.abspath(__file__))
+if _dir_atual not in sys.path:
+    sys.path.insert(0, _dir_atual)
+
+from correios import (
+    CorreiosAuthError,
+    CorreiosClient,
+    CorreiosConfig,
+    ObjetoRastreio,
+    TrackingService,
+)
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
-# Credenciais Correios (via variáveis de ambiente)
-ID_CORREIOS = os.getenv("ID_CORREIOS", "")
-CONTRATO = os.getenv("CONTRATO", "")
-CODIGO_ACESSO = os.getenv("CODIGO_ACESSO", "")
+# Configuração e Credenciais Correios
+_config = CorreiosConfig()
+ID_CORREIOS = _config.id_correios
+CONTRATO = _config.contrato
+CODIGO_ACESSO = _config.codigo_acesso
 
 # Endpoints
-URL_TOKEN = "https://api.correios.com.br/token/v1/autentica/contrato"
-URL_RASTREIO = "https://api.correios.com.br/srorastro/v1/objetos/{objeto}?resultado=T"
+URL_TOKEN = _config.url_token
+URL_RASTREIO = _config.url_rastreio
 
-# Arquivos
 # Arquivos
 CSV_ENTRADA = "rastreios_tiny.csv"
 RELATORIO_HTML = "relatorio_rastreio.html"
 RELATORIO_ATRASADOS = "pedidos_atrasados.html"
 
 def obter_token():
-    print("Obtendo novo token de acesso nos Correios...")
-    auth_str = f"{ID_CORREIOS}:{CODIGO_ACESSO}"
-    auth_b64 = base64.b64encode(auth_str.encode()).decode()
-    
-    headers = {
-        "Authorization": f"Basic {auth_b64}",
-        "Content-Type": "application/json"
-    }
-    payload = {"numero": CONTRATO}
-    
-    response = requests.post(URL_TOKEN, headers=headers, json=payload)
-    if response.status_code == 201:
-        return response.json().get("token")
-    else:
-        raise Exception(f"Erro ao obter token: {response.status_code} - {response.text}")
+    """Obtém token de autenticação nos Correios utilizando o CorreiosClient."""
+    client = CorreiosClient()
+    return client.gerar_token()
 
 def consultar_objeto(objeto, token):
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
-    }
-    url = URL_RASTREIO.format(objeto=objeto)
-    
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if "objetos" in data and len(data["objetos"]) > 0:
-            return data["objetos"][0]
-    return None
+    """Consulta dados de rastreamento de um objeto na API dos Correios."""
+    client = CorreiosClient()
+    return client.consultar_objeto(objeto, token=token)
 
 def formatar_evento_html(evento):
     dt_iso = evento.get("dtHrCriado", "")
@@ -107,6 +100,11 @@ def formatar_evento_html(evento):
     """
 
 def processar():
+    config = CorreiosConfig()
+    if not config.credenciais_preenchidas():
+        print("Erro: Credenciais dos Correios não configuradas. Verifique ID_CORREIOS, CONTRATO e CODIGO_ACESSO no .env.")
+        return False
+
     try:
         token = obter_token()
         
@@ -857,110 +855,45 @@ def processar():
             print(f"Processando {pedido}...")
             obj_data = consultar_objeto(rastreio, token)
             
-            # Verificação de status
-            is_entregue = False
-            is_devolvido = False
-            is_postado = False
-            data_postagem_dt = None
-            data_devolucao_dt = None
-            data_entrega_dt = None
-            ultimo_evento_desc = ""
-            ultimo_local = ""
-            events_html = []
+            # Processamento e classificação com TrackingService
+            obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
+            status_category = obj_classificado.status_categoria
             
+            events_html = []
             if obj_data and "eventos" in obj_data:
-                for i, evento in enumerate(obj_data["eventos"]):
+                for evento in obj_data["eventos"]:
                     events_html.append(formatar_evento_html(evento))
-                    desc_upper = evento.get("descricao", "").upper()
-                    detalhe_upper = evento.get("detalhe", "").upper() if evento.get("detalhe") else ""
-                    
-                    # Captura info do evento mais recente (primeiro da lista)
-                    if i == 0:
-                        ultimo_evento_desc = evento.get("descricao", "")
-                        unidade = evento.get("unidade", {})
-                        endereco = unidade.get("endereco", {})
-                        cidade = endereco.get("cidade", "")
-                        uf = endereco.get("uf", "")
-                        ultimo_local = f"{cidade}/{uf}".strip("/")
-                    
-                    if "REMETENTE" in desc_upper or "DEVOLVIDO" in desc_upper or "DEVOLUÇÃO" in desc_upper:
-                        is_devolvido = True
-                        if data_devolucao_dt is None:
-                            try:
-                                data_devolucao_dt = datetime.fromisoformat(evento.get("dtHrCriado", ""))
-                            except:
-                                pass
-                    elif "ENTREGUE" in desc_upper:
-                        is_entregue = True
-                        if data_entrega_dt is None:
-                            try:
-                                data_entrega_dt = datetime.fromisoformat(evento.get("dtHrCriado", ""))
-                            except:
-                                pass
-
-                    if "POSTADO" in desc_upper:
-                        is_postado = True
-                        try:
-                            data_postagem_dt = datetime.fromisoformat(evento.get("dtHrCriado", ""))
-                        except:
-                            data_postagem_dt = None
             else:
                 events_html.append('<div class="event"><em>Sem informações de rastreio disponíveis nos Correios para este objeto.</em></div>')
             
-            # Classifica o status do pedido
-            if is_devolvido:
-                status_category = "devolvido"
+            # Contabilização de status
+            if obj_classificado.is_devolvido:
                 devolvidos_count += 1
                 print(f">> Pedido #{pedido} ({rastreio}) — Status: DEVOLVIDO AO REMETENTE")
-            elif is_entregue:
-                status_category = "entregue"
+            elif obj_classificado.is_entregue:
                 entregues_count += 1
                 print(f">> Pedido #{pedido} ({rastreio}) — Status: Entregue")
-
-            elif is_postado:
-                status_category = "em_transito"
+            elif obj_classificado.is_postado:
                 em_transito_count += 1
             else:
-                status_category = "nao_enviado"
                 nao_enviados_count += 1
 
-            # Calcula dias em trânsito e coleta dados de atrasados
-            if data_postagem_dt and status_category in ("em_transito", "entregue", "devolvido"):
-                if is_entregue and not is_devolvido:
-                    # Para entregues, não mostra como atrasado
-                    pass
-                else:
-                    dias_transito = (datetime.now() - data_postagem_dt).days
-                    if dias_transito > 3:
-                        atrasados_data.append({
-                            "pedido": pedido,
-                            "rastreio": rastreio,
-                            "situacao_tiny": situacao_tiny,
-                            "data_postagem": data_postagem_dt.strftime("%d/%m/%Y"),
-                            "dias_transito": dias_transito,
-                            "ultimo_evento": ultimo_evento_desc,
-                            "ultimo_local": ultimo_local,
-                            "status": status_category
-                        })
+            # Verificação de atraso com TrackingService
+            atraso = TrackingService.verificar_atraso(obj_classificado, pedido, situacao_tiny)
+            if atraso:
+                atrasados_data.append({
+                    "pedido": atraso.pedido,
+                    "rastreio": atraso.rastreio,
+                    "situacao_tiny": atraso.situacao_tiny,
+                    "data_postagem": atraso.data_postagem,
+                    "dias_transito": atraso.dias_transito,
+                    "ultimo_evento": atraso.ultimo_evento,
+                    "ultimo_local": atraso.ultimo_local,
+                    "status": atraso.status
+                })
 
-            # Esconde entregues e devolvidos conforme nova regra
-            hidden_class = ""
-            now = datetime.now()
-
-            if status_category == "devolvido":
-                if data_devolucao_dt and (now - data_devolucao_dt).total_seconds() > 24 * 3600:
-                    hidden_class = "order-hidden"
-            elif status_category == "entregue":
-                if data_entrega_dt:
-                    delivered_this_week = (data_entrega_dt.isocalendar()[:2] == now.isocalendar()[:2])
-                    if delivered_this_week:
-                        after_friday_18 = (now.weekday() == 4 and now.hour >= 18) or (now.weekday() > 4)
-                        if after_friday_18:
-                            hidden_class = "order-hidden"
-                    else:
-                        hidden_class = "order-hidden"
-                else:
-                    hidden_class = "order-hidden"
+            # Visibilidade do card conforme regras de negócio
+            hidden_class = "order-hidden" if TrackingService.deve_ocultar_card(obj_classificado) else ""
 
             card = f"""
             <div class="order-card {hidden_class}" data-status="{status_category}">
