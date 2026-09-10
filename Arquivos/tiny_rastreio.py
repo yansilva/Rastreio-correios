@@ -1,96 +1,82 @@
-import requests  # type: ignore
-import csv
-from datetime import datetime, timedelta
-import time
+"""
+Fachada de retrocompatibilidade para o módulo de integração com Tiny ERP.
+
+Este script mantém a interface histórica (buscar_pedidos, gerar_csv, processar)
+para total compatibilidade com `executar_rastreio.py` e execuções diretas via terminal,
+delegando as regras para a camada modular `tiny/`.
+"""
 import os
-from dotenv import load_dotenv
+import sys
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Tuple
 
-# Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+# Garante que o diretório Arquivos/ esteja no PYTHONPATH caso executado isoladamente
+_dir_atual = os.path.dirname(os.path.abspath(__file__))
+if _dir_atual not in sys.path:
+    sys.path.insert(0, _dir_atual)
 
-# Configurações
-TOKEN = os.getenv("TOKEN_TINY", "")
-URL_PESQUISA = "https://api.tiny.com.br/api2/pedidos.pesquisa.php"
-FORMATO = "json"
-DIAS_ATRAS = 30
+from tiny import TinyAuthError, TinyClient, TinyConfig, TinyOrderService, PedidoTiny
 
-def buscar_pedidos():
+# Variáveis globais para compatibilidade retroativa com código legado
+_config = TinyConfig()
+TOKEN = _config.token
+URL_PESQUISA = _config.url_pesquisa
+FORMATO = _config.formato
+DIAS_ATRAS = _config.dias_atras_padrao
+
+
+def buscar_pedidos() -> List[Dict[str, Any]]:
+    """
+    Busca pedidos brutos no Tiny ERP no período dos últimos DIAS_ATRAS.
+    
+    Retorna a lista de dicionários no formato original {'pedido': {...}}.
+    """
+    config = TinyConfig()
+    if not config.token:
+        print("Erro: Token do Tiny ERP não configurado. Verifique o arquivo .env.")
+        return []
+
+    client = TinyClient(config=config)
     data_final = datetime.now().strftime("%d/%m/%Y")
-    data_inicial = (datetime.now() - timedelta(days=DIAS_ATRAS)).strftime("%d/%m/%Y")
-    
+    data_inicial = (datetime.now() - timedelta(days=config.dias_atras_padrao)).strftime("%d/%m/%Y")
+
     print(f"Buscando pedidos de {data_inicial} até {data_final}...")
-    
-    pagina = 1
-    num_paginas = 1
-    todos_pedidos = []
-    
-    while pagina <= num_paginas:
-        params = {
-            "token": TOKEN,
-            "formato": FORMATO,
-            "dataInicial": data_inicial,
-            "dataFinal": data_final,
-            "pagina": pagina,
-            "sort": "DESC"
-        }
-        
-        response = requests.get(URL_PESQUISA, params=params)
-        data = response.json()
-        
-        if data['retorno']['status'] == 'Erro':
-            # Se não houver registros na página, o Tiny retorna erro 6 (A consulta não retornou registros)
-            erros = data['retorno'].get('erros', [])
-            if any(erro['erro'] == 'A consulta não retornou registros' for erro in erros):
-                break
-            else:
-                print(f"Erro na API: {data['retorno']['erros']}")
-                break
-        
-        pedidos_pagina = data['retorno'].get('pedidos', [])
-        todos_pedidos.extend(pedidos_pagina)
-        
-        num_paginas = int(data['retorno'].get('numero_paginas', 1))
-        
-        if pagina >= num_paginas:
-            break
-            
-        pagina += 1  # type: ignore
-        # Pequeno delay para evitar bloqueio por excesso de requisições
-        time.sleep(0.5)
-        
-    return todos_pedidos
-
-def gerar_csv(pedidos):
-    # Caminho absoluto relativo a este script
-    filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rastreios_tiny.csv")
-    count = 0
-    
-    with open(filename, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Número do Pedido no Tiny", "Situação", "Código de Rastreio"])
-        
-        for item in pedidos:
-            pedido = item.get('pedido', {})
-            # Verificamos se há código de rastreamento
-            rastreio = pedido.get('codigo_rastreamento')
-            situacao = pedido.get('situacao', '').upper()
-            
-            # Filtros solicitados:
-            # 1. Remover pedidos com situação ENTREGUE ou CANCELADO (case insensitive)
-            # 2. Código de rastreio deve começar com A
-            if rastreio and situacao not in ["ENTREGUE", "CANCELADO"] and rastreio.startswith("A"):
-                writer.writerow([
-                    pedido.get('numero'),
-                    pedido.get('situacao'),
-                    rastreio
-                ])
-                count += 1
-                
-    return filename, count
-
-def processar():
     try:
+        pedidos = client.pesquisar_todos_pedidos(data_inicial, data_final)
+        return pedidos
+    except TinyAuthError as e:
+        print(f"Erro de autenticação: {e}")
+        return []
+    except Exception as e:
+        print(f"Erro na consulta de pedidos do Tiny: {e}")
+        return []
+
+
+def gerar_csv(pedidos: List[Dict[str, Any]]) -> Tuple[str, int]:
+    """
+    Gera o arquivo CSV 'rastreios_tiny.csv' aplicando os filtros de negócio.
+    
+    Mantém o contrato de retorno: (caminho_arquivo, total_gravados).
+    """
+    service = TinyOrderService()
+    pedidos_convertidos = [PedidoTiny.de_dicionario(p) for p in pedidos]
+    caminho_csv = os.path.join(_dir_atual, "rastreios_tiny.csv")
+    return service.exportar_csv(pedidos_convertidos, caminho_saida=caminho_csv)
+
+
+def processar() -> bool:
+    """
+    Ponto de entrada principal chamado por `executar_rastreio.py` e pela CLI.
+    
+    Executa busca, filtragem e geração de CSV com tratamento seguro de erros.
+    """
+    config = TinyConfig()
+    if not config.token:
+        print("Erro: Token do Tiny ERP não configurado. Defina TOKEN_TINY no arquivo .env.")
+        return False
+
+    try:
+        service = TinyOrderService(config=config)
         pedidos_extraidos = buscar_pedidos()
         if pedidos_extraidos:
             csv_file, total = gerar_csv(pedidos_extraidos)
@@ -98,9 +84,11 @@ def processar():
             return True
         else:
             print("Nenhum pedido encontrado no período.")
+            return False
     except Exception as e:
         print(f"Ocorreu um erro no Tiny: {e}")
-    return False
+        return False
+
 
 if __name__ == "__main__":
     processar()
