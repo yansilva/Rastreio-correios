@@ -1,15 +1,29 @@
-# Ambiente virtual Python
-venv/
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
-# Variáveis de ambiente com segredos
+# Virtual Environment
+.venv/
+venv/
+Arquivos/venv/
+
+# Environment Variables
 .env
+Arquivos/.env
 
-# Relatórios gerados
+# IDE
+.idea/
+.vscode/
+
+# Relatórios e arquivos gerados automaticamente
 *.csv
 relatorio_rastreio.html
 pedidos_atrasados.html
 opcoes_frete.html
+alert_frete.js
+Arquivos/rastreios_tiny.csv
 
 # Relatórios de segurança
 gitguard-report-*.md

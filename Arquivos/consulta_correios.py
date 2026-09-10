@@ -6,13 +6,14 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Carrega variáveis do .env
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+# Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
-# Credenciais Correios (via .env)
-ID_CORREIOS = os.getenv("ID_CORREIOS")
-CONTRATO = os.getenv("CONTRATO")
-CODIGO_ACESSO = os.getenv("CODIGO_ACESSO")
+# Credenciais Correios (via variáveis de ambiente)
+ID_CORREIOS = os.getenv("ID_CORREIOS", "")
+CONTRATO = os.getenv("CONTRATO", "")
+CODIGO_ACESSO = os.getenv("CODIGO_ACESSO", "")
 
 # Endpoints
 URL_TOKEN = "https://api.correios.com.br/token/v1/autentica/contrato"

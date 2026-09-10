@@ -5,11 +5,12 @@ import time
 import os
 from dotenv import load_dotenv
 
-# Carrega variáveis do .env
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+# Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # Configurações
-TOKEN = os.getenv("TOKEN_TINY")
+TOKEN = os.getenv("TOKEN_TINY", "")
 URL_PESQUISA = "https://api.tiny.com.br/api2/pedidos.pesquisa.php"
 FORMATO = "json"
 DIAS_ATRAS = 30

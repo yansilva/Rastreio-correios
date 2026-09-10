@@ -5,26 +5,27 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-# Carrega variáveis do .env
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+# Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # ============== CONFIGURAÇÃO ==============
 
 # Tiny ERP
-TOKEN_TINY = os.getenv("TOKEN_TINY")
+TOKEN_TINY = os.getenv("TOKEN_TINY", "")
 URL_PESQUISA_TINY = "https://api.tiny.com.br/api2/pedidos.pesquisa.php"
 URL_OBTER_TINY = "https://api.tiny.com.br/api2/pedido.obter.php"
 
 # Correios
-ID_CORREIOS = os.getenv("ID_CORREIOS")
-CONTRATO = os.getenv("CONTRATO")
-CODIGO_ACESSO = os.getenv("CODIGO_ACESSO")
+ID_CORREIOS = os.getenv("ID_CORREIOS", "")
+CONTRATO = os.getenv("CONTRATO", "")
+CODIGO_ACESSO = os.getenv("CODIGO_ACESSO", "")
 URL_TOKEN = "https://api.correios.com.br/token/v1/autentica/contrato"
 URL_PRECO = "https://api.correios.com.br/preco/v1/nacional/{coProduto}"
 URL_PRAZO = "https://api.correios.com.br/prazo/v1/nacional/{coProduto}"
 
 # Configuração de envio
-CEP_ORIGEM = "05617010"
+CEP_ORIGEM = os.environ.get("CEP_ORIGEM", "05617010")
 PESO_GRAMAS = 1000
 COMPRIMENTO = 30
 LARGURA = 20
