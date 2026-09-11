@@ -67,32 +67,11 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_atualizar()
             return
 
-        if clean_path == "/api/demo":
-            self._handle_gerar_demo()
-            return
-
         self._send_json_response({"sucesso": False, "erro": "Rota não encontrada"}, status=404)
 
     # ---------------------------------------------------------
     # Handlers Internos de Rotas
     # ---------------------------------------------------------
-
-    def _handle_gerar_demo(self) -> None:
-        """Gera relatórios de demonstração via API."""
-        try:
-            import sys
-            dir_arquivos = str(self.server_config.base_dir / "Arquivos")
-            if dir_arquivos not in sys.path:
-                sys.path.append(dir_arquivos)
-
-            from demo_data import gerar_dados_demonstracao
-            gerar_dados_demonstracao(self.server_config.base_dir)
-            self._send_json_response(
-                {"sucesso": True, "mensagem": "Dados de demonstração gerados com sucesso."},
-                status=200,
-            )
-        except Exception as exc:
-            self._send_json_response({"sucesso": False, "erro": str(exc)}, status=500)
 
     def _handle_sse_logs(self) -> None:
         """Gerencia o streaming SSE de logs."""
@@ -153,95 +132,18 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json_response({"remaining": rem, "erro": "Atualização já em andamento"}, status=429)
 
     def _serve_main_html(self) -> None:
-        """Serve o arquivo HTML principal do painel ou tela de boas-vindas/onboarding."""
+        """Serve o arquivo HTML principal do painel."""
         caminho_html = self.server_config.base_dir / self.server_config.html_file
         if caminho_html.is_file():
             self._serve_file(caminho_html, content_type="text/html; charset=utf-8")
         else:
-            onboarding_html = (
-                "<!DOCTYPE html>\n"
-                "<html lang='pt-br'>\n"
-                "<head>\n"
-                "    <meta charset='UTF-8'>\n"
-                "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n"
-                "    <title>Bem-vindo ao Painel de Rastreio Correios</title>\n"
-                "    <link rel='stylesheet' href='web/css/main.css'>\n"
-                "    <link rel='stylesheet' href='web/css/components.css'>\n"
-                "</head>\n"
-                "<body>\n"
-                "    <div class='floating-actions'>\n"
-                "        <button id='btnTheme' class='btn-theme' aria-label='Alternar tema claro/escuro'>\n"
-                "            <span id='btnThemeText'>🌙 Escuro</span>\n"
-                "        </button>\n"
-                "    </div>\n"
-                "    <div class='container' style='max-width: 760px; margin-top: 40px; text-align: center;'>\n"
-                "        <h1>📦 Rastreio Correios & Tiny ERP</h1>\n"
-                "        <p class='meta' style='font-size: 1.05rem; margin-bottom: 30px;'>\n"
-                "            Sistema automatizado de rastreamento, auditoria de prazos e cotação de fretes.\n"
-                "        </p>\n"
-                "        <div class='order-card' style='padding: 32px 28px; text-align: left;'>\n"
-                "            <h2 style='margin-top: 0; color: var(--color-primary); font-size: 1.3rem;'>⚡ Primeiro Acesso Detectado</h2>\n"
-                "            <p style='color: var(--color-text-muted); line-height: 1.6;'>\n"
-                "                Nenhum relatório de rastreio foi encontrado no momento. Escolha uma das opções abaixo para começar:\n"
-                "            </p>\n"
-                "            <div style='display: flex; flex-direction: column; gap: 14px; margin: 25px 0;'>\n"
-                "                <button type='button' id='btnCarregarDemo' class='btn-action' style='justify-content: center; width: 100%; font-size: 1rem; padding: 14px 20px;'>\n"
-                "                    🚀 Carregar Dados de Demonstração (Modo Portfólio)\n"
-                "                </button>\n"
-                "                <button type='button' id='btnSincronizar' class='btn-action btn-theme' style='justify-content: center; width: 100%; font-size: 0.95rem; padding: 12px 20px;'>\n"
-                "                    🔄 Sincronizar com APIs Reais (Tiny ERP & Correios)\n"
-                "                </button>\n"
-                "            </div>\n"
-                "            <div style='background: var(--color-header-bg); border-radius: 8px; padding: 16px 20px; font-size: 0.88rem; color: var(--color-text-muted); border: 1px solid var(--color-border);'>\n"
-                "                <strong>💡 Dica para Avaliadores e Recrutadores:</strong><br>\n"
-                "                O botão <em>Carregar Dados de Demonstração</em> gera instantaneamente 10 pedidos realistas (em trânsito, atrasados com alerta, entregues e aguardando retirada) para permitir a exploração completa de filtros, busca instantânea e dark mode sem necessidade de credenciais de produção.\n"
-                "            </div>\n"
-                "        </div>\n"
-                "    </div>\n"
-                "    <script src='web/js/app.js'></script>\n"
-                "    <script>\n"
-                "        document.getElementById('btnCarregarDemo').addEventListener('click', function() {\n"
-                "            var btn = this;\n"
-                "            btn.disabled = true;\n"
-                "            btn.textContent = '⏳ Gerando demonstração...';\n"
-                "            fetch('/api/demo', { method: 'POST' })\n"
-                "                .then(function(res) { return res.json(); })\n"
-                "                .then(function(data) {\n"
-                "                    if (data.sucesso) {\n"
-                "                        window.location.reload();\n"
-                "                    } else {\n"
-                "                        alert('Erro ao carregar demonstração: ' + (data.erro || 'Desconhecido'));\n"
-                "                        btn.disabled = false;\n"
-                "                        btn.textContent = '🚀 Carregar Dados de Demonstração (Modo Portfólio)';\n"
-                "                    }\n"
-                "                })\n"
-                "                .catch(function(err) {\n"
-                "                    alert('Erro de conexão: ' + err);\n"
-                "                    btn.disabled = false;\n"
-                "                    btn.textContent = '🚀 Carregar Dados de Demonstração (Modo Portfólio)';\n"
-                "                });\n"
-                "        });\n"
-                "        document.getElementById('btnSincronizar').addEventListener('click', function() {\n"
-                "            var btn = this;\n"
-                "            btn.disabled = true;\n"
-                "            btn.textContent = '⏳ Iniciando sincronização...';\n"
-                "            fetch('/atualizar', { method: 'POST' })\n"
-                "                .then(function(res) { return res.json(); })\n"
-                "                .then(function() {\n"
-                "                    alert('Sincronização iniciada! Acompanhe o terminal ou aguarde a conclusão.');\n"
-                "                    setTimeout(function() { window.location.reload(); }, 3000);\n"
-                "                })\n"
-                "                .catch(function(err) {\n"
-                "                    alert('Erro ao acionar sincronização: ' + err);\n"
-                "                    btn.disabled = false;\n"
-                "                    btn.textContent = '🔄 Sincronizar com APIs Reais (Tiny ERP & Correios)';\n"
-                "                });\n"
-                "        });\n"
-                "    </script>\n"
-                "</body>\n"
-                "</html>"
+            html_msg = (
+                "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Painel</title></head>"
+                "<body><h2>Painel de Rastreio</h2>"
+                f"<p>O arquivo <code>{self.server_config.html_file}</code> ainda não foi gerado.</p>"
+                "<p>Clique em Atualizar ou execute a rotina de rastreamento.</p></body></html>"
             )
-            self._send_bytes_response(onboarding_html.encode("utf-8"), content_type="text/html; charset=utf-8", status=200)
+            self._send_bytes_response(html_msg.encode("utf-8"), content_type="text/html; charset=utf-8", status=200)
 
     def _serve_static_file(self, requested_url_path: str) -> None:
         """Serve arquivo estático validado contra Path Traversal e arquivos confidenciais."""
