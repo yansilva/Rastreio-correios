@@ -22,7 +22,7 @@ class TinyClient:
     def __init__(self, config: TinyConfig | None = None):
         self.config = config or TinyConfig()
         if not self.config.token:
-            logger.error("Tentativa de inicializar TinyClient sem token de acesso.")
+            logger.error("Tentativa de inicializar TinyClient sem credencial de acesso configurada.")
             raise TinyAuthError(
                 "Token do Tiny ERP não configurado. Defina a variável de ambiente TOKEN_TINY ou passe explicitamente na configuração."
             )

@@ -33,12 +33,12 @@ class CorreiosClient:
             return self._token
 
         if not self.config.credenciais_preenchidas():
-            logger.error("Tentativa de obter token sem credenciais completas dos Correios.")
+            logger.error("Credenciais obrigatórias dos Correios não configuradas no ambiente.")
             raise CorreiosAuthError(
                 "Credenciais dos Correios não configuradas. Verifique ID_CORREIOS, CONTRATO e CODIGO_ACESSO no .env."
             )
 
-        logger.info("Solicitando novo token de acesso nos Correios...")
+        logger.info("Iniciando autenticação nos Correios...")
         auth_str = f"{self.config.id_correios}:{self.config.codigo_acesso}"
         auth_b64 = base64.b64encode(auth_str.encode()).decode()
 
@@ -56,12 +56,12 @@ class CorreiosClient:
                 timeout=self.config.timeout_segundos,
             )
         except requests.exceptions.Timeout as exc:
-            logger.error("Timeout de %ss excedido na autenticação dos Correios", self.config.timeout_segundos)
+            logger.error("Tempo limite excedido na autenticação dos Correios (%ss)", self.config.timeout_segundos)
             raise CorreiosTimeoutError(
                 f"Tempo limite de {self.config.timeout_segundos}s excedido ao autenticar nos Correios."
             ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Erro de conexão com a API de token dos Correios: %s", exc)
+            logger.error("Falha de rede ao conectar com o serviço de autenticação dos Correios")
             raise CorreiosConnectionError(f"Falha de conexão com os Correios: {exc}") from exc
 
         if response.status_code == 201:
@@ -71,19 +71,19 @@ class CorreiosClient:
                 if not token:
                     raise CorreiosAuthError("Resposta da API de token não contém o campo 'token'.")
                 self._token = token
-                logger.info("Token de acesso dos Correios obtido com sucesso.")
+                logger.info("Autenticação nos Correios realizada com sucesso.")
                 return token
             except Exception as exc:
                 if isinstance(exc, CorreiosAuthError):
                     raise
                 raise CorreiosAPIError("Falha ao deserializar JSON da resposta de autenticação.") from exc
         elif response.status_code in (401, 403):
-            logger.error("Credenciais rejeitadas pelos Correios (HTTP %d)", response.status_code)
+            logger.error("Autenticação rejeitada pelos Correios (HTTP %d)", response.status_code)
             raise CorreiosAuthError(
                 f"Falha de autenticação nos Correios (HTTP {response.status_code}): {response.text}"
             )
         else:
-            logger.error("Erro inesperado na API de token dos Correios (HTTP %d): %s", response.status_code, response.text[:200])
+            logger.error("Resposta inesperada no serviço de autenticação dos Correios (HTTP %d)", response.status_code)
             raise CorreiosAPIError(
                 f"Erro ao obter token dos Correios: {response.status_code} - {response.text}",
                 status_code=response.status_code,
@@ -112,15 +112,15 @@ class CorreiosClient:
                 timeout=self.config.timeout_segundos,
             )
         except requests.exceptions.Timeout as exc:
-            logger.error("Timeout de %ss excedido ao rastrear objeto %s", self.config.timeout_segundos, objeto)
+            logger.error("Tempo limite excedido ao rastrear objeto %s", objeto)
             raise CorreiosTimeoutError(f"Tempo limite excedido ao rastrear {objeto}.") from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Erro de conexão ao rastrear objeto %s: %s", objeto, exc)
+            logger.error("Erro de conexão ao rastrear objeto %s", objeto)
             raise CorreiosConnectionError(f"Falha de conexão ao rastrear {objeto}: {exc}") from exc
 
-        # Se o token expirou (401), tenta renovar uma vez
+        # Se a sessão expirou (401), tenta renovar uma vez
         if response.status_code == 401 and token is None:
-            logger.warning("Token expirado ao consultar %s. Tentando renovação...", objeto)
+            logger.warning("Sessão expirada ao consultar objeto %s. Renovando autorização...", objeto)
             novo_token = self.gerar_token(forcar_renovacao=True)
             headers["Authorization"] = f"Bearer {novo_token}"
             response = requests.get(url, headers=headers, timeout=self.config.timeout_segundos)
