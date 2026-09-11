@@ -1,10 +1,12 @@
 @echo off
 title Painel de Rastreio - Servidor Local
 cd /d "%~dp0"
-echo Iniciando o Servidor de Rastreio...
+echo ======================================================
+echo Iniciando o Painel de Rastreio e Frete...
+echo ======================================================
 if exist "Arquivos\venv\Scripts\python.exe" (
-    "Arquivos\venv\Scripts\python.exe" "Arquivos\servidor_rastreio.py"
+    "Arquivos\venv\Scripts\python.exe" run.py
 ) else (
-    python "Arquivos\servidor_rastreio.py"
+    python run.py
 )
 pause
