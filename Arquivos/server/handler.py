@@ -3,7 +3,7 @@ import http.server
 import json
 import mimetypes
 import queue
-from typing import Any, Optional
+from typing import Any
 
 from .config import ServerConfig
 from .logger import ServerLogQueue, logger
@@ -17,7 +17,7 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
     # Referências globais/padrão injetáveis pelo servidor
     server_config: ServerConfig = ServerConfig()
     log_queue: ServerLogQueue = ServerLogQueue()
-    update_manager: Optional[UpdateManager] = None
+    update_manager: UpdateManager | None = None
 
     def end_headers(self) -> None:
         """Adiciona headers CORS e de segurança padrão."""
@@ -85,7 +85,7 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
             while True:
                 try:
                     message = self.log_queue.get(timeout=1.0)
-                    line = f"data: {message}\n\n".encode("utf-8")
+                    line = f"data: {message}\n\n".encode()
                     self.wfile.write(line)
                     self.wfile.flush()
                 except queue.Empty:

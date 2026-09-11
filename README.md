@@ -1,8 +1,9 @@
 # 📦 Rastreio Correios & Tiny ERP
 
+[![CI](https://github.com/yansilva/Rastreio-correios/actions/workflows/ci.yml/badge.svg)](https://github.com/yansilva/Rastreio-correios/actions/workflows/ci.yml)
 [![Secured by GitGuard](https://img.shields.io/badge/Secured%20by-GitGuard-success?style=flat-square)](https://www.gitguard.com.br/yansilva)
-[![Tests](https://img.shields.io/badge/tests-136%20passed-brightgreen?style=flat-square)]()
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?style=flat-square)]()
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?style=flat-square)](https://github.com/astral-sh/ruff)
 
 Sistema automatizado em Python para consulta de rastreamento de encomendas, auditoria de prazos de entrega e cálculo/cotação de fretes via API dos Correios, integrado ao **Tiny ERP**.
 
@@ -16,6 +17,7 @@ Sistema automatizado em Python para consulta de rastreamento de encomendas, audi
 - **Painel Web Local:** Dashboard embutido com interface visual amigável e atualização em tempo real via navegador (Server-Sent Events).
 - **Cotação e Comparação de Fretes:** Simulação e conferência de preços/prazos (SEDEX, PAC, Mini Envios) direto com a API dos Correios.
 - **Alertas Automatizados:** Geração de relatórios com alertas visuais e sonoros para divergências e prazos estendidos.
+- **Validação e Qualidade Contínua (CI):** Pipeline automatizado no GitHub Actions para cada push e pull request validando compilação, lint (Ruff) e testes em matriz Python 3.11 e 3.12.
 
 ---
 
@@ -23,9 +25,14 @@ Sistema automatizado em Python para consulta de rastreamento de encomendas, audi
 
 ```text
 Rastreio-correios/
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # Pipeline automatizado de CI (Python 3.11 e 3.12)
 ├── run.py                   # Ponto de entrada principal da aplicação
 ├── ABRIR_PAINEL.bat         # Inicializador rápido para Windows (com suporte a venv)
-├── requirements.txt         # Dependências do projeto Python
+├── pyproject.toml           # Configurações do projeto, Ruff, Pytest e Cobertura
+├── requirements.txt         # Dependências de produção
+├── requirements-dev.txt     # Ferramentas de desenvolvimento, lint e testes
 ├── .env.example             # Modelo de configuração das variáveis de ambiente
 ├── .gitignore               # Arquivos e pastas ignorados pelo Git
 ├── README.md                # Documentação do projeto
@@ -56,6 +63,9 @@ Rastreio-correios/
 - **Requests** (consumo de APIs REST com timeout explícito)
 - **Python-dotenv** (gerenciamento seguro de configurações e credenciais)
 - **Pytest** e **unittest.mock** (136 testes automatizados rápidos e isolados)
+- **Pytest-cov** (relatórios de cobertura de código)
+- **Ruff** (linter e formatador de código estático de alta performance)
+- **GitHub Actions** (integração contínua e validação automática em matriz multi-versão)
 - **HTML5 / CSS3 / JavaScript / SSE** (Dashboard local com streaming de logs em tempo real)
 
 ---
@@ -63,7 +73,7 @@ Rastreio-correios/
 ## ⚙️ Configuração e Instalação
 
 ### 1. Pré-requisitos
-- Python 3.8 ou superior instalado.
+- Python 3.11 ou superior instalado.
 - Acesso à API do Tiny ERP (Token de API).
 - Cartão de postagem / contrato ativo nos Correios e código de acesso à API dos Correios.
 
@@ -87,8 +97,15 @@ source venv/bin/activate
 ```
 
 ### 4. Instalar as Dependências
+
+Para executar o sistema em produção/operação:
 ```bash
 pip install -r requirements.txt
+```
+
+Para desenvolvimento, execução de testes e lint:
+```bash
+pip install -r requirements-dev.txt
 ```
 
 ### 5. Configurar as Variáveis de Ambiente
@@ -149,24 +166,35 @@ O painel será aberto automaticamente no navegador em `http://localhost:8000`.
 
 ---
 
-## 🧪 Testes Automatizados
+## 🧪 Qualidade e Testes Automatizados
 
-O projeto conta com suíte de testes unitários abrangente e 100% mockada (sem chamadas reais de rede):
+O projeto conta com suíte de testes automatizados abrangente e 100% mockada (sem chamadas de rede ou credenciais reais), validada continuamente pelo GitHub Actions:
 
+### 1. Executar os Testes Unitários
 ```bash
 python -m pytest tests/ -v
 ```
 
-Resultado: **136 testes aprovados** cobrindo:
-- Conectividade, paginação e exportação Tiny ERP
-- Autenticação Basic/Bearer e classificação de eventos Correios
-- Validação de CEP, cubagem e cotação de fretes
-- Roteamento HTTP, streaming SSE, cooldown e proteção anti-path traversal no servidor
+### 2. Executar Cobertura de Código
+```bash
+python -m pytest tests/ --cov=Arquivos --cov-report=term-missing
+```
+
+### 3. Executar Análise Estática (Ruff)
+```bash
+ruff check .
+```
+
+### 4. Validar Sintaxe de Todos os Arquivos
+```bash
+python -m compileall Arquivos run.py tests
+```
 
 ---
 
 ## 🔒 Segurança e Arquitetura
 
+- **Integração Contínua Segura:** O pipeline no GitHub Actions não requer e não armazena nenhuma credencial ou secret real, pois toda a suíte é executada sobre mocks.
 - **Proteção Anti-Path Traversal:** O servidor HTTP valida canonicamente os caminhos e bloqueia acesso a arquivos fora da raiz, arquivos ocultos (`.env`, `.git`) ou código-fonte (`.py`).
 - **Sanitização de Streaming:** Tokens e chaves de API são interceptados e mascarados antes do envio ao navegador via SSE.
 - **Credenciais Seguras:** Nenhuma credencial trafega ou é gravada no versionamento.

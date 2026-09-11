@@ -9,7 +9,7 @@ para manter compatibilidade com o painel e alert_frete.js.
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .config import FreteConfig
 
@@ -19,13 +19,13 @@ logger = logging.getLogger("frete.report")
 class FreteReportGenerator:
     """Gera o HTML de opções de frete e o script de alertas."""
 
-    def __init__(self, config: Optional[FreteConfig] = None):
+    def __init__(self, config: FreteConfig | None = None):
         self.config = config or FreteConfig()
 
     def gerar_html(
         self,
-        pedidos_com_frete: List[Dict[str, Any]],
-        alertas_extras: Optional[List[str]] = None,
+        pedidos_com_frete: list[dict[str, Any]],
+        alertas_extras: list[str] | None = None,
     ) -> str:
         """Gera e salva a página HTML premium com opções de frete.
 
@@ -47,14 +47,11 @@ class FreteReportGenerator:
             if any(s["disponivel"] for s in p.get("servicos", {}).values())
         )
 
-        tem_prazo_longo = False
         pedidos_com_prazo_longo = []
 
         # Inclui alertas de pedidos Motoboy/Retirada com prazo longo (não exibidos nos cards)
         if alertas_extras:
             pedidos_com_prazo_longo.extend(alertas_extras)
-            if alertas_extras:
-                tem_prazo_longo = True
 
         # Monta os cards de pedido
         cards_html = ""
@@ -75,7 +72,6 @@ class FreteReportGenerator:
                     preco_display = info.get("preco_fmt", "—")
                     prazo_display = f'{info["prazo"]} dias úteis' if info.get("prazo") else "—"
                     if info.get("prazo") and info["prazo"] > 3:
-                        tem_prazo_longo = True
                         if str(pedido['numero']) not in pedidos_com_prazo_longo:
                             pedidos_com_prazo_longo.append(str(pedido['numero']))
 
@@ -90,7 +86,6 @@ class FreteReportGenerator:
                     <div class="servico-prazo">📅 {prazo_display}</div>{msg_prazo_html}
                 </div>"""
                 else:
-                    erro = info.get("erro", "Indisponível")
                     servicos_html += f"""
                 <div class="servico-card indisponivel">
                     <div class="servico-nome">{nome}</div>
@@ -506,7 +501,7 @@ class FreteReportGenerator:
 
         return caminho_html
 
-    def _gerar_alert_js(self, pasta_projeto: str, pedidos_com_prazo_longo: List[str]) -> None:
+    def _gerar_alert_js(self, pasta_projeto: str, pedidos_com_prazo_longo: list[str]) -> None:
         """Gera o arquivo alert_frete.js com alertas de prazo longo."""
         js_content = f"""(function() {{
     const pedidosComPrazo = {str(pedidos_com_prazo_longo)};

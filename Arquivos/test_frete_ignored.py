@@ -1,7 +1,8 @@
-import requests
 import json
-import time
 import os
+import time
+
+import requests
 from dotenv import load_dotenv
 
 # Carrega variáveis do .env
@@ -40,7 +41,7 @@ for num in pedidos_a_testar:
         print("Nao encontrado!")
         continue
     pid = p_data[0]["pedido"]["id"]
-    
+
     time.sleep(1)
     r2 = requests.get("https://api.tiny.com.br/api2/pedido.obter.php", params={
         "token": TOKEN,
@@ -48,7 +49,7 @@ for num in pedidos_a_testar:
         "id": pid
     })
     pedido = r2.json()["retorno"]["pedido"]
-    
+
     # Endereco e Frete
     cli = pedido.get("cliente", {})
     ee = pedido.get("endereco_entrega") or {}
@@ -56,15 +57,15 @@ for num in pedidos_a_testar:
     cidade = ee.get("cidade") or cli.get("cidade")
     uf = ee.get("uf") or cli.get("uf")
     forma_envio = pedido.get("forma_envio", "")
-    
+
     print(f"Situacao: {pedido.get('situacao')}")
     print(f"Metodo envio: {forma_envio}")
     print(f"CEP: {cep} ({cidade}/{uf})")
-    
+
     if "MOTOBOY" in forma_envio.upper() or "RETIRADA" in forma_envio.upper():
         print("Ignorado (Motoboy/Retirada)")
         continue
-        
+
     if cep:
         cep_limpo = "".join(filter(str.isdigit, str(cep)))
         headers = {"Authorization": f"Bearer {token_correios}"}

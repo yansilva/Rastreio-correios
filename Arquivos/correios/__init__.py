@@ -1,4 +1,5 @@
 """Módulo de integração com as APIs dos Correios."""
+from .client import CorreiosClient
 from .config import CorreiosConfig
 from .exceptions import (
     CorreiosAPIError,
@@ -8,7 +9,6 @@ from .exceptions import (
     CorreiosTimeoutError,
 )
 from .models import EventoRastreio, ObjetoRastreio, PedidoAtrasado
-from .client import CorreiosClient
 from .tracking import TrackingService
 
 __all__ = [

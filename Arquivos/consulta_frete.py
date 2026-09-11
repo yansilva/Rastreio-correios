@@ -6,10 +6,10 @@ e gera o relatório HTML com as opções de frete.
 Uso direto:
     python Arquivos/consulta_frete.py
 """
+import logging
 import os
 import sys
 import time
-import logging
 from datetime import datetime, timedelta
 
 import requests  # type: ignore
@@ -25,12 +25,12 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # --- Módulos refatorados ---
-from correios import CorreiosClient, CorreiosConfig
+from correios import CorreiosClient
 from frete import (
-    FreteConfig,
     FreteClient,
-    FreteService,
+    FreteConfig,
     FreteReportGenerator,
+    FreteService,
 )
 
 # ============== CONFIGURAÇÃO ==============
@@ -126,7 +126,7 @@ def obter_cep_destino(pedido_id):
             forma_frete = (pedido.get('forma_frete') or '').upper()
             forma_envio = (pedido.get('forma_envio') or '').upper()
             frete_por = (pedido.get('frete_por') or '').upper()
-            
+
             # Combina os campos para facilitar a checagem
             metodo_envio = f"{forma_frete} {forma_envio} {frete_por}"
 
@@ -188,7 +188,7 @@ def processar():
             # Obter CEP de destino e forma de envio
             cep_destino, destino_label, metodo_envio = obter_cep_destino(pedido['id'])
             time.sleep(1)  # Rate limit Tiny
-            
+
             # Pedidos Ocultos: Mercado Envios, Shopee, Motoboy e Retirada
             # Não exibe card e NÃO gera alerta — o frete é gerenciado pela plataforma
             # O Tiny indica Mercado Envios usando "M" isolado na forma_envio
@@ -198,7 +198,7 @@ def processar():
                 continue
 
             if not cep_destino or len(cep_destino) < 8:
-                print(f"  [!] CEP de destino nao encontrado. Pulando...")
+                print("  [!] CEP de destino nao encontrado. Pulando...")
                 continue
 
             print(f"  Destino: {destino_label} - CEP {cep_destino}")

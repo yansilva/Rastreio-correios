@@ -6,11 +6,12 @@ Exibe a resposta COMPLETA (JSON) para verificar se há mensagens como:
   - "Provisoriamente está com 5 dias adicionais"
 """
 
-import requests
-import json
-import time
 import base64
+import json
 import os
+import time
+
+import requests
 from dotenv import load_dotenv
 
 # Carrega variáveis do .env
@@ -101,7 +102,7 @@ def consultar_correios_completo(token, cep_destino):
     """Consulta preço E prazo nos Correios e mostra a resposta COMPLETA"""
 
     print(f"\n{'='*60}")
-    print(f"  CONSULTANDO API DOS CORREIOS")
+    print("  CONSULTANDO API DOS CORREIOS")
     print(f"  CEP Origem: {CEP_ORIGEM}  ->  CEP Destino: {cep_destino}")
     print(f"{'='*60}")
 
@@ -131,13 +132,13 @@ def consultar_correios_completo(token, cep_destino):
         print(f"{'─'*50}")
 
         # === CONSULTA DE PREÇO ===
-        print(f"\n  📦 CONSULTA DE PREÇO:")
+        print("\n  📦 CONSULTA DE PREÇO:")
         url_preco = URL_PRECO.format(coProduto=cod)
         try:
             resp_preco = requests.get(url_preco, headers=headers, params=params_preco, timeout=15)
             print(f"  Status HTTP: {resp_preco.status_code}")
             print(f"  URL: {resp_preco.url}")
-            print(f"\n  RESPOSTA COMPLETA (JSON):")
+            print("\n  RESPOSTA COMPLETA (JSON):")
             try:
                 data_preco = resp_preco.json()
                 print(json.dumps(data_preco, indent=4, ensure_ascii=False))
@@ -149,13 +150,13 @@ def consultar_correios_completo(token, cep_destino):
         time.sleep(0.3)
 
         # === CONSULTA DE PRAZO ===
-        print(f"\n  📅 CONSULTA DE PRAZO:")
+        print("\n  📅 CONSULTA DE PRAZO:")
         url_prazo = URL_PRAZO.format(coProduto=cod)
         try:
             resp_prazo = requests.get(url_prazo, headers=headers, params=params_prazo, timeout=15)
             print(f"  Status HTTP: {resp_prazo.status_code}")
             print(f"  URL: {resp_prazo.url}")
-            print(f"\n  RESPOSTA COMPLETA (JSON):")
+            print("\n  RESPOSTA COMPLETA (JSON):")
             try:
                 data_prazo = resp_prazo.json()
                 print(json.dumps(data_prazo, indent=4, ensure_ascii=False))
@@ -165,7 +166,7 @@ def consultar_correios_completo(token, cep_destino):
                     "cep", "cidade", "adicional", "provisori",
                     "prazo", "dias", "msg", "observ", "mensagem", "aviso"
                 ]
-                print(f"\n  🔍 BUSCANDO MENSAGENS ESPECIAIS NA RESPOSTA:")
+                print("\n  🔍 BUSCANDO MENSAGENS ESPECIAIS NA RESPOSTA:")
                 json_str = json.dumps(data_prazo, ensure_ascii=False).lower()
                 encontrou = False
                 for campo, valor in data_prazo.items():
@@ -194,7 +195,7 @@ if __name__ == "__main__":
 
     # 1. Token Correios
     token = obter_token_correios()
-    print(f"Token obtido com sucesso.")
+    print("Token obtido com sucesso.")
 
     # 2. Buscar CEP do pedido no Tiny
     cep_destino = buscar_pedido_tiny(NUMERO_PEDIDO)

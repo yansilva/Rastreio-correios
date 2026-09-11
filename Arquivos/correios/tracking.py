@@ -1,7 +1,7 @@
 """Serviço de normalização, classificação de status e regras de atraso de encomendas."""
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .models import EventoRastreio, ObjetoRastreio, PedidoAtrasado
 
@@ -12,7 +12,7 @@ class TrackingService:
     """Aplica as regras de negócio para análise de status e prazos das encomendas."""
 
     @staticmethod
-    def processar_objeto(codigo: str, dados_brutos: Optional[Dict[str, Any]]) -> ObjetoRastreio:
+    def processar_objeto(codigo: str, dados_brutos: dict[str, Any] | None) -> ObjetoRastreio:
         """
         Transforma o payload bruto retornado pela API dos Correios em um ObjetoRastreio tipado
         e aplica a classificação de status de acordo com o histórico de eventos.
@@ -84,8 +84,8 @@ class TrackingService:
         numero_pedido: str,
         situacao_tiny: str,
         dias_limite: int = 3,
-        data_referencia: Optional[datetime] = None,
-    ) -> Optional[PedidoAtrasado]:
+        data_referencia: datetime | None = None,
+    ) -> PedidoAtrasado | None:
         """
         Calcula os dias decorridos desde a postagem e retorna um PedidoAtrasado
         caso o prazo ultrapasse o limite (padrão 3 dias).
@@ -129,7 +129,7 @@ class TrackingService:
         )
 
     @staticmethod
-    def deve_ocultar_card(objeto: ObjetoRastreio, data_referencia: Optional[datetime] = None) -> bool:
+    def deve_ocultar_card(objeto: ObjetoRastreio, data_referencia: datetime | None = None) -> bool:
         """
         Aplica as regras de visibilidade no dashboard:
         - Devolvidos: ocultar se decorridas mais de 24 horas desde o evento de devolução.

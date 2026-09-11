@@ -1,12 +1,8 @@
 """Inicialização, lifecycle e execução do servidor HTTP multithreaded."""
-import os
-from pathlib import Path
 import socketserver
 import sys
 import threading
-from threading import Timer
 import time
-from typing import Optional
 import webbrowser
 
 from .config import ServerConfig
@@ -36,7 +32,7 @@ def abrir_navegador(url: str, delay: float = 1.5) -> None:
 
 
 def iniciar_servidor(
-    config: Optional[ServerConfig] = None,
+    config: ServerConfig | None = None,
     abrir_browser: bool = True,
     capturar_stdout: bool = True,
 ) -> None:

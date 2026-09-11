@@ -1,8 +1,9 @@
 """Cliente HTTP para comunicação exclusiva com as APIs dos Correios."""
 import base64
 import logging
+from typing import Any
+
 import requests
-from typing import Any, Dict, Optional
 
 from .config import CorreiosConfig
 from .exceptions import (
@@ -18,9 +19,9 @@ logger = logging.getLogger("correios.client")
 class CorreiosClient:
     """Responsável unicamente pela autenticação e comunicação HTTP com a API dos Correios."""
 
-    def __init__(self, config: Optional[CorreiosConfig] = None):
+    def __init__(self, config: CorreiosConfig | None = None):
         self.config = config or CorreiosConfig()
-        self._token: Optional[str] = None
+        self._token: str | None = None
 
     def gerar_token(self, forcar_renovacao: bool = False) -> str:
         """
@@ -89,7 +90,7 @@ class CorreiosClient:
                 detalhes=response.text,
             )
 
-    def consultar_objeto(self, objeto: str, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def consultar_objeto(self, objeto: str, token: str | None = None) -> dict[str, Any] | None:
         """
         Consulta os eventos de rastreamento de um objeto na API SRO dos Correios.
         

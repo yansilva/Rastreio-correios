@@ -18,20 +18,17 @@ if _raiz not in sys.path:
 if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
+import consulta_correios
 import requests
 from correios import (
-    CorreiosAPIError,
     CorreiosAuthError,
     CorreiosClient,
     CorreiosConfig,
     CorreiosConnectionError,
     CorreiosTimeoutError,
-    EventoRastreio,
     ObjetoRastreio,
-    PedidoAtrasado,
     TrackingService,
 )
-import consulta_correios
 
 
 class TestCorreiosConfig(unittest.TestCase):

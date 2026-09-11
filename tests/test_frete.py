@@ -8,7 +8,7 @@ import os
 import sys
 import unittest
 from decimal import Decimal
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import requests
 
@@ -20,23 +20,22 @@ if _raiz not in sys.path:
 if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
+from correios import CorreiosClient, CorreiosConfig
 from frete import (
-    FreteConfig,
-    FreteClient,
-    FreteService,
-    FreteReportGenerator,
-    FreteError,
     FreteAPIError,
+    FreteClient,
+    FreteConfig,
     FreteConnectionError,
-    FreteTimeoutError,
+    FreteError,
+    FreteReportGenerator,
+    FreteService,
     FreteServicoIndisponivelError,
+    FreteTimeoutError,
     OpcaoFrete,
-    validar_cep,
     normalizar_cep,
+    validar_cep,
     validar_dimensoes,
 )
-from correios import CorreiosClient, CorreiosConfig
-
 
 # ============== TESTES DE CEP ==============
 

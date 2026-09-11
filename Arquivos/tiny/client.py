@@ -1,8 +1,9 @@
 """Cliente HTTP para comunicação exclusiva com a API do Tiny ERP."""
 import logging
 import time
+from typing import Any
+
 import requests
-from typing import Any, Dict, List, Optional
 
 from .config import TinyConfig
 from .exceptions import (
@@ -18,7 +19,7 @@ logger = logging.getLogger("tiny.client")
 class TinyClient:
     """Responsável unicamente pela comunicação HTTP com a API do Tiny ERP."""
 
-    def __init__(self, config: Optional[TinyConfig] = None):
+    def __init__(self, config: TinyConfig | None = None):
         self.config = config or TinyConfig()
         if not self.config.token:
             logger.error("Tentativa de inicializar TinyClient sem token de acesso.")
@@ -32,7 +33,7 @@ class TinyClient:
         data_final: str,
         pagina: int = 1,
         sort: str = "DESC",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Consulta uma página de pedidos no Tiny ERP no intervalo de datas informado.
         
@@ -88,7 +89,7 @@ class TinyClient:
         self,
         data_inicial: str,
         data_final: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Itera automaticamente pelas páginas da API do Tiny coletando todos os pedidos do período.
         
@@ -97,7 +98,7 @@ class TinyClient:
         logger.info("Iniciando busca de pedidos no Tiny ERP de %s até %s", data_inicial, data_final)
         pagina = 1
         num_paginas = 1
-        todos_pedidos: List[Dict[str, Any]] = []
+        todos_pedidos: list[dict[str, Any]] = []
 
         while pagina <= num_paginas:
             data = self.pesquisar_pedidos(data_inicial, data_final, pagina=pagina)

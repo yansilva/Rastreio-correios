@@ -1,10 +1,9 @@
-import requests  # type: ignore
 import csv
-import base64
-import time
 import os
 import sys
+import time
 from datetime import datetime
+
 from dotenv import load_dotenv
 
 # Garante que o diretório Arquivos/ esteja no PYTHONPATH
@@ -13,10 +12,8 @@ if _dir_atual not in sys.path:
     sys.path.insert(0, _dir_atual)
 
 from correios import (
-    CorreiosAuthError,
     CorreiosClient,
     CorreiosConfig,
-    ObjetoRastreio,
     TrackingService,
 )
 
@@ -58,19 +55,19 @@ def formatar_evento_html(evento):
     uf = endereco.get("uf", "")
     local = f"{cidade}/{uf}".strip("/")
     detalhe = evento.get("detalhe", "")
-    
+
     try:
         dt_obj = datetime.fromisoformat(dt_iso)
         dt_br = dt_obj.strftime("%d/%m/%Y %H:%M")
-    except:
+    except Exception:
         dt_br = dt_iso
-    
+
     desc_upper = desc.upper()
     det_upper = detalhe.upper()
-    
+
     status_class = ""
     badge = ""
-    
+
     if "RETIRADA" in desc_upper or "RETIRADA" in det_upper:
         status_class = "status-critical"
         badge = '<span class="badge badge-red">AGUARDANDO RETIRADA</span>'
@@ -85,9 +82,9 @@ def formatar_evento_html(evento):
         badge = '<span class="badge badge-purple">DEVOLVIDO</span>'
     elif "POSTADO" in desc_upper:
         badge = '<span class="badge badge-green">POSTADO</span>'
-    
+
     detalhe_html = f'<div class="event-detail">{detalhe}</div>' if detalhe else ''
-    
+
     return f"""
     <div class="event {status_class}">
         <div class="event-header">
@@ -107,23 +104,23 @@ def processar():
 
     try:
         token = obter_token()
-        
+
         # Garante que procuramos o CSV na mesma pasta do script
         caminho_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), CSV_ENTRADA)
         print(f"Lendo '{caminho_csv}'...")
-        
+
         vendas = []
-        with open(caminho_csv, mode='r', encoding='utf-8') as f:
+        with open(caminho_csv, encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 vendas.append(row)
-        
+
         if not vendas:
             print("Nenhum registro encontrado no CSV de entrada.")
             return
 
         print(f"\nConsultando {len(vendas)} objetos...")
-        
+
         html_template = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -841,31 +838,31 @@ def processar():
         devolvidos_count = 0
         nao_enviados_count = 0
         em_transito_count = 0
-        
+
         PEDIDOS_IGNORADOS = ["39192"]
 
         for venda in vendas:
             pedido = venda.get("Número do Pedido no Tiny")
             if pedido in PEDIDOS_IGNORADOS:
                 continue
-                
+
             rastreio = venda.get("Código de Rastreio")
             situacao_tiny = venda.get("Situação")
-            
+
             print(f"Processando {pedido}...")
             obj_data = consultar_objeto(rastreio, token)
-            
+
             # Processamento e classificação com TrackingService
             obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
             status_category = obj_classificado.status_categoria
-            
+
             events_html = []
             if obj_data and "eventos" in obj_data:
                 for evento in obj_data["eventos"]:
                     events_html.append(formatar_evento_html(evento))
             else:
                 events_html.append('<div class="event"><em>Sem informações de rastreio disponíveis nos Correios para este objeto.</em></div>')
-            
+
             # Contabilização de status
             if obj_classificado.is_devolvido:
                 devolvidos_count += 1
@@ -908,7 +905,7 @@ def processar():
             """
             orders_html.append(card)
             time.sleep(0.2)
-        
+
         print(f"\nRelatório gerado. Entregues: {entregues_count} | Devolvidos: {devolvidos_count}")
 
         # Monta o dashboard de resumo
@@ -963,14 +960,14 @@ def processar():
             atrasados_link=atrasados_link_html,
             versao_cache=int(time.time())
         )
-            
+
         # Salva o relatório na raiz do projeto (um nível acima de Arquivos/)
         pasta_projeto = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         caminho_html = os.path.join(pasta_projeto, RELATORIO_HTML)
-        
+
         with open(caminho_html, mode='w', encoding='utf-8') as f:
             f.write(final_html)
-            
+
         print(f"\nSucesso! Relatório HTML premium salvo em '{caminho_html}'.")
 
         # ===== GERA PÁGINA DE PEDIDOS ATRASADOS =====
@@ -996,7 +993,7 @@ def processar():
             else:
                 urgencia_class = "urgencia-baixa"
                 urgencia_label = "ATENÇÃO"
-            
+
             status_label = {"em_transito": "Em Trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
 
             rows_html += f"""
@@ -1271,7 +1268,7 @@ def processar():
             f.write(atrasados_html_page)
 
         print(f"Página de atrasados salva em '{caminho_atrasados}' ({len(atrasados_data)} pedido(s) com mais de 3 dias).")
-                
+
     except Exception as e:
         print(f"Erro no processamento: {e}")
 

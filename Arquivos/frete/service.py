@@ -4,11 +4,10 @@ Combina preço e prazo, normaliza resultados e aplica regras de comparação.
 """
 import logging
 import time
-from typing import List, Optional
 
 from .client import FreteClient
 from .config import FreteConfig
-from .exceptions import FreteServicoIndisponivelError, FreteError
+from .exceptions import FreteError, FreteServicoIndisponivelError
 from .models import OpcaoFrete
 
 logger = logging.getLogger("frete.service")
@@ -17,7 +16,7 @@ logger = logging.getLogger("frete.service")
 class FreteService:
     """Orquestra consultas de preço e prazo e produz OpcaoFrete normalizados."""
 
-    def __init__(self, client: Optional[FreteClient] = None, config: Optional[FreteConfig] = None):
+    def __init__(self, client: FreteClient | None = None, config: FreteConfig | None = None):
         self.config = config or FreteConfig()
         self.client = client or FreteClient(config=self.config)
 
@@ -83,7 +82,7 @@ class FreteService:
             erro=None,
         )
 
-    def consultar_opcoes(self, cep_destino: str, intervalo_segundos: float = 0.3) -> List[OpcaoFrete]:
+    def consultar_opcoes(self, cep_destino: str, intervalo_segundos: float = 0.3) -> list[OpcaoFrete]:
         """Consulta preço e prazo de todos os serviços configurados para um CEP.
 
         Args:
@@ -94,7 +93,7 @@ class FreteService:
             Lista de OpcaoFrete com todos os serviços (disponíveis ou não).
         """
         logger.info("Iniciando consulta de frete para CEP %s", cep_destino)
-        opcoes: List[OpcaoFrete] = []
+        opcoes: list[OpcaoFrete] = []
 
         for i, (codigo, nome) in enumerate(self.config.servicos.items()):
             opcao = self._consultar_servico(cep_destino, codigo, nome)
@@ -113,12 +112,12 @@ class FreteService:
         return opcoes
 
     @staticmethod
-    def filtrar_disponiveis(opcoes: List[OpcaoFrete]) -> List[OpcaoFrete]:
+    def filtrar_disponiveis(opcoes: list[OpcaoFrete]) -> list[OpcaoFrete]:
         """Retorna apenas as opções com disponivel=True."""
         return [o for o in opcoes if o.disponivel]
 
     @staticmethod
-    def mais_barato(opcoes: List[OpcaoFrete]) -> Optional[OpcaoFrete]:
+    def mais_barato(opcoes: list[OpcaoFrete]) -> OpcaoFrete | None:
         """Retorna a opção disponível com menor preço, ou None se nenhuma disponível."""
         disponiveis = [o for o in opcoes if o.disponivel and o.preco is not None]
         if not disponiveis:
@@ -126,7 +125,7 @@ class FreteService:
         return min(disponiveis, key=lambda o: o.preco)
 
     @staticmethod
-    def mais_rapido(opcoes: List[OpcaoFrete]) -> Optional[OpcaoFrete]:
+    def mais_rapido(opcoes: list[OpcaoFrete]) -> OpcaoFrete | None:
         """Retorna a opção disponível com menor prazo, ou None se nenhuma disponível."""
         disponiveis = [o for o in opcoes if o.disponivel and o.prazo_dias is not None]
         if not disponiveis:

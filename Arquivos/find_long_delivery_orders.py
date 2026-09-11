@@ -1,8 +1,9 @@
-import requests
 import json
-import time
 import os
+import time
 from datetime import datetime, timedelta
+
+import requests
 from dotenv import load_dotenv
 
 # Carrega variáveis do .env
@@ -52,10 +53,10 @@ for item in pedidos_res:
     numero = p_summary.get("numero")
     rastreio = p_summary.get("codigo_rastreamento")
     situacao = p_summary.get("situacao", "").upper()
-    
+
     if rastreio or situacao in ["CANCELADO", "ENTREGUE"]:
         continue
-        
+
     pid = p_summary["id"]
     time.sleep(0.3)
     r2 = requests.get("https://api.tiny.com.br/api2/pedido.obter.php", params={
@@ -63,17 +64,17 @@ for item in pedidos_res:
         "formato": "json",
         "id": pid
     })
-    
+
     try:
         pedido = r2.json()["retorno"]["pedido"]
         cli = pedido.get("cliente", {})
         ee = pedido.get("endereco_entrega") or {}
         cep = ee.get("cep") or cli.get("cep")
         forma_envio = pedido.get("forma_envio", "")
-        
+
         if "MOTOBOY" in forma_envio.upper() or "RETIRADA" in forma_envio.upper():
             continue
-            
+
         if cep:
             cep_limpo = "".join(filter(str.isdigit, str(cep)))
             headers = {"Authorization": f"Bearer {token_correios}"}
@@ -85,7 +86,7 @@ for item in pedidos_res:
             prazo = None
             if res.status_code == 200:
                 prazo = int(float(res.json().get("prazoEntrega", 0)))
-                
+
             print(f"Pedido #{numero} | Situacao: {situacao} | CEP: {cep} | Envio: {forma_envio} | SEDEX Prazo: {prazo} dias")
             count += 1
     except Exception as e:

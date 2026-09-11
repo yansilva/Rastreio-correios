@@ -6,8 +6,8 @@ e cotação de frete.
 Uso:
     python run.py
 """
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Assegura que o diretório 'Arquivos' esteja no PYTHONPATH
 BASE_DIR = Path(__file__).resolve().parent

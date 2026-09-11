@@ -1,8 +1,6 @@
 """Validação de segurança de caminhos e proteção contra Path Traversal."""
-import os
-from pathlib import Path
-from typing import Optional, Set
 import urllib.parse
+from pathlib import Path
 
 # Nomes de arquivos e diretórios expressamente bloqueados
 BLOCKED_NAMES = {
@@ -32,8 +30,8 @@ BLOCKED_EXTENSIONS = {
 def resolve_safe_path(
     base_dir: Path,
     requested_url_path: str,
-    allowed_extensions: Optional[Set[str]] = None,
-) -> Optional[Path]:
+    allowed_extensions: set[str] | None = None,
+) -> Path | None:
     """Valida e resolve com segurança um caminho requisitado via URL.
 
     Retorna o Path absoluto se for seguro e pertencer a base_dir, ou None caso contrário.

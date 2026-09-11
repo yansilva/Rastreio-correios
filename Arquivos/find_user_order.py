@@ -1,8 +1,9 @@
-import requests
 import json
-import time
 import os
+import time
 from datetime import datetime, timedelta
+
+import requests
 from dotenv import load_dotenv
 
 # Carrega variáveis do .env
@@ -47,10 +48,10 @@ while pagina <= num_paginas:
     }
     r = requests.get("https://api.tiny.com.br/api2/pedidos.pesquisa.php", params=params)
     data = r.json()
-    
+
     if data['retorno']['status'] == 'Erro':
         break
-        
+
     pedidos_lista.extend(data['retorno'].get('pedidos', []))
     num_paginas = int(data['retorno'].get('numero_paginas', 1))
     pagina += 1
@@ -63,10 +64,10 @@ for item in pedidos_lista:
     numero = p.get("numero")
     rastreio = p.get("codigo_rastreamento", "")
     situacao = p.get("situacao", "").upper()
-    
+
     if situacao in ["CANCELADO", "ENTREGUE"]:
         continue
-        
+
     # Vamos verificar este pedido!
     pid = p.get("id")
     time.sleep(0.2)
@@ -75,14 +76,14 @@ for item in pedidos_lista:
         "formato": "json",
         "id": pid
     })
-    
+
     try:
         pedido = r_detail.json()["retorno"]["pedido"]
         cli = pedido.get("cliente", {})
         ee = pedido.get("endereco_entrega") or {}
         cep = ee.get("cep") or cli.get("cep")
         forma_envio = pedido.get("forma_envio", "")
-        
+
         # 1. Se tem codigo de rastreio
         if rastreio:
             print(f"Pedido #{numero} (Com Rastreio: {rastreio}) | Situacao: {situacao} | Envio: {forma_envio} | CEP: {cep}")

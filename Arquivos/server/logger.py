@@ -2,8 +2,7 @@
 import logging
 import queue
 import re
-import sys
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("rastreio.server")
 if not logger.handlers:
@@ -53,7 +52,7 @@ class ServerLogQueue:
                     pass
                 self._queue.put_nowait(clean)
 
-    def get(self, timeout: Optional[float] = 1.0) -> str:
+    def get(self, timeout: float | None = 1.0) -> str:
         """Obtém mensagem da fila ou levanta queue.Empty."""
         return self._queue.get(timeout=timeout)
 

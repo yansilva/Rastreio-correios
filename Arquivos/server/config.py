@@ -1,8 +1,7 @@
 """Configurações do servidor web local do painel de rastreio."""
-from dataclasses import dataclass, field
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Set
 
 
 @dataclass
@@ -15,7 +14,7 @@ class ServerConfig:
     html_file: str = "relatorio_rastreio.html"
     cooldown_seconds: int = 150  # 2.5 minutos
     auto_update_interval: int = 2700  # 45 minutos em segundos
-    allowed_extensions: Set[str] = field(
+    allowed_extensions: set[str] = field(
         default_factory=lambda: {
             ".html",
             ".htm",
@@ -32,10 +31,10 @@ class ServerConfig:
     )
 
     @classmethod
-    def from_env(cls, base_dir: Optional[Path] = None) -> "ServerConfig":
+    def from_env(cls, base_dir: Path | None = None) -> "ServerConfig":
         """Cria configuração lendo variáveis de ambiente se disponíveis."""
         host = os.environ.get("SERVER_HOST", "127.0.0.1").strip()
-        
+
         porta_str = os.environ.get("SERVER_PORT", "8000").strip()
         try:
             port = int(porta_str)

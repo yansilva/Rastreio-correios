@@ -1,7 +1,7 @@
 """Modelos de dados para eventos e status de rastreamento dos Correios."""
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -21,7 +21,7 @@ class EventoRastreio:
         return f"{self.cidade}/{self.uf}".strip("/")
 
     @classmethod
-    def de_dicionario(cls, dados: Dict[str, Any]) -> "EventoRastreio":
+    def de_dicionario(cls, dados: dict[str, Any]) -> "EventoRastreio":
         """Cria uma instância a partir do payload de evento da API dos Correios."""
         unidade = dados.get("unidade", {})
         endereco = unidade.get("endereco", {})
@@ -40,15 +40,15 @@ class EventoRastreio:
 class ObjetoRastreio:
     """Resultado estruturado e classificado do rastreamento de um objeto."""
     codigo: str
-    eventos: List[EventoRastreio] = field(default_factory=list)
+    eventos: list[EventoRastreio] = field(default_factory=list)
     status_categoria: str = "nao_enviado"  # 'entregue', 'devolvido', 'em_transito', 'nao_enviado'
     is_entregue: bool = False
     is_devolvido: bool = False
     is_postado: bool = False
     is_retirada: bool = False
-    data_postagem_dt: Optional[datetime] = None
-    data_entrega_dt: Optional[datetime] = None
-    data_devolucao_dt: Optional[datetime] = None
+    data_postagem_dt: datetime | None = None
+    data_entrega_dt: datetime | None = None
+    data_devolucao_dt: datetime | None = None
     ultimo_evento_desc: str = ""
     ultimo_local: str = ""
 

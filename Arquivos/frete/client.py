@@ -4,11 +4,11 @@ Responsabilidade exclusiva: comunicação HTTP.
 NÃO monta HTML, NÃO escolhe melhor opção, NÃO gera relatório.
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
-
 from correios.client import CorreiosClient
+
 from .config import FreteConfig
 from .exceptions import (
     FreteAPIError,
@@ -29,13 +29,13 @@ class FreteClient:
 
     def __init__(
         self,
-        correios_client: Optional[CorreiosClient] = None,
-        config: Optional[FreteConfig] = None,
+        correios_client: CorreiosClient | None = None,
+        config: FreteConfig | None = None,
     ):
         self.correios_client = correios_client or CorreiosClient()
         self.config = config or FreteConfig()
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         """Monta headers com token Bearer atualizado."""
         token = self.correios_client.gerar_token()
         return {
@@ -43,7 +43,7 @@ class FreteClient:
             "Accept": "application/json",
         }
 
-    def _fazer_requisicao(self, url: str, params: Dict[str, Any], timeout: Optional[float] = None) -> Dict[str, Any]:
+    def _fazer_requisicao(self, url: str, params: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         """Executa GET com tratamento de erro padronizado.
 
         Retorna o JSON da resposta ou levanta exceção apropriada.
@@ -108,7 +108,7 @@ class FreteClient:
             logger.error("JSON inválido na resposta de frete: %s", exc)
             raise FreteAPIError("Resposta da API de frete não é JSON válido.") from exc
 
-    def obter_preco(self, cep_destino: str, codigo_servico: str) -> Dict[str, Any]:
+    def obter_preco(self, cep_destino: str, codigo_servico: str) -> dict[str, Any]:
         """Consulta o preço de um serviço para um CEP de destino.
 
         Retorna o dicionário bruto da API com campos como pcFinal, pcBase, etc.
@@ -128,7 +128,7 @@ class FreteClient:
 
         return self._fazer_requisicao(url, params)
 
-    def obter_prazo(self, cep_destino: str, codigo_servico: str) -> Dict[str, Any]:
+    def obter_prazo(self, cep_destino: str, codigo_servico: str) -> dict[str, Any]:
         """Consulta o prazo de entrega de um serviço para um CEP de destino.
 
         Retorna o dicionário bruto da API com campos como prazoEntrega, msgPrazo, etc.

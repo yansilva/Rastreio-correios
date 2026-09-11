@@ -1,6 +1,7 @@
-import requests
 import json
 import os
+
+import requests
 from dotenv import load_dotenv
 
 # Carrega variáveis do .env
@@ -23,10 +24,10 @@ else:
     p = pedidos[0].get("pedido", {})
     pid = p.get("id")
     print(f"ID interno do pedido 39546: {pid}")
-    
+
     import time
     time.sleep(1)
-    
+
     # Obter detalhes completos
     r2 = requests.get("https://api.tiny.com.br/api2/pedido.obter.php", params={
         "token": TOKEN,
@@ -35,25 +36,25 @@ else:
     })
     detail = r2.json()
     pedido = detail["retorno"].get("pedido", {})
-    
+
     # Mostrar TODA a estrutura de endereco
     print("\n=== ENDERECO_ENTREGA (raw) ===")
     ee = pedido.get("endereco_entrega")
     print(f"Tipo: {type(ee)}")
     print(json.dumps(ee, indent=2, ensure_ascii=False) if ee else "VAZIO/NONE")
-    
+
     print("\n=== CLIENTE (endereco) ===")
     cli = pedido.get("cliente", {})
     print(f"cep: {cli.get('cep')}")
     print(f"cidade: {cli.get('cidade')}")
     print(f"uf: {cli.get('uf')}")
     print(f"endereco: {cli.get('endereco')}")
-    
+
     print("\n=== FRETE/ENVIO ===")
     print(f"forma_frete: {pedido.get('forma_frete')}")
     print(f"forma_envio: {pedido.get('forma_envio')}")
     print(f"total_pedido: {pedido.get('total_pedido')}")
-    
+
     # Mostrar todas as chaves do pedido para referencia
     print("\n=== TODAS AS CHAVES DO PEDIDO ===")
     for k in sorted(pedido.keys()):

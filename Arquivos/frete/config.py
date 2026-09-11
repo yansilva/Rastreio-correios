@@ -1,7 +1,6 @@
 """Configurações da consulta de frete dos Correios."""
 import os
 from dataclasses import dataclass, field
-from typing import Dict
 
 from dotenv import load_dotenv
 
@@ -12,7 +11,7 @@ load_dotenv(os.path.join(_raiz_projeto, ".env"))
 load_dotenv(os.path.join(_pasta_arquivos, ".env"))
 
 # Serviços padrão — mesmos valores do consulta_frete.py original
-_SERVICOS_PADRAO: Dict[str, str] = {
+_SERVICOS_PADRAO: dict[str, str] = {
     "03220": "SEDEX",
     "03158": "SEDEX 10",
     "03140": "SEDEX 12",
@@ -37,7 +36,7 @@ class FreteConfig:
     tipo_objeto: int = 2  # 2 = Pacote
 
     # Serviços consultados (código → nome legível)
-    servicos: Dict[str, str] = field(default_factory=lambda: dict(_SERVICOS_PADRAO))
+    servicos: dict[str, str] = field(default_factory=lambda: dict(_SERVICOS_PADRAO))
 
     # URLs da API de preço/prazo
     url_preco: str = "https://api.correios.com.br/preco/v1/nacional/{coProduto}"

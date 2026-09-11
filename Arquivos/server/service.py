@@ -1,10 +1,11 @@
 """Gerenciamento de atualizações periódicas e manuais do painel."""
-from datetime import datetime
 import importlib
 import sys
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
 
 from .config import ServerConfig
 from .logger import ServerLogQueue, logger
@@ -17,7 +18,7 @@ class UpdateManager:
         self,
         config: ServerConfig,
         log_queue: ServerLogQueue,
-        runner_fn: Optional[Callable[[], Any]] = None,
+        runner_fn: Callable[[], Any] | None = None,
     ):
         self.config = config
         self.log_queue = log_queue
@@ -26,7 +27,7 @@ class UpdateManager:
         self.next_update_time: float = time.time() + self.config.auto_update_interval
         self._is_updating: bool = False
         self._lock = threading.Lock()
-        self._auto_thread: Optional[threading.Thread] = None
+        self._auto_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
     def remaining_cooldown(self) -> int:
@@ -40,7 +41,7 @@ class UpdateManager:
         """Indica se uma nova atualização pode ser solicitada."""
         return self.remaining_cooldown() == 0 and not self._is_updating
 
-    def get_proxima_atualizacao_info(self) -> Dict[str, Any]:
+    def get_proxima_atualizacao_info(self) -> dict[str, Any]:
         """Retorna dados estruturados sobre a próxima atualização automática."""
         remaining = max(0, int(self.next_update_time - time.time()))
         if self.next_update_time > 0:
@@ -49,7 +50,7 @@ class UpdateManager:
             next_time_str = "--:--"
         return {"remaining": remaining, "next_time": next_time_str}
 
-    def get_status_info(self) -> Dict[str, Any]:
+    def get_status_info(self) -> dict[str, Any]:
         """Retorna o status geral do servidor e serviços."""
         prox = self.get_proxima_atualizacao_info()
         return {

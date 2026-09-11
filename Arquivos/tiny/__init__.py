@@ -1,4 +1,5 @@
 """Módulo de integração com a API do Tiny ERP."""
+from .client import TinyClient
 from .config import TinyConfig
 from .exceptions import (
     TinyAPIError,
@@ -7,7 +8,6 @@ from .exceptions import (
     TinyError,
     TinyTimeoutError,
 )
-from .client import TinyClient
 from .models import PedidoTiny
 from .orders import TinyOrderService
 

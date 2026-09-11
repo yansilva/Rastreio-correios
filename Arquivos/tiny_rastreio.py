@@ -8,14 +8,14 @@ delegando as regras para a camada modular `tiny/`.
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 # Garante que o diretório Arquivos/ esteja no PYTHONPATH caso executado isoladamente
 _dir_atual = os.path.dirname(os.path.abspath(__file__))
 if _dir_atual not in sys.path:
     sys.path.insert(0, _dir_atual)
 
-from tiny import TinyAuthError, TinyClient, TinyConfig, TinyOrderService, PedidoTiny
+from tiny import PedidoTiny, TinyAuthError, TinyClient, TinyConfig, TinyOrderService
 
 # Variáveis globais para compatibilidade retroativa com código legado
 _config = TinyConfig()
@@ -25,7 +25,7 @@ FORMATO = _config.formato
 DIAS_ATRAS = _config.dias_atras_padrao
 
 
-def buscar_pedidos() -> List[Dict[str, Any]]:
+def buscar_pedidos() -> list[dict[str, Any]]:
     """
     Busca pedidos brutos no Tiny ERP no período dos últimos DIAS_ATRAS.
     
@@ -52,7 +52,7 @@ def buscar_pedidos() -> List[Dict[str, Any]]:
         return []
 
 
-def gerar_csv(pedidos: List[Dict[str, Any]]) -> Tuple[str, int]:
+def gerar_csv(pedidos: list[dict[str, Any]]) -> tuple[str, int]:
     """
     Gera o arquivo CSV 'rastreios_tiny.csv' aplicando os filtros de negócio.
     
@@ -76,7 +76,6 @@ def processar() -> bool:
         return False
 
     try:
-        service = TinyOrderService(config=config)
         pedidos_extraidos = buscar_pedidos()
         if pedidos_extraidos:
             csv_file, total = gerar_csv(pedidos_extraidos)

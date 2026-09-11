@@ -17,6 +17,13 @@ Arquivos/.env
 .idea/
 .vscode/
 
+# Testes, Lint e Cobertura
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
 # Relatórios e arquivos gerados automaticamente
 *.csv
 relatorio_rastreio.html

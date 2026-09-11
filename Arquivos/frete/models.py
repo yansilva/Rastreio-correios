@@ -2,7 +2,6 @@
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Optional
 
 
 def validar_cep(cep: str) -> bool:
@@ -44,13 +43,13 @@ class OpcaoFrete:
     codigo: str          # Código do serviço (ex: "03220")
     nome: str            # Nome legível (ex: "SEDEX")
     disponivel: bool = False
-    preco: Optional[Decimal] = None
-    prazo_dias: Optional[int] = None
-    msg_prazo: Optional[str] = None
-    erro: Optional[str] = None
+    preco: Decimal | None = None
+    prazo_dias: int | None = None
+    msg_prazo: str | None = None
+    erro: str | None = None
 
     @property
-    def preco_formatado(self) -> Optional[str]:
+    def preco_formatado(self) -> str | None:
         """Formata o preço no padrão brasileiro: R$ X.XXX,XX"""
         if self.preco is None:
             return None
@@ -72,7 +71,7 @@ class OpcaoFrete:
         }
 
     @staticmethod
-    def parse_preco(valor_str: str) -> Optional[Decimal]:
+    def parse_preco(valor_str: str) -> Decimal | None:
         """Converte string de preço da API dos Correios para Decimal.
 
         A API retorna valores como '29.90' ou '1.234,56'.
@@ -91,7 +90,7 @@ class OpcaoFrete:
             return None
 
     @staticmethod
-    def parse_prazo(valor) -> Optional[int]:
+    def parse_prazo(valor) -> int | None:
         """Converte valor de prazo da API para inteiro.
 
         Aceita int, float, string numérica. Retorna None para valores inválidos.

@@ -19,6 +19,7 @@ if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
 import requests
+import tiny_rastreio
 from tiny import (
     PedidoTiny,
     TinyAPIError,
@@ -29,7 +30,6 @@ from tiny import (
     TinyOrderService,
     TinyTimeoutError,
 )
-import tiny_rastreio
 
 
 class TestTinyClient(unittest.TestCase):
@@ -186,7 +186,7 @@ class TestTinyOrderService(unittest.TestCase):
             self.assertEqual(caminho_gerado, csv_path)
             self.assertEqual(total, 1)  # apenas o pedido 2001 é válido
 
-            with open(csv_path, "r", encoding="utf-8") as f:
+            with open(csv_path, encoding="utf-8") as f:
                 linhas = f.read().splitlines()
 
             self.assertEqual(linhas[0], "Número do Pedido no Tiny,Situação,Código de Rastreio")

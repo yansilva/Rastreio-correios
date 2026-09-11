@@ -1,6 +1,6 @@
 """Modelos de dados para a integração com o Tiny ERP."""
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -9,10 +9,10 @@ class PedidoTiny:
     id: str
     numero: str
     situacao: str
-    codigo_rastreamento: Optional[str] = None
+    codigo_rastreamento: str | None = None
 
     @classmethod
-    def de_dicionario(cls, item: Dict[str, Any]) -> "PedidoTiny":
+    def de_dicionario(cls, item: dict[str, Any]) -> "PedidoTiny":
         """
         Cria uma instância de PedidoTiny a partir do dicionário retornado pela API.
         

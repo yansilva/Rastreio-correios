@@ -1,6 +1,7 @@
 """Configurações da integração com a API dos Correios."""
 import os
 from dataclasses import dataclass
+
 from dotenv import load_dotenv
 
 # Carrega variáveis procurando na raiz do projeto e em Arquivos/

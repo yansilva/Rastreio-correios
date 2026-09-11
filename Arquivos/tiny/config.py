@@ -1,6 +1,7 @@
 """Configurações da integração com o Tiny ERP."""
 import os
 from dataclasses import dataclass
+
 from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente procurando na raiz do projeto e em Arquivos/

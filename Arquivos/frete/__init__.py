@@ -1,4 +1,5 @@
 """Módulo de consulta de frete dos Correios."""
+from .client import FreteClient
 from .config import FreteConfig
 from .exceptions import (
     FreteAPIError,
@@ -7,10 +8,9 @@ from .exceptions import (
     FreteServicoIndisponivelError,
     FreteTimeoutError,
 )
-from .models import OpcaoFrete, validar_cep, normalizar_cep, validar_dimensoes
-from .client import FreteClient
-from .service import FreteService
+from .models import OpcaoFrete, normalizar_cep, validar_cep, validar_dimensoes
 from .report import FreteReportGenerator
+from .service import FreteService
 
 __all__ = [
     "FreteConfig",

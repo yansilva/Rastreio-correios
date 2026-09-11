@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rastreio-correios"
+version = "1.0.0"
+description = "Automação de rastreamento, auditoria e cotação de frete integrada ao Tiny ERP e Correios"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "Arquivos/venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501", # Linhas longas (templates HTML inline legados e strings extensas)
+    "E402", # Inserção em sys.path antes de importações locais
+    "W291", # Trailing whitespace
+    "W293", # Blank line contains whitespace
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Scripts utilitários/debug legados mantidos para histórico
+"Arquivos/debug_*.py" = ["F401", "F841", "E722"]
+"Arquivos/find_*.py" = ["F401", "F841", "E722"]
+"Arquivos/list_*.py" = ["F401", "F841", "E722"]
+"Arquivos/test_frete_ignored.py" = ["F401", "F841", "E722"]
+# Testes podem usar asserts ou imports condicionais
+"tests/*" = ["F841"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"
+
+[tool.coverage.run]
+source = ["Arquivos"]
+omit = [
+    "Arquivos/venv/*",
+    "Arquivos/debug_*.py",
+    "Arquivos/find_*.py",
+    "Arquivos/list_*.py",
+    "Arquivos/test_frete_ignored.py",
+]
+
+[tool.coverage.report]
+show_missing = true

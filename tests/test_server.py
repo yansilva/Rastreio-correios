@@ -5,13 +5,12 @@ nem abrir abas de navegador.
 Compatível tanto com `pytest` quanto com `python -m unittest`.
 """
 import io
-import json
 import os
-from pathlib import Path
 import sys
 import time
 import unittest
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import patch
 
 # Adiciona caminhos ao sys.path para importação consistente
 TESTS_DIR = Path(__file__).resolve().parent
@@ -31,7 +30,7 @@ from server.logger import (
     StreamToQueue,
     sanitize_log_message,
 )
-from server.security import BLOCKED_EXTENSIONS, BLOCKED_NAMES, resolve_safe_path
+from server.security import resolve_safe_path
 from server.service import UpdateManager
 
 

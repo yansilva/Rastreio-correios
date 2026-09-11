@@ -8,8 +8,8 @@ ou:
     python Arquivos/servidor_rastreio.py
 """
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Garante que 'Arquivos' esteja no sys.path para importações relativas e módulos irmãos
 DIR_ARQUIVOS = Path(__file__).resolve().parent
@@ -19,10 +19,6 @@ if str(DIR_ARQUIVOS) not in sys.path:
 from server import (
     RastreioRequestHandler,
     ServerConfig,
-    ServerLogQueue,
-    StreamToQueue,
-    ThreadedTCPServer,
-    UpdateManager,
     abrir_navegador,
     iniciar_servidor,
 )
