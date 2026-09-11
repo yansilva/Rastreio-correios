@@ -73,7 +73,7 @@ class FreteClient:
 
         # Token expirado — tenta renovar uma vez
         if response.status_code == 401:
-            logger.warning("Token expirado na consulta de frete. Renovando...")
+            logger.warning("Sessão de frete expirada. Renovando autorização...")
             self.correios_client.gerar_token(forcar_renovacao=True)
             try:
                 response = requests.get(url, headers=self._headers(), params=params, timeout=timeout)
