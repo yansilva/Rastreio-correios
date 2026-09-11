@@ -14,7 +14,7 @@ Sistema automatizado em Python para consulta de rastreamento de encomendas, audi
 - **Sincronização com Tiny ERP:** Busca pedidos ativos, verifica status e códigos de rastreamento pendentes ou expedidos recentemente.
 - **Rastreamento Correios em Lote:** Consulta automática via API oficial dos Correios (autenticação por contrato e token), destacando objetos aguardando retirada ou com atrasos.
 - **Auditoria de Entregas & Prazos:** Identificação e destaque de pedidos com atraso na entrega em relação ao prazo prometido.
-- **Painel Web Local:** Dashboard embutido com interface visual amigável e atualização em tempo real via navegador (Server-Sent Events).
+- **Painel Web Local:** Dashboard embutido com interface visual moderna, busca instantânea client-side por pedido/cliente/rastreio/cidade, filtros dinâmicos de status, modo escuro e atualização em tempo real (Server-Sent Events).
 - **Cotação e Comparação de Fretes:** Simulação e conferência de preços/prazos (SEDEX, PAC, Mini Envios) direto com a API dos Correios.
 - **Alertas Automatizados:** Geração de relatórios com alertas visuais e sonoros para divergências e prazos estendidos.
 - **Validação e Qualidade Contínua (CI):** Pipeline automatizado no GitHub Actions para cada push e pull request validando compilação, lint (Ruff) e testes em matriz Python 3.11 e 3.12.
@@ -38,11 +38,20 @@ Rastreio-correios/
 ├── README.md                # Documentação do projeto
 ├── docs/
 │   └── architecture.md      # Documentação detalhada da arquitetura e fluxos
-├── tests/                   # Suíte de testes automatizados (136 testes mockados)
+├── web/                     # Frontend estático modular (HTML, CSS e JavaScript)
+│   ├── css/
+│   │   ├── main.css         # Design tokens, variáveis CSS (:root / dark), tipografia e reset
+│   │   └── components.css   # Cards de status, tabela de atrasados, timeline, console SSE e toasts
+│   └── js/
+│       ├── app.js           # Gerenciamento de tema claro/escuro e sistema Toast
+│       ├── dashboard.js     # Busca instantânea e filtros dinâmicos por status
+│       └── logs.js          # Streaming SSE de logs, cooldown e contagem regressiva
+├── tests/                   # Suíte de testes automatizados (143 testes mockados)
 │   ├── test_tiny.py         # Testes da camada Tiny ERP (11 testes)
 │   ├── test_correios.py     # Testes da camada Correios SRO (20 testes)
 │   ├── test_frete.py        # Testes da camada de Frete (67 testes)
-│   └── test_server.py       # Testes da camada do Servidor (35 testes)
+│   ├── test_server.py       # Testes da camada do Servidor (35 testes)
+│   └── test_frontend.py     # Testes dos assets web e integração de templates (7 testes)
 └── Arquivos/
     ├── tiny/                # Pacote modular Tiny ERP (client, service, models, config)
     ├── correios/            # Pacote modular Correios SRO (client, tracking, models)

@@ -69,6 +69,13 @@ A arquitetura adota um design modular em camadas concêntricas com separação e
 - **`service.py` (`FreteService`)**: Sanitização e validação de CEP, cálculo de cubagem, resolução de dimensões mínimas, classificação por menor custo/prazo e tolerância graciosa a indisponibilidade pontual de prazos.
 - **`report.py` (`FreteReportGenerator`)**: Geração dos relatórios `opcoes_frete.html` e alertas em `alert_frete.js`.
 
+### 3.5 Camada Frontend Web Modular (`web/`)
+- **`web/css/main.css`**: Design tokens globais (cores HSL/HEX, espaçamentos, tipografia, bordas e sombras), variáveis CSS `:root` e `[data-theme="dark"]`, resets e navegação por abas (`.nav-tabs`).
+- **`web/css/components.css`**: Componentes da UI (cards de resumo do dashboard, controles de busca e pílulas de filtro, cards de pedidos e timeline vertical, badges de urgência e tabela de atrasados, terminal SSE do console e toasts flutuantes).
+- **`web/js/app.js`**: Gerenciador de tema claro/escuro com alternância automática por preferência do sistema e persistência em `localStorage`, além do sistema de toasts de notificação.
+- **`web/js/dashboard.js`**: Mecanismo de busca instantânea client-side (pesquisa por pedido `#123`, nome do cliente, código de rastreio ou cidade) e filtragem interativa por status com contadores reativos.
+- **`web/js/logs.js`**: Streaming de logs via Server-Sent Events (SSE) `/logs`, disparo de sincronização assíncrona (`POST /atualizar`), proteção contra cliques múltiplos com cooldown e contagem regressiva fluida para a próxima verificação automática.
+
 ---
 
 ## 4. Fluxo de Dados Operacional
