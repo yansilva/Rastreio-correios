@@ -16,7 +16,14 @@ class TinyOrderService:
 
     def __init__(self, client: TinyClient | None = None, config: TinyConfig | None = None):
         self.config = config or TinyConfig()
-        self.client = client or TinyClient(config=self.config)
+        self._client = client
+
+    @property
+    def client(self) -> TinyClient:
+        """Obtém o cliente HTTP sob demanda."""
+        if self._client is None:
+            self._client = TinyClient(config=self.config)
+        return self._client
 
     def buscar_pedidos_recentes(self, dias_atras: int | None = None) -> list[PedidoTiny]:
         """Busca os pedidos expedidos no intervalo de dias informado (padrão 30 dias)."""
