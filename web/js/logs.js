@@ -156,13 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnUpdate.addEventListener('click', atualizarDados);
     }
 
-    // 2. Botão de Tema
-    const btnTheme = document.getElementById('btnTheme');
-    if (btnTheme) {
-        btnTheme.addEventListener('click', toggleTheme);
-    }
-
-    // 3. Sincronização periódica da próxima atualização com o backend
+    // 2. Sincronização periódica da próxima atualização com o backend
     verificarProximaAtualizacao();
     setInterval(verificarProximaAtualizacao, 10000);
 

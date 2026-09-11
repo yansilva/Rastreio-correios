@@ -95,6 +95,10 @@ def test_ux_tema_botao_e_script():
     assert "btnTheme" in app_js
     assert "aria-label" in app_js
 
+    # Garante que logs.js NÃO registra o listener para evitar execução duplicada
+    logs_js = (raiz / "web" / "js" / "logs.js").read_text(encoding="utf-8")
+    assert "btnTheme" not in logs_js
+
     # Template possui botão com id, classe e aria-label
     assert 'id="btnTheme"' in consulta_py
     assert 'class="btn-theme"' in consulta_py

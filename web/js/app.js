@@ -1,13 +1,20 @@
 /**
  * Gerenciamento de Tema, Notificações Toast e Inicialização Global.
+ * Responsabilidade Única: Controle exclusivo de tema e toasts do painel.
  */
 
 // 1. Controle de Tema (Dark / Light Mode)
+function getCurrentTheme() {
+    return document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
+}
+
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
+
     var themeBtn = document.getElementById('btnThemeText');
     var themeContainer = document.getElementById('btnTheme');
+
     if (themeBtn) {
         themeBtn.textContent = theme === 'dark' ? '☀️ Claro' : '🌙 Escuro';
     }
@@ -18,19 +25,19 @@ function setTheme(theme) {
 }
 
 function toggleTheme() {
-    var current = localStorage.getItem('theme') || 'light';
+    var current = getCurrentTheme();
     var next = current === 'light' ? 'dark' : 'light';
     setTheme(next);
 }
 
-// Inicializa o tema salvo ou preferência do sistema
+// Inicializa o tema imediatamente para evitar FOUC (Flash of Unstyled Content)
 (function initTheme() {
     var saved = localStorage.getItem('theme');
     if (saved) {
-        setTheme(saved);
+        document.documentElement.setAttribute('data-theme', saved);
     } else {
         var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
 })();
 
@@ -60,22 +67,16 @@ function showToast(mensagem, cor, duracao) {
     }, duracao);
 }
 
-// 3. Event Listeners — inicializa ao carregar a DOM
+// 3. Inicialização e Event Listeners exclusivos do app.js
 document.addEventListener('DOMContentLoaded', function() {
-    // Botão de Tema
+    // Sincroniza o estado visual do botão com o tema ativo
+    setTheme(getCurrentTheme());
+
+    // Registra listener exclusivo do Botão de Tema (com prevenção contra duplicatas)
     var btnTheme = document.getElementById('btnTheme');
     if (btnTheme) {
+        btnTheme.removeEventListener('click', toggleTheme);
         btnTheme.addEventListener('click', toggleTheme);
-    }
-
-    // Botão de Atualização
-    var btnUpdate = document.getElementById('btnUpdate');
-    if (btnUpdate) {
-        btnUpdate.addEventListener('click', function() {
-            if (typeof atualizarDados === 'function') {
-                atualizarDados();
-            }
-        });
     }
 
     // Verifica retorno pós-atualização via query param
