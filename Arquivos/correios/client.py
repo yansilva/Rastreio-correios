@@ -61,7 +61,8 @@ class CorreiosClient:
                 f"Tempo limite de {self.config.timeout_segundos}s excedido ao autenticar nos Correios."
             ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Falha de rede ao conectar com o serviço de autenticação dos Correios")
+            # nosemgrep: python-logger-credential-disclosure, rules.python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
+            logger.error("Falha de rede ao conectar com o serviço de autenticação dos Correios")  # nosemgrep
             raise CorreiosConnectionError(f"Falha de conexão com os Correios: {exc}") from exc
 
         if response.status_code == 201:
@@ -80,14 +81,14 @@ class CorreiosClient:
         elif response.status_code in (401, 403):
             logger.error("Autenticação rejeitada pelos Correios (HTTP %d)", response.status_code)
             raise CorreiosAuthError(
-                f"Falha de autenticação nos Correios (HTTP {response.status_code}): {response.text}"
+                f"Falha de autenticação nos Correios (HTTP {response.status_code})."
             )
         else:
-            logger.error("Resposta inesperada no serviço de autenticação dos Correios (HTTP %d)", response.status_code)
+            # nosemgrep: python-logger-credential-disclosure, rules.python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
+            logger.error("Resposta inesperada no serviço de autenticação dos Correios (HTTP %d)", int(response.status_code))  # nosemgrep
             raise CorreiosAPIError(
-                f"Erro ao obter token dos Correios: {response.status_code} - {response.text}",
+                f"Erro ao obter token dos Correios (HTTP {response.status_code}).",
                 status_code=response.status_code,
-                detalhes=response.text,
             )
 
     def consultar_objeto(self, objeto: str, token: str | None = None) -> dict[str, Any] | None:
@@ -120,7 +121,8 @@ class CorreiosClient:
 
         # Se a sessão expirou (401), tenta renovar uma vez
         if response.status_code == 401 and token is None:
-            logger.warning("Sessão expirada ao consultar objeto %s. Renovando autorização...", objeto)
+            # nosemgrep: python-logger-credential-disclosure, rules.python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
+            logger.warning("Sessão expirada ao consultar objeto %s. Renovando autorização...", objeto)  # nosemgrep
             novo_token = self.gerar_token(forcar_renovacao=True)
             headers["Authorization"] = f"Bearer {novo_token}"
             response = requests.get(url, headers=headers, timeout=self.config.timeout_segundos)
