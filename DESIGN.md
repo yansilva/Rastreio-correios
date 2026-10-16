@@ -240,7 +240,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Ferramentas do cabeçalho e da lista
 - **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
-- **Ordenar e expandir:** um seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido) e o botão de texto "Expandir históricos" ficam sob a legenda. A tecla `/` foca a busca e Esc limpa o texto.
+- **Ordenar e expandir:** um seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido) e o botão de texto "Expandir históricos" ficam sob a legenda. A tecla `/` foca a busca e Esc limpa o texto. "Regerar página" reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
 - **Atualizar dados:** único botão flutuante; no celular vira um círculo de 52px só com o ícone, com ria-label.
 
 ### Navigation (`.nav-tabs`)

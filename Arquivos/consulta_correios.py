@@ -16,6 +16,7 @@ from correios import (
     CorreiosConfig,
     TrackingService,
 )
+from correios.cache import carregar_cache, salvar_cache
 from correios.cards import (
     dias_desde,
     divergencia_tiny,
@@ -44,6 +45,7 @@ URL_RASTREIO = _config.url_rastreio
 
 # Arquivos
 CSV_ENTRADA = "rastreios_tiny.csv"
+CACHE_ARQUIVO = "rastreios_cache.json"
 RELATORIO_HTML = "relatorio_rastreio.html"
 RELATORIO_ATRASADOS = "pedidos_atrasados.html"
 
@@ -111,16 +113,32 @@ def formatar_evento_html(evento):
     """
 
 
-def processar():
-    config = CorreiosConfig()
-    if not config.credenciais_preenchidas():
-        print(
-            "Erro: Credenciais dos Correios não configuradas. Verifique ID_CORREIOS, CONTRATO e CODIGO_ACESSO no .env."
-        )
-        return False
+def processar(usar_cache=False):
+    """Gera os relatórios HTML. Com `usar_cache=True` reaproveita o último retorno dos Correios, sem rede."""
+    if not usar_cache:
+        config = CorreiosConfig()
+        if not config.credenciais_preenchidas():
+            print(
+                "Erro: Credenciais dos Correios não configuradas. "
+                "Verifique ID_CORREIOS, CONTRATO e CODIGO_ACESSO no .env."
+            )
+            return False
 
     try:
-        token = obter_token()
+        token = None if usar_cache else obter_token()
+
+        # Cache das respostas dos Correios, na mesma pasta do script
+        caminho_cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), CACHE_ARQUIVO)
+        objetos_cache = {}
+        data_dados = time.strftime("%d/%m/%Y %H:%M:%S")
+        if usar_cache:
+            carregado = carregar_cache(caminho_cache)
+            if carregado is None:
+                print("Erro: não há dados em cache. Clique em Atualizar Dados primeiro.")
+                return False
+            objetos_cache, momento_dados = carregado
+            data_dados = momento_dados.strftime("%d/%m/%Y %H:%M:%S")
+            print(f"Regerando o relatório com os dados consultados em {data_dados} (sem chamar as APIs).")
 
         # Garante que procuramos o CSV na mesma pasta do script
         caminho_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), CSV_ENTRADA)
@@ -162,6 +180,7 @@ def processar():
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
                     Relatório gerado em: {data_geracao}
+                    <span class="meta-dados">| Dados consultados em: {data_dados}</span>
                     <span id="next-check" style="margin-left: 10px; opacity: 0.9;">
                         | <svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima verificação automática em: <strong id="countdown-timer">carregando...</strong>
                     </span>
@@ -204,6 +223,7 @@ def processar():
                     <option value="antigo">Último evento mais antigo</option>
                     <option value="pedido">Número do pedido</option>
                 </select>
+                <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os últimos dados já consultados, sem chamar o Tiny nem os Correios">Regerar página</button>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
             </div>
         </div>
@@ -258,7 +278,11 @@ def processar():
             situacao_tiny = venda.get("Situação")
 
             print(f"Processando {pedido}...")
-            obj_data = consultar_objeto(rastreio, token)
+            if usar_cache:
+                obj_data = objetos_cache.get(str(rastreio))
+            else:
+                obj_data = consultar_objeto(rastreio, token)
+                objetos_cache[str(rastreio)] = obj_data
 
             # Processamento e classificação com TrackingService
             obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
@@ -334,7 +358,14 @@ def processar():
             )
             ordem = prioridade(status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado)
             orders_html.append((ordem, -dias_atraso, card))
-            time.sleep(0.2)
+            if not usar_cache:
+                time.sleep(0.2)
+
+        if not usar_cache:
+            try:
+                salvar_cache(caminho_cache, objetos_cache)
+            except (OSError, TypeError, ValueError) as exc:
+                print(f"Aviso: não foi possível gravar o cache dos Correios ({exc}).")
 
         # Pedidos que pedem ação primeiro; entre atrasados, os mais antigos antes
         orders_html.sort(key=lambda item: (item[0], item[1]))
@@ -397,6 +428,7 @@ def processar():
         final_html = html_template.format(
             icon_sprite=ICON_SPRITE,
             data_geracao=time.strftime("%d/%m/%Y %H:%M:%S"),
+            data_dados=data_dados,
             dashboard=dashboard_html,
             content="".join(orders_html),
             atrasados_link=atrasados_link_html,

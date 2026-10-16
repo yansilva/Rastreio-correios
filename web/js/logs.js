@@ -125,6 +125,46 @@ async function atualizarDados() {
     }
 }
 
+// Regera a página a partir do cache em disco, sem consultar o Tiny nem os Correios
+async function regerarPagina() {
+    const btn = document.getElementById('btnRegenerate');
+    const rotulo = btn ? btn.textContent : '';
+    const restaurar = () => {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = rotulo;
+        }
+    };
+
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Regerando...';
+        }
+        const response = await fetch(`${getBaseUrl()}/regerar`, { method: 'POST' });
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Corpo inválido: usa a mensagem padrão abaixo
+        }
+
+        if (response.ok) {
+            showToast('✅ Página regerada com os últimos dados consultados.', '#16a34a');
+            setTimeout(() => {
+                window.location.href = window.location.pathname + '?updated=true';
+            }, 700);
+        } else {
+            showToast(`❌ ${data.erro || 'Não foi possível regerar a página.'}`, '#dc2626', 6000);
+            restaurar();
+        }
+    } catch (err) {
+        console.error('Falha ao regerar a página:', err);
+        showToast('❌ Servidor offline ou inacessível.', '#dc2626');
+        restaurar();
+    }
+}
+
 // Monitora o horário da próxima atualização automática com contagem regressiva fluida
 let remainingSeconds = 0;
 let nextTimeStr = '--:--';
@@ -170,6 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnUpdate = document.getElementById('btnUpdate');
     if (btnUpdate) {
         btnUpdate.addEventListener('click', atualizarDados);
+    }
+
+    const btnRegenerate = document.getElementById('btnRegenerate');
+    if (btnRegenerate) {
+        btnRegenerate.addEventListener('click', regerarPagina);
     }
 
     // 2. Sincronização periódica da próxima atualização com o backend

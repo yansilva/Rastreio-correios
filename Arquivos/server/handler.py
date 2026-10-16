@@ -67,6 +67,10 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_atualizar()
             return
 
+        if clean_path == "/regerar":
+            self._handle_regerar()
+            return
+
         self._send_json_response({"sucesso": False, "erro": "Rota não encontrada"}, status=404)
 
     # ---------------------------------------------------------
@@ -130,6 +134,18 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
         else:
             rem = self.update_manager.remaining_cooldown()
             self._send_json_response({"remaining": rem, "erro": "Atualização já em andamento"}, status=429)
+
+    def _handle_regerar(self) -> None:
+        """Regera o relatório a partir do cache em disco, sem consultar as APIs."""
+        if not self.update_manager:
+            self._send_json_response({"sucesso": False, "erro": "UpdateManager inativo"}, status=500)
+            return
+
+        sucesso, mensagem = self.update_manager.regenerate()
+        if sucesso:
+            self._send_json_response({"sucesso": True, "mensagem": mensagem}, status=200)
+        else:
+            self._send_json_response({"sucesso": False, "erro": mensagem}, status=409)
 
     def _serve_main_html(self) -> None:
         """Serve o arquivo HTML principal do painel."""

@@ -964,8 +964,22 @@ h1 .icon {
     outline-offset: 2px;
 }
 
-.btn-link {
+.sort-select + .btn-link {
     margin-left: auto;
+}
+
+.meta-dados {
+    margin-left: 10px;
+    opacity: 0.9;
+}
+
+.btn-link:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.btn-link {
+    margin-left: 0;
     min-height: 36px;
     padding: 6px 4px;
     font: inherit;

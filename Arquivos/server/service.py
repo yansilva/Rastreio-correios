@@ -19,10 +19,12 @@ class UpdateManager:
         config: ServerConfig,
         log_queue: ServerLogQueue,
         runner_fn: Callable[[], Any] | None = None,
+        regenerator_fn: Callable[[], Any] | None = None,
     ):
         self.config = config
         self.log_queue = log_queue
         self.runner_fn = runner_fn or self._default_runner
+        self.regenerator_fn = regenerator_fn or self._default_regenerator
         self.last_update_time: float = 0.0
         self.next_update_time: float = time.time() + self.config.auto_update_interval
         self._is_updating: bool = False
@@ -93,6 +95,30 @@ class UpdateManager:
         thread.start()
         return True
 
+    def regenerate(self) -> tuple[bool, str]:
+        """Reconstrói o relatório a partir do último retorno em cache, sem chamar o Tiny nem os Correios.
+
+        Não usa o cooldown (não consome APIs), mas não roda junto de uma atualização em andamento.
+        """
+        with self._lock:
+            if self._is_updating:
+                return False, "Há uma atualização em andamento. Tente de novo quando ela terminar."
+            self._is_updating = True
+
+        try:
+            self.log_queue.put("🔁 REGERANDO O RELATÓRIO A PARTIR DO CACHE")
+            self.regenerator_fn()
+            self.log_queue.put("✅ RELATÓRIO REGERADO")
+            logger.info("Relatório regerado a partir do cache.")
+            return True, "Relatório regerado a partir dos últimos dados consultados."
+        except Exception as exc:
+            logger.error(f"Erro ao regerar o relatório: {exc}")
+            self.log_queue.put(f"❌ [ERRO] Não foi possível regerar o relatório: {exc}")
+            return False, str(exc)
+        finally:
+            with self._lock:
+                self._is_updating = False
+
     def start_auto_update_loop(self) -> None:
         """Inicia loop de atualização automática periódica em thread daemon."""
         if self._auto_thread and self._auto_thread.is_alive():
@@ -123,6 +149,19 @@ class UpdateManager:
     def stop(self) -> None:
         """Sinaliza parada do loop de atualização."""
         self._stop_event.set()
+
+    @staticmethod
+    def _default_regenerator() -> None:
+        """Regera o HTML com os dados em cache, recarregando os módulos para aplicar mudanças de template."""
+        dir_arquivos = str(ServerConfig.from_env().base_dir / "Arquivos")
+        if dir_arquivos not in sys.path:
+            sys.path.append(dir_arquivos)
+
+        import consulta_correios
+
+        importlib.reload(consulta_correios)
+        if consulta_correios.processar(usar_cache=True) is False:
+            raise RuntimeError("não há dados em cache; clique em Atualizar Dados primeiro")
 
     @staticmethod
     def _default_runner() -> None:
