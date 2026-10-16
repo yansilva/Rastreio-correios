@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T00:00:00Z",
+  "title": "Design System: Rastreio Correios",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Correio Azul", "canonical": "#2563eb", "tonalRamp": ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
+      "text-main": { "role": "neutral", "displayName": "Tinta Principal", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Texto corrido e descrições de evento." },
+      "label": { "displayName": "Label", "purpose": "Rótulos e cabeçalhos em caixa-alta." },
+      "display": { "displayName": "Display", "purpose": "Título do painel, uma vez por página." }
+    },
+    "shadows": [
+      { "name": "rest", "value": "0 1px 2px 0 rgba(0, 0, 0, 0.05)", "purpose": "Repouso de cartões, campos e botões secundários." },
+      { "name": "hover-card", "value": "0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05)", "purpose": "Elevação de cartões de resumo no hover." },
+      { "name": "floating-action", "value": "0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04)", "purpose": "Botão de sincronização flutuante." },
+      { "name": "search-focus", "value": "0 0 0 3px rgba(37, 99, 235, 0.12)", "purpose": "Anel de foco do campo de busca." }
+    ],
+    "motion": [
+      { "name": "transition-default", "value": "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Transição padrão de hover, foco e seleção." },
+      { "name": "theme-fade", "value": "background-color 0.25s ease, color 0.25s ease", "purpose": "Troca de tema claro e escuro." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Botão de sincronização flutuante, a ação principal da tela.",
+      "html": "<button class=\"ds-btn-primary\">Atualizar agora</button>",
+      "css": ".ds-btn-primary { background: var(--color-primary, #2563eb); color: #ffffff; border: none; padding: 12px 22px; border-radius: 9999px; font-weight: 700; font-size: 0.95rem; font-family: inherit; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: var(--color-primary-hover, #1d4ed8); transform: translateY(-2px); } .ds-btn-primary:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; } .ds-btn-primary:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "filter-pill",
+      "description": "Filtro de status; o estado ativo fica em azul sólido.",
+      "html": "<button class=\"ds-filter-pill\">Atrasados</button>",
+      "css": ".ds-filter-pill { background: transparent; color: #475569; border: 1px solid #e2e8f0; padding: 7px 14px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-filter-pill:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; } .ds-filter-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; } .ds-filter-pill.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "Busca instantânea por pedido, cliente, rastreio ou cidade.",
+      "html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Buscar pedido, cliente ou rastreio\">",
+      "css": ".ds-search { width: 100%; padding: 14px 18px; font-size: 1rem; font-family: inherit; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #0f172a; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); outline: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-search::placeholder { color: #94a3b8; } .ds-search:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }"
+    },
+    {
+      "name": "Summary Card",
+      "kind": "card",
+      "refersTo": "dash-card",
+      "description": "Cartão de resumo com número grande; ao ser clicado filtra a lista.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-card-number\">12</span><span class=\"ds-card-label\">Atrasados</span></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px 20px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.05); border-color: #94a3b8; } .ds-card-number { font-size: 1.75rem; font-weight: 800; line-height: 1.1; color: #0f172a; } .ds-card-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-top: 2px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "custom",
+      "refersTo": "badge-red",
+      "description": "Badge de estado; o vermelho sinaliza atraso crítico.",
+      "html": "<span class=\"ds-badge-red\">Atrasado</span>",
+      "css": ".ds-badge-red { font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 700; text-transform: uppercase; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Painel de Expedição",
+    "overview": "Ferramenta de operação diária. Cartões brancos sobre fundo frio, tipografia sem ornamento e cor usada para significar estado. O número vem antes do rótulo; a elevação só aparece como resposta ao hover.",
+    "keyCharacteristics": [
+      "Cartões brancos e bordas finas sobre fundo frio.",
+      "Cor de status é o principal sinal de urgência.",
+      "Números grandes para resumos; texto de corpo discreto.",
+      "Profundidade leve: sombras pequenas em repouso, maiores no hover.",
+      "Português brasileiro em todos os rótulos."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "O azul de ação aparece em no máximo um elemento de decisão por área visível. Cor de status é reservada para estado do pedido.", "section": "colors" },
+      { "name": "The Contrast Debt Rule", "body": "Âmbar, Verde e Tinta Sutil não atingem 4.5:1 para texto pequeno sobre branco. Escurecer um degrau ou usar texto em Tinta Principal ao lado.", "section": "colors" },
+      { "name": "The Number First Rule", "body": "Em cada cartão de resumo, o número vem antes do rótulo.", "section": "typography" },
+      { "name": "The Quiet Lift Rule", "body": "Sombras são resposta a estado. Elementos em repouso não ganham sombra além da mínima.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar a cor de status junto com um texto ou rótulo.",
+      "Do manter o número como elemento dominante em cada cartão de resumo.",
+      "Do usar --radius-full para ações e filtros, e --radius-lg para cartões e campos.",
+      "Do testar o layout em 375px de largura.",
+      "Do reutilizar os tokens de :root e [data-theme=\"dark\"]."
+    ],
+    "donts": [
+      "Don't usar Tinta Sutil para texto informativo sobre fundo branco.",
+      "Don't usar Âmbar, Verde ou Tinta Sutil em texto pequeno sem escurecer o tom.",
+      "Don't introduzir gradientes ou ilustrações decorativas.",
+      "Don't criar uma segunda cor de ação.",
+      "Don't aumentar sombras no repouso."
+    ]
+  }
+}

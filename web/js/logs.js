@@ -36,14 +36,18 @@ async function atualizarDados() {
     const consoleBody = document.getElementById('consoleBody');
 
     // Limpa caches locais de alertas antigos
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('alerta_prazo_v2_') || key.startsWith('modal_frete_'))) {
-            keysToRemove.push(key);
+    try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('alerta_prazo_v2_') || key.startsWith('modal_frete_'))) {
+                keysToRemove.push(key);
+            }
         }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {
+        // Storage indisponível: nada a limpar
     }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
 
     try {
         if (btn) btn.disabled = true;
@@ -80,16 +84,28 @@ async function atualizarDados() {
                 }
             };
 
+            // Se o streaming cair antes do fim, libera o botão: sem isso ele ficava desabilitado para sempre
             eventSource.onerror = function () {
                 if (eventSource) {
                     eventSource.close();
                 }
+                addLog('[ERRO] Conexão com o servidor perdida antes do fim da atualização.');
+                showToast('❌ Conexão de logs interrompida. Tente atualizar novamente.', '#dc2626');
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+                if (btnText) btnText.textContent = '🔄 Atualizar Dados';
             };
         } else if (response.status === 429) {
-            const data = await response.json();
-            const min = Math.floor(data.remaining / 60);
-            const sec = data.remaining % 60;
-            showToast(`⏳ Cooldown ativo! Próxima atualização permitida em ${min}m ${sec}s`, '#d97706');
+            let remaining = 0;
+            try {
+                const data = await response.json();
+                remaining = Math.max(0, Number(data.remaining) || 0);
+            } catch (e) {
+                // Corpo inválido: mostra o aviso sem o tempo restante
+            }
+            const min = Math.floor(remaining / 60);
+            const sec = remaining % 60;
+            showToast(`⏳ Cooldown ativo! Próxima atualização permitida em ${min}m ${sec}s`, '#b45309');
             if (consoleDiv) consoleDiv.style.display = 'none';
             if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';

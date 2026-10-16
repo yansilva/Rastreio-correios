@@ -17,19 +17,19 @@
     
     /* Tipografia & Textos */
     --color-text-main: #0f172a;
-    --color-text-muted: #64748b;
-    --color-text-subtle: #94a3b8;
-    
-    /* Estados & Semântica */
-    --color-success: #16a34a;
+    --color-text-muted: #475569;
+    --color-text-subtle: #64748b;
+
+    /* Estados & Semântica (cores de texto com contraste ≥ 4.5:1 sobre o fundo claro) */
+    --color-success: #15803d;
     --color-success-bg: #dcfce7;
     --color-success-border: #bbf7d0;
     
-    --color-warning: #d97706;
+    --color-warning: #b45309;
     --color-warning-bg: #fef3c7;
     --color-warning-border: #fde68a;
     
-    --color-danger: #dc2626;
+    --color-danger: #b91c1c;
     --color-danger-bg: #fee2e2;
     --color-danger-border: #fecaca;
     
@@ -64,8 +64,8 @@
     --color-border: #26334d;
     
     --color-text-main: #f8fafc;
-    --color-text-muted: #94a3b8;
-    --color-text-subtle: #64748b;
+    --color-text-muted: #b6c2d2;
+    --color-text-subtle: #94a3b8;
     
     --color-primary-light: #1e293b;
     --color-success-bg: rgba(22, 163, 74, 0.15);

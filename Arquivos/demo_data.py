@@ -29,28 +29,28 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     # -------------------------------------------------------------------------
     dashboard_html = """
         <div class="dashboard">
-            <div class="dash-card dash-clickable" onclick="filterOrders('nao_enviado')" data-filter="nao_enviado">
+            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange">📭</div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-orange">2</span>
                     <span class="dash-label">Não Enviados</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable" onclick="filterOrders('em_transito')" data-filter="em_transito">
+            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="em_transito">
                 <div class="dash-icon dash-icon-blue">🚚</div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">4</span>
                     <span class="dash-label">Em Trânsito</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable" onclick="filterOrders('entregue')" data-filter="entregue">
+            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="entregue">
                 <div class="dash-icon dash-icon-green">✅</div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">2</span>
                     <span class="dash-label">Entregues</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable" onclick="filterOrders('devolvido')" data-filter="devolvido">
+            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="devolvido">
                 <div class="dash-icon dash-icon-purple">↩️</div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-purple">1</span>
@@ -343,7 +343,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     <link rel="stylesheet" href="web/css/components.css?v={versao_cache}">
 </head>
 <body>
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <div class="floating-actions">
         <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
@@ -392,7 +392,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <button type="button" class="filter-pill" data-filter="devolvido">↩️ Devolvidos</button>
                     <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">✕ Limpar filtros</button>
                 </div>
-                <span id="filterCount" class="filter-count"></span>
+                <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
         </div>
 
@@ -404,7 +404,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="console-dot dot-green"></div>
                 <span style="margin-left: 10px; color: #94a3b8; font-weight: 600; font-size: 0.85rem;">Terminal de Atualização (Ao Vivo)</span>
             </div>
-            <div id="consoleBody" class="console-body">
+            <div id="consoleBody" class="console-body" aria-live="polite">
                 <div class="log-line log-info">⚡ Modo Demonstração inicializado com 10 pedidos realistas.</div>
                 <div class="log-line log-success">✅ Sistema operacional pronto para consulta e filtros.</div>
             </div>

@@ -360,7 +360,6 @@
 
 /* Status Highlights */
 .status-critical {
-    border-left-color: var(--color-danger);
     background: rgba(239, 68, 68, 0.05);
     border-radius: 0 8px 8px 0;
 }
@@ -369,16 +368,11 @@
     background: var(--color-danger);
 }
 
-.status-warning {
-    border-left-color: var(--color-warning);
-}
-
 .status-warning::before {
     background: var(--color-warning);
 }
 
 .status-devolvido {
-    border-left-color: var(--color-purple);
     background: rgba(147, 51, 234, 0.08);
     border-radius: 0 8px 8px 0;
 }
@@ -658,9 +652,10 @@ tbody tr:hover {
     background: var(--color-surface-hover);
 }
 
-.urgencia-alta { border-left: 4px solid #dc2626; }
-.urgencia-media { border-left: 4px solid #ea580c; }
-.urgencia-baixa { border-left: 4px solid #d97706; }
+/* Urgência é indicada pela tag e pelo badge de dias; a linha recebe só um tom sutil */
+.urgencia-alta { background: rgba(220, 38, 38, 0.05); }
+.urgencia-media { background: rgba(234, 88, 12, 0.05); }
+.urgencia-baixa { background: rgba(217, 119, 6, 0.05); }
 
 .dias-badge {
     display: inline-block;
@@ -684,8 +679,8 @@ tbody tr:hover {
 }
 
 .urgencia-tag.urgencia-alta { background: #dc2626; color: #ffffff; }
-.urgencia-tag.urgencia-media { background: #ea580c; color: #ffffff; }
-.urgencia-tag.urgencia-baixa { background: #d97706; color: #ffffff; }
+.urgencia-tag.urgencia-media { background: #c2410c; color: #ffffff; }
+.urgencia-tag.urgencia-baixa { background: #b45309; color: #ffffff; }
 
 .empty-state {
     text-align: center;
@@ -754,5 +749,62 @@ tbody tr:hover {
     .filter-count {
         margin-left: 0;
         text-align: center;
+    }
+
+    /* Alvos de toque próximos de 44px nos controles principais */
+    .filter-pill,
+    .btn-clear-filter,
+    .btn-theme,
+    .nav-tab,
+    .back-link {
+        min-height: 44px;
+    }
+}
+
+/* ==========================================================================
+   8. Acessibilidade: foco em cartões clicáveis e movimento reduzido
+   ========================================================================== */
+
+/* Entrada suave de pedidos e do aviso vazio quando um filtro ou busca os mostra de novo */
+@keyframes cardEnter {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes cardFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.order-card.is-entering,
+#noResults:not([hidden]) {
+    animation: cardEnter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dash-clickable:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .dash-card:hover,
+    .btn-action:hover,
+    .btn-theme:hover,
+    .back-link:hover {
+        transform: none;
+    }
+
+    /* Movimento reduzido: só a opacidade, sem deslocamento */
+    .order-card.is-entering,
+    #noResults:not([hidden]) {
+        animation-name: cardFade;
+        animation-duration: 150ms;
     }
 }

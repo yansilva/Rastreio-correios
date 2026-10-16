@@ -3,14 +3,31 @@
  * Responsabilidade Única: Controle exclusivo de tema e toasts do painel.
  */
 
+// Acesso ao localStorage pode falhar (modo privado, cookies bloqueados): o tema segue sem persistir
+function readStoredTheme() {
+    try {
+        return localStorage.getItem('theme');
+    } catch (e) {
+        return null;
+    }
+}
+
+function storeTheme(theme) {
+    try {
+        localStorage.setItem('theme', theme);
+    } catch (e) {
+        // Sem persistência: o tema vale só para esta página
+    }
+}
+
 // 1. Controle de Tema (Dark / Light Mode)
 function getCurrentTheme() {
-    return document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
+    return document.documentElement.getAttribute('data-theme') || readStoredTheme() || 'light';
 }
 
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    storeTheme(theme);
 
     var themeBtn = document.getElementById('btnThemeText');
     var themeContainer = document.getElementById('btnTheme');
@@ -32,7 +49,7 @@ function toggleTheme() {
 
 // Inicializa o tema imediatamente para evitar FOUC (Flash of Unstyled Content)
 (function initTheme() {
-    var saved = localStorage.getItem('theme');
+    var saved = readStoredTheme();
     if (saved) {
         document.documentElement.setAttribute('data-theme', saved);
     } else {

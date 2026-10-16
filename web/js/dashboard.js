@@ -41,7 +41,13 @@ function applyFilters() {
         var matchesSearch = !term || cardText.includes(term);
 
         if (matchesStatus && matchesSearch) {
-            card.classList.remove('order-hidden');
+            if (card.classList.contains('order-hidden')) {
+                card.classList.remove('order-hidden');
+                // Reinicia a animação de entrada somente quando o cartão reaparece
+                card.classList.remove('is-entering');
+                void card.offsetWidth;
+                card.classList.add('is-entering');
+            }
             visibleCount++;
         } else {
             card.classList.add('order-hidden');
@@ -57,6 +63,22 @@ function applyFilters() {
         } else {
             countDisplay.textContent = total + ' pedidos';
         }
+    }
+
+    // Estado vazio quando a busca ou o filtro não encontra nenhum pedido
+    var noResults = document.getElementById('noResults');
+    if (cards.length && visibleCount === 0) {
+        if (!noResults) {
+            noResults = document.createElement('div');
+            noResults.id = 'noResults';
+            noResults.className = 'empty-state';
+            noResults.setAttribute('role', 'status');
+            noResults.innerHTML = '<div class="emoji">🔎</div><p>Nenhum pedido corresponde ao filtro ou à busca.</p>';
+            cards[0].parentNode.insertBefore(noResults, cards[0]);
+        }
+        noResults.hidden = false;
+    } else if (noResults) {
+        noResults.hidden = true;
     }
 
     // Atualiza banner de filtro
@@ -106,8 +128,9 @@ function filterOrders(status) {
 
     if (activeStatusFilter) {
         var firstVisible = document.querySelector('.order-card:not(.order-hidden)');
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (firstVisible) {
-            firstVisible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            firstVisible.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
         }
     }
 }
@@ -144,6 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
         card.addEventListener('click', function() {
             var filter = card.getAttribute('data-filter');
             filterOrders(filter);
+        });
+        // Cartões são divs: ativá-los com Enter ou Espaço, como um botão
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                filterOrders(card.getAttribute('data-filter'));
+            }
         });
     });
 
