@@ -4,6 +4,7 @@
 
 var activeStatusFilter = null;
 var currentSearchTerm = '';
+var initialRenderDone = false;
 
 // Rótulos amigáveis para exibição de filtros
 var STATUS_LABELS = {
@@ -43,10 +44,12 @@ function applyFilters() {
         if (matchesStatus && matchesSearch) {
             if (card.classList.contains('order-hidden')) {
                 card.classList.remove('order-hidden');
-                // Reinicia a animação de entrada somente quando o cartão reaparece
-                card.classList.remove('is-entering');
-                void card.offsetWidth;
-                card.classList.add('is-entering');
+                // Anima só quando o cartão reaparece por ação do usuário, nunca na carga da página
+                if (initialRenderDone) {
+                    card.classList.remove('is-entering');
+                    void card.offsetWidth;
+                    card.classList.add('is-entering');
+                }
             }
             visibleCount++;
         } else {
@@ -116,6 +119,7 @@ function applyFilters() {
 
     // Mostra/esconde botão Limpar
     updateClearButton();
+    initialRenderDone = true;
 }
 
 function filterOrders(status) {

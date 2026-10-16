@@ -490,8 +490,11 @@ def processar():
             f"Página de atrasados salva em '{caminho_atrasados}' ({len(atrasados_data)} pedido(s) com mais de 3 dias)."
         )
 
+        return True
+
     except Exception as e:
         print(f"Erro no processamento: {e}")
+        return False
 
 
 if __name__ == "__main__":

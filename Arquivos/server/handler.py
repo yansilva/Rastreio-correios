@@ -92,7 +92,7 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
                     # Envia heartbeat keep-alive
                     self.wfile.write(b": keep-alive\n\n")
                     self.wfile.flush()
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, OSError):
             pass
         except Exception as exc:
             logger.debug(f"Conexão SSE encerrada: {exc}")
@@ -177,20 +177,25 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
         try:
             with open(file_path, "rb") as f:
                 content = f.read()
-            self._send_bytes_response(content, content_type=content_type, status=200)
+            # no-cache: o painel é local e os assets mudam; o navegador sempre revalida
+            self._send_bytes_response(content, content_type=content_type, status=200, no_cache=True)
         except Exception as exc:
             logger.error(f"Erro ao ler arquivo {file_path}: {exc}")
             self._send_json_response({"sucesso": False, "erro": "Erro ao carregar arquivo"}, status=500)
 
-    def _send_bytes_response(self, content: bytes, content_type: str, status: int = 200) -> None:
+    def _send_bytes_response(
+        self, content: bytes, content_type: str, status: int = 200, no_cache: bool = False
+    ) -> None:
         """Envia resposta binária com código HTTP e cabeçalhos."""
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(content)))
+        if no_cache:
+            self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         try:
             self.wfile.write(content)
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, OSError):
             pass
 
     def _send_json_response(self, data: Any, status: int = 200) -> None:

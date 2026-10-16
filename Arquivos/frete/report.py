@@ -130,10 +130,10 @@ class FreteReportGenerator:
             --bg: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #1e293b;
-            --text-sub: #64748b;
+            --text-sub: #475569;
             --border: #e2e8f0;
-            --green: #16a34a;
-            --red: #dc2626;
+            --green: #15803d;
+            --red: #b91c1c;
         }}
         [data-theme="dark"] {{
             --bg: #0f172a;
@@ -156,10 +156,7 @@ class FreteReportGenerator:
         h1 {{
             margin: 0;
             font-size: 2.2rem;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary);
         }}
         .meta {{ color: var(--text-sub); margin-top: 8px; }}
         .config-info {{
@@ -184,6 +181,7 @@ class FreteReportGenerator:
             font-weight: 600;
             font-size: 0.9rem;
             margin-top: 14px;
+            min-height: 44px;
             box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
             transition: all 0.2s ease;
         }}
@@ -197,6 +195,7 @@ class FreteReportGenerator:
             color: var(--text-main);
             border: 2px solid var(--border);
             padding: 8px 16px;
+            min-height: 44px;
             border-radius: 99px;
             font-weight: 600;
             cursor: pointer;
@@ -235,6 +234,8 @@ class FreteReportGenerator:
             background: var(--bg);
             color: var(--text-main);
             font-size: 0.95rem;
+            min-height: 44px;
+            box-sizing: border-box;
             width: 120px;
             outline: none;
             transition: border-color 0.2s;
@@ -268,8 +269,8 @@ class FreteReportGenerator:
         }}
         .summary-number {{ font-size: 2.5rem; font-weight: 800; line-height: 1.2; }}
         .summary-label {{ font-size: 0.82rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }}
-        .num-blue {{ color: #2563eb; }}
-        .num-green {{ color: #16a34a; }}
+        .num-blue {{ color: var(--primary); }}
+        .num-green {{ color: var(--green); }}
 
         /* Pedido Cards */
         .pedido-card {{
@@ -295,8 +296,8 @@ class FreteReportGenerator:
         .pedido-cliente {{ color: var(--text-sub); font-size: 0.9rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
-            background: linear-gradient(135deg, #eff6ff, #bfdbfe);
-            color: #2563eb;
+            background: #dbeafe;
+            color: #1d4ed8;
             padding: 3px 12px;
             border-radius: 99px;
             font-size: 0.75rem;
@@ -304,8 +305,8 @@ class FreteReportGenerator:
             text-transform: uppercase;
         }}
         [data-theme="dark"] .pedido-badge {{
-            background: linear-gradient(135deg, #1e3a5f, #1e40af);
-            color: #93c5fd;
+            background: #1e3a8a;
+            color: #bfdbfe;
         }}
         .pedido-destino {{
             color: var(--text-sub);
@@ -369,7 +370,7 @@ class FreteReportGenerator:
         }}
         .servico-msg-prazo {{
             font-size: 0.72rem;
-            color: #d97706;
+            color: #b45309;
             margin-top: 8px;
             padding: 6px 10px;
             background: rgba(217, 119, 6, 0.08);
@@ -399,6 +400,14 @@ class FreteReportGenerator:
         .summary-card {{ animation: fadeIn 0.4s ease forwards; }}
         .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
 
+        @media (prefers-reduced-motion: reduce) {{
+            *, *::before, *::after {{
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }}
+            .back-link:hover, .btn-theme:hover, .servico-card.disponivel:hover {{ transform: none; }}
+        }}
+
         @media (max-width: 600px) {{
             .pedido-header {{ flex-direction: column; align-items: flex-start; }}
             .pedido-right {{ align-items: flex-start; }}
@@ -407,7 +416,7 @@ class FreteReportGenerator:
     </style>
 </head>
 <body>
-    <button class="btn-theme" onclick="toggleTheme()">🌓 Tema</button>
+    <button class="btn-theme" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro">🌓 Tema</button>
     <div class="container">
         <header>
             <h1>📦 Opções de Frete Correios</h1>
@@ -437,7 +446,7 @@ class FreteReportGenerator:
                 <label for="valMax">Valor Máximo (R$):</label>
                 <input type="number" id="valMax" placeholder="Sem limite" oninput="filtrarPorValor()">
             </div>
-            <span class="filter-count" id="filterCount"></span>
+            <span class="filter-count" id="filterCount" aria-live="polite"></span>
         </div>
 
         {cards_html}
@@ -445,15 +454,17 @@ class FreteReportGenerator:
 
     <script>
         // Lógica de Tema
+        function lerTema() {{
+            try {{ return localStorage.getItem('theme') || 'light'; }} catch (e) {{ return 'light'; }}
+        }}
         function setTheme(theme) {{
             document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
+            try {{ localStorage.setItem('theme', theme); }} catch (e) {{ /* sem persistência */ }}
         }}
         function toggleTheme() {{
-            const current = localStorage.getItem('theme') || 'light';
-            setTheme(current === 'light' ? 'dark' : 'light');
+            setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         }}
-        setTheme(localStorage.getItem('theme') || 'light');
+        setTheme(lerTema());
 
         // Lógica de Filtro
         function filtrarPorValor() {{

@@ -19,10 +19,10 @@ def main():
         sucesso_tiny = tiny_rastreio.processar()
         if not sucesso_tiny:
             print("Erro na etapa do Tiny. Abortando processo.")
-            return
+            return False
     except Exception as e:
         print(f"Erro critico ao processar Tiny: {e}")
-        return
+        return False
 
     # 2. Consultar rastreios nos Correios e Gerar Relatório
     print("\n[PASSO 2/2] Consultando Correios e Gerando Relatório HTML...")
@@ -30,7 +30,9 @@ def main():
         # Verifica se o arquivo gerado pelo Tiny existe antes de prosseguir
         caminho_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rastreios_tiny.csv")
         if os.path.exists(caminho_csv):
-            consulta_correios.processar()
+            if consulta_correios.processar() is False:
+                print("Erro na etapa dos Correios. Os relatórios não foram atualizados.")
+                return False
 
             print("\n[PASSO 3/3] Consultando Opções de Frete...")
             import consulta_frete
@@ -44,9 +46,13 @@ def main():
             print("="*60)
         else:
             print(f"⚠️ Arquivo '{caminho_csv}' não encontrado. Verifique os filtros do Tiny.")
+            return False
+
+        return True
 
     except Exception as e:
         print(f"Erro critico ao processar Correios: {e}")
+        return False
 
 if __name__ == "__main__":
     main()

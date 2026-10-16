@@ -136,4 +136,5 @@ class UpdateManager:
 
         importlib.reload(consulta_correios)
         importlib.reload(executar_rastreio)
-        executar_rastreio.main()
+        if executar_rastreio.main() is False:
+            raise RuntimeError("a atualização falhou; veja as mensagens de erro acima no console")
