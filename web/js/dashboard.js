@@ -140,6 +140,41 @@ function filterOrders(status) {
     }
 }
 
+// Ordenação: a ordem de urgência vem do servidor; guardamos o índice inicial para poder voltar a ela
+function ordenarPedidos(modo) {
+    var lista = document.querySelector('.orders-list');
+    if (!lista) return;
+    var cartoes = Array.prototype.slice.call(lista.querySelectorAll('.order-card'));
+    var numero = function(valor) { var n = parseFloat(valor); return isNaN(n) ? null : n; };
+
+    cartoes.sort(function(a, b) {
+        var ia = numero(a.getAttribute('data-idade')), ib = numero(b.getAttribute('data-idade'));
+        var pa = numero(a.getAttribute('data-pedido')), pb = numero(b.getAttribute('data-pedido'));
+        var porOrdem = Number(a.getAttribute('data-ordem')) - Number(b.getAttribute('data-ordem'));
+        // Itens sem o dado vão para o fim, nas duas direções
+        if (modo === 'recente' || modo === 'antigo') {
+            if (ia === null || ib === null) return ia === ib ? porOrdem : (ia === null ? 1 : -1);
+            return (modo === 'recente' ? ia - ib : ib - ia) || porOrdem;
+        }
+        if (modo === 'pedido') {
+            if (pa === null || pb === null) return pa === pb ? porOrdem : (pa === null ? 1 : -1);
+            return (pb - pa) || porOrdem;
+        }
+        return porOrdem;
+    });
+
+    cartoes.forEach(function(cartao) { lista.appendChild(cartao); });
+}
+
+function alternarHistoricos() {
+    var botao = document.getElementById('btnToggleHistory');
+    var detalhes = document.querySelectorAll('.order-card:not(.order-hidden) details.order-history');
+    if (!detalhes.length) return;
+    var abrir = Array.prototype.some.call(detalhes, function(d) { return !d.open; });
+    detalhes.forEach(function(d) { d.open = abrir; });
+    if (botao) botao.textContent = abrir ? 'Recolher históricos' : 'Expandir históricos';
+}
+
 function clearAllFilters() {
     activeStatusFilter = null;
     currentSearchTerm = '';
@@ -189,6 +224,42 @@ document.addEventListener('DOMContentLoaded', function() {
             filterOrders(filter);
         });
     });
+
+    // 5. Ordenação e histórico recolhido/expandido
+    document.querySelectorAll('.order-card').forEach(function(cartao, indice) {
+        cartao.setAttribute('data-ordem', indice);
+    });
+    var seletorOrdem = document.getElementById('sortSelect');
+    if (seletorOrdem) {
+        seletorOrdem.addEventListener('change', function() { ordenarPedidos(seletorOrdem.value); });
+    }
+    var botaoHistoricos = document.getElementById('btnToggleHistory');
+    if (botaoHistoricos) {
+        botaoHistoricos.addEventListener('click', alternarHistoricos);
+    }
+
+    // 6. Atalho "/" foca a busca (fora de campos de texto); Esc limpa a busca
+    document.addEventListener('keydown', function(e) {
+        var alvo = e.target;
+        var emCampo = alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.tagName === 'SELECT' || alvo.isContentEditable);
+        if (e.key === '/' && !emCampo && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            var busca = document.getElementById('searchInput');
+            if (busca) {
+                e.preventDefault();
+                busca.focus();
+                busca.select();
+            }
+        }
+    });
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchInput.value) {
+                searchInput.value = '';
+                currentSearchTerm = '';
+                applyFilters();
+            }
+        });
+    }
 
     // Aplica contagem inicial
     applyFilters();

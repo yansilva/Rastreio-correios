@@ -13,7 +13,14 @@ _DIR_ARQUIVOS = str(Path(__file__).resolve().parent)
 if _DIR_ARQUIVOS not in sys.path:
     sys.path.insert(0, _DIR_ARQUIVOS)
 
-from correios.cards import montar_card_pedido, prioridade, selo_status, status_tokens  # noqa: E402
+from correios.cards import (  # noqa: E402
+    divergencia_tiny,
+    esta_encerrado,
+    montar_card_pedido,
+    prioridade,
+    selo_status,
+    status_tokens,
+)
 from correios.icons import ICON_SPRITE  # noqa: E402
 
 # Obtém a raiz do projeto
@@ -247,7 +254,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "pedido": "41710",
             "rastreio": "BR998877665BR",
             "cliente": "Beatriz Martins",
-            "situacao": "Entregue",
+            "situacao": "Enviado",
             "status": "entregue",
             "eventos": [
                 {
@@ -344,6 +351,10 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             classe_selo=classe_selo,
             situacao_tiny=o["situacao"],
             eventos_html=events_html,
+            encerrado=esta_encerrado(categoria, retirada=retirada, atrasado=atrasado),
+            numero=o["pedido"],
+            idade_dias=o.get("idade_dias", orders.index(o)),
+            divergencia=divergencia_tiny(categoria, o["situacao"]),
         )
         ordem = prioridade(categoria, retirada=retirada, atrasado=atrasado)
         orders_cards.append((ordem, -o.get("dias_atraso", 0), card))
@@ -373,18 +384,13 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     {ICON_SPRITE}
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <div class="floating-actions">
-        <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-        <button id="btnUpdate" class="btn-action btn-update" title="Sincronizar dados com o Tiny e Correios">
-            <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
-        </button>
-    </div>
-
     <div class="container">
         <header>
+            <div class="header-tools">
+                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
@@ -407,7 +413,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         <div class="controls-panel">
             <div class="search-wrapper">
                 <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
@@ -423,6 +429,16 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p>
+            <div class="list-tools">
+                <label class="sort-label" for="sortSelect">Ordenar por</label>
+                <select id="sortSelect" class="sort-select">
+                    <option value="urgencia">Urgência</option>
+                    <option value="recente">Último evento mais recente</option>
+                    <option value="antigo">Último evento mais antigo</option>
+                    <option value="pedido">Número do pedido</option>
+                </select>
+                <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+            </div>
         </div>
 
         <!-- Terminal de Logs Visual -->
@@ -443,6 +459,13 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         <main class="orders-list">
             {''.join(orders_cards)}
         </main>
+    </div>
+
+    <div class="floating-actions">
+        <button id="btnUpdate" class="btn-action btn-update" aria-label="Atualizar dados" title="Sincronizar dados com o Tiny e Correios">
+            <div id="spinner" class="spinner"></div>
+            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
+        </button>
     </div>
 
     <script src="web/js/app.js?v={versao_cache}"></script>

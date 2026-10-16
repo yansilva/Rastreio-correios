@@ -784,6 +784,40 @@ tbody tr:hover {
         justify-content: flex-start;
     }
 
+    /* Tema acima do título, alinhado à direita, sem sobrepor o conteúdo */
+    .header-tools {
+        position: static;
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 8px;
+    }
+
+    .sort-select,
+    .btn-link {
+        min-height: 44px;
+    }
+
+    .btn-link {
+        margin-left: 0;
+    }
+
+    /* Botão de atualizar compacto: só o ícone, com o texto disponível para leitores de tela */
+    .btn-update {
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .btn-update #btnUpdateText {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
     /* Atrasados ocupa a linha inteira no celular, como cartão principal */
     .dash-card-urgent {
         grid-column: 1 / -1;
@@ -888,6 +922,100 @@ h1 .icon {
 
 .status-legend strong {
     color: var(--color-text-main);
+}
+
+/* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
+.header-tools {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+/* Ferramentas da lista: ordenar e expandir/recolher históricos */
+.list-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 12px;
+}
+
+.sort-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.sort-select {
+    min-height: 36px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--color-text-main);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+}
+
+.sort-select:focus-visible,
+.btn-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.btn-link {
+    margin-left: auto;
+    min-height: 36px;
+    padding: 6px 4px;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-link);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Casos encerrados (entregues e devolvidos sem pendência): ficam no fim e sem destaque */
+.order-card.order-closed .order-header {
+    background: transparent;
+}
+
+.order-card.order-closed .order-title {
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.order-card.order-closed .event.status-devolvido {
+    background: none;
+}
+
+.order-card.order-closed .event.status-devolvido::before {
+    background: var(--color-text-subtle);
+}
+
+/* Ajustes do celular para as regras acima (ficam depois delas para prevalecer na cascata) */
+@media (max-width: 640px) {
+    .header-tools {
+        position: static;
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 8px;
+    }
+
+    .sort-select,
+    .btn-link {
+        min-height: 44px;
+    }
+
+    .btn-link {
+        margin-left: 0;
+    }
 }
 
 /* Entrada suave de pedidos e do aviso vazio quando um filtro ou busca os mostra de novo */

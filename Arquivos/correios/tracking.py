@@ -92,6 +92,10 @@ class TrackingService:
         """
         now = data_referencia or datetime.now()
 
+        # Devolvidos já têm status próprio: não contam como atraso de entrega
+        if objeto.is_devolvido:
+            return None
+
         # Condições: deve ter data de postagem e estar em status elegível
         if not objeto.data_postagem_dt or objeto.status_categoria not in ("em_transito", "entregue", "devolvido"):
             return None

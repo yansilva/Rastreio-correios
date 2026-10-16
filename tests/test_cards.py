@@ -9,7 +9,16 @@ _arquivos = os.path.join(_raiz, "Arquivos")
 if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
-from correios.cards import montar_card_pedido, prioridade, selo_status, status_tokens, texto_idade  # noqa: E402
+from correios.cards import (  # noqa: E402
+    dias_desde,
+    divergencia_tiny,
+    esta_encerrado,
+    montar_card_pedido,
+    prioridade,
+    selo_status,
+    status_tokens,
+    texto_idade,
+)
 
 
 class TestStatusTokens(unittest.TestCase):
@@ -51,15 +60,17 @@ class TestSeloStatus(unittest.TestCase):
 
 class TestPrioridade(unittest.TestCase):
     def test_ordem_de_acao(self):
+        # Do que mais pede ação ao que já está encerrado (entregues por último)
         ordem = [
-            prioridade("entregue"),
-            prioridade("nao_enviado"),
-            prioridade("em_transito"),
-            prioridade("devolvido"),
-            prioridade("em_transito", atrasado=True),
             prioridade("em_transito", retirada=True),
+            prioridade("em_transito", atrasado=True),
+            prioridade("em_transito"),
+            prioridade("nao_enviado"),
+            prioridade("devolvido"),
+            prioridade("entregue"),
         ]
-        self.assertEqual(sorted(ordem, reverse=True), ordem)
+        self.assertEqual(sorted(ordem), ordem)
+        self.assertEqual(len(set(ordem)), len(ordem))
 
 
 class TestTextoIdade(unittest.TestCase):
@@ -75,7 +86,64 @@ class TestTextoIdade(unittest.TestCase):
         self.assertEqual(texto_idade("não é data", self.AGORA), "")
 
 
+class TestDiasDesde(unittest.TestCase):
+    def test_dias_e_data_invalida(self):
+        agora = datetime(2026, 10, 16, 12, 0)
+        self.assertEqual(dias_desde("2026-10-11T10:00:00", agora), 5)
+        self.assertIsNone(dias_desde("", agora))
+
+
+class TestDivergenciaTiny(unittest.TestCase):
+    def test_entregue_nos_correios_com_tiny_desatualizado(self):
+        self.assertIn("Entregue nos Correios", divergencia_tiny("entregue", "Enviado"))
+        self.assertIn("Entregue nos Correios", divergencia_tiny("entregue", "Não entregue"))
+
+    def test_entregue_coerente(self):
+        self.assertEqual(divergencia_tiny("entregue", "Entregue"), "")
+        self.assertEqual(divergencia_tiny("entregue", "ENTREGUE "), "")
+
+    def test_devolvido_com_tiny_enviado(self):
+        self.assertIn("Devolvido nos Correios", divergencia_tiny("devolvido", "Enviado"))
+
+    def test_devolvido_com_nao_entregue_e_coerente(self):
+        self.assertEqual(divergencia_tiny("devolvido", "Não entregue"), "")
+
+    def test_sem_situacao_ou_em_transito(self):
+        self.assertEqual(divergencia_tiny("devolvido", ""), "")
+        self.assertEqual(divergencia_tiny("em_transito", "Enviado"), "")
+
+
+class TestEstaEncerrado(unittest.TestCase):
+    def test_entregue_e_devolvido_sem_pendencia(self):
+        self.assertTrue(esta_encerrado("entregue"))
+        self.assertTrue(esta_encerrado("devolvido"))
+
+    def test_pendencias_mantem_aberto(self):
+        self.assertFalse(esta_encerrado("devolvido", retirada=True))
+        self.assertFalse(esta_encerrado("entregue", atrasado=True))
+        self.assertFalse(esta_encerrado("em_transito"))
+
+
 class TestMontarCardPedido(unittest.TestCase):
+    def test_atributos_de_ordenacao_encerrado_e_divergencia(self):
+        card = montar_card_pedido(
+            titulo="Pedido Tiny #42517",
+            tokens="entregue",
+            selo="Entregue",
+            classe_selo="badge-green",
+            situacao_tiny="Enviado",
+            eventos_html=['<div class="event">x</div>'],
+            encerrado=True,
+            numero="42517",
+            idade_dias=2,
+            divergencia="Entregue nos Correios, mas o Tiny mostra 'Enviado'",
+        )
+        self.assertIn('class="order-card order-closed"', card)
+        self.assertIn('data-pedido="42517"', card)
+        self.assertIn('data-idade="2"', card)
+        self.assertIn("Tiny desatualizado", card)
+        self.assertIn("Entregue nos Correios, mas o Tiny mostra &#x27;Enviado&#x27;", card)
+
     def _card(self, eventos, **kwargs):
         return montar_card_pedido(
             titulo="Pedido Tiny #1 — AB123BR",

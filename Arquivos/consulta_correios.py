@@ -17,6 +17,9 @@ from correios import (
     TrackingService,
 )
 from correios.cards import (
+    dias_desde,
+    divergencia_tiny,
+    esta_encerrado,
     montar_card_pedido,
     prioridade,
     selo_status,
@@ -148,18 +151,13 @@ def processar():
     {icon_sprite}
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <div class="floating-actions">
-        <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-        <button id="btnUpdate" class="btn-action btn-update" title="Sincronizar dados com o Tiny e Correios">
-            <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
-        </button>
-    </div>
-
     <div class="container">
         <header>
+            <div class="header-tools">
+                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
@@ -182,7 +180,7 @@ def processar():
         <div class="controls-panel">
             <div class="search-wrapper">
                 <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
@@ -198,6 +196,16 @@ def processar():
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p>
+            <div class="list-tools">
+                <label class="sort-label" for="sortSelect">Ordenar por</label>
+                <select id="sortSelect" class="sort-select">
+                    <option value="urgencia">Urgência</option>
+                    <option value="recente">Último evento mais recente</option>
+                    <option value="antigo">Último evento mais antigo</option>
+                    <option value="pedido">Número do pedido</option>
+                </select>
+                <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+            </div>
         </div>
 
         <!-- Terminal de Logs Visual -->
@@ -215,6 +223,13 @@ def processar():
         <main class="orders-list">
             {content}
         </main>
+    </div>
+
+    <div class="floating-actions">
+        <button id="btnUpdate" class="btn-action btn-update" aria-label="Atualizar dados" title="Sincronizar dados com o Tiny e Correios">
+            <div id="spinner" class="spinner"></div>
+            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
+        </button>
     </div>
 
     <script src="web/js/app.js?v={versao_cache}"></script>
@@ -310,6 +325,12 @@ def processar():
                 eventos_html=events_html,
                 idade=texto_idade(ultimo_evento),
                 oculto=oculto,
+                encerrado=esta_encerrado(
+                    status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
+                ),
+                numero=str(pedido),
+                idade_dias=dias_desde(ultimo_evento),
+                divergencia=divergencia_tiny(status_category, situacao_tiny),
             )
             ordem = prioridade(status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado)
             orders_html.append((ordem, -dias_atraso, card))

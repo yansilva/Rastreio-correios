@@ -322,6 +322,20 @@ class TestTrackingService(unittest.TestCase):
         atraso = TrackingService.verificar_atraso(obj_entregue, "1005", "Entregue", data_referencia=ref_now)
         self.assertIsNone(atraso)
 
+    def test_devolvido_nao_consta_como_atrasado(self):
+        """Devolvidos têm status próprio e não entram na contagem de atrasos de entrega."""
+        ref_now = datetime(2026, 9, 10, 12, 0, 0)
+        obj_devolvido = ObjetoRastreio(
+            codigo="BB222222222BR",
+            status_categoria="devolvido",
+            is_devolvido=True,
+            is_postado=True,
+            data_postagem_dt=ref_now - timedelta(days=12),
+            data_devolucao_dt=ref_now - timedelta(days=2),
+        )
+        atraso = TrackingService.verificar_atraso(obj_devolvido, "1006", "Não entregue", data_referencia=ref_now)
+        self.assertIsNone(atraso)
+
     def test_deve_ocultar_card_devolvido_apos_24h(self):
         """Valida ocultamento de cards devolvidos após 24h."""
         ref_now = datetime(2026, 9, 10, 12, 0, 0)

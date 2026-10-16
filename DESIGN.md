@@ -217,7 +217,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Cards / Containers
 - **Summary card (`.dash-card`, `.summary-card`):** cantos de 16px, fundo branco, borda fina, 18px × 20px. Hover sobe 2px. Estado ativo usa contorno azul de 2px e fundo Azul Névoa. O cartão "Atrasados" (`.dash-card-urgent`) vem primeiro, com borda de status, e ocupa a linha inteira no celular.
-- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com o título à esquerda e, à direita, o selo do status atual (`.badge`), há quanto tempo foi o último evento e o status do Tiny. Só o último evento fica visível; o restante abre em `<details class="order-history">` ("Ver histórico completo"). A lista é ordenada por urgência: aguardando retirada, atrasados (mais antigos antes), devolvidos, em trânsito, não enviados e entregues.
+- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com o título à esquerda e, à direita, o selo do status atual (`.badge`), há quanto tempo foi o último evento e o status do Tiny. Só o último evento fica visível; o restante abre em `<details class="order-history">` ("Ver histórico completo"). A lista é ordenada por urgência: aguardando retirada, atrasados (mais antigos antes), em trânsito, não enviados, devolvidos e entregues. Casos encerrados (entregues e devolvidos sem pendência) ganham `.order-closed`: título em tom discreto, cabeçalho sem fundo e sem tinta no evento, e ficam no fim. Quando a situação do Tiny contradiz os Correios (por exemplo, entregue nos Correios e "Enviado" no Tiny), o cabeçalho mostra o selo amarelo "Tiny desatualizado", com a explicação na dica. "Atrasado" conta só pedidos ainda a caminho; devolvidos têm status próprio.
 - **Event timeline:** linha vertical de 3px em Borda Fina, bolinha de 12px no início de cada evento. Eventos críticos ganham a cor do status na barra e na bolinha, com fundo levemente tingido.
 
 ### Inputs / Fields
@@ -237,6 +237,11 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Ícones
 - **Style:** SVG de traço fino (1.75px, cantos arredondados), cor herdada do texto (`currentColor`) e 1.1em de tamanho; nos chips de resumo, 1.6rem na cor do status.
 - **Theme button:** mostra o ícone do tema de destino (sol no escuro, lua no claro).
+
+### Ferramentas do cabeçalho e da lista
+- **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
+- **Ordenar e expandir:** um seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido) e o botão de texto "Expandir históricos" ficam sob a legenda. A tecla `/` foca a busca e Esc limpa o texto.
+- **Atualizar dados:** único botão flutuante; no celular vira um círculo de 52px só com o ícone, com ria-label.
 
 ### Navigation (`.nav-tabs`)
 - **Style:** pílulas com borda fina. Ativa em azul sólido com texto branco e sombra azul suave.
