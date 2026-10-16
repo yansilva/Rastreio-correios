@@ -33,7 +33,8 @@ function setTheme(theme) {
     var themeContainer = document.getElementById('btnTheme');
 
     if (themeBtn) {
-        themeBtn.textContent = theme === 'dark' ? '☀️ Claro' : '🌙 Escuro';
+        // O ícone (sol ou lua) é alternado por CSS conforme o tema; aqui só o texto
+        themeBtn.textContent = theme === 'dark' ? 'Claro' : 'Escuro';
     }
     if (themeContainer) {
         themeContainer.setAttribute('aria-label',

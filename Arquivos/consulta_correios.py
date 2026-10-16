@@ -23,6 +23,7 @@ from correios.cards import (
     status_tokens,
     texto_idade,
 )
+from correios.icons import ICON_SPRITE
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -144,33 +145,34 @@ def processar():
     <link rel="stylesheet" href="web/css/components.css?v={versao_cache}">
 </head>
 <body>
+    {icon_sprite}
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <div class="floating-actions">
         <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <span id="btnThemeText">🌙 Escuro</span>
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
         <button id="btnUpdate" class="btn-action btn-update" title="Sincronizar dados com o Tiny e Correios">
             <div id="spinner" class="spinner"></div>
-            <span id="btnUpdateText">🔄 Atualizar Dados</span>
+            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
         </button>
     </div>
 
     <div class="container">
         <header>
             <div class="header-main">
-                <h1>📦 Status de Entregas</h1>
+                <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
                     Relatório gerado em: {data_geracao}
                     <span id="next-check" style="margin-left: 10px; opacity: 0.9;">
-                        | ⏰ Próxima verificação automática em: <strong id="countdown-timer">carregando...</strong>
+                        | <svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima verificação automática em: <strong id="countdown-timer">carregando...</strong>
                     </span>
                 </div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active">📊 Painel Geral</a>
+                <a href="relatorio_rastreio.html" class="nav-tab active"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel Geral</a>
                 {atrasados_link}
-                <a href="opcoes_frete.html" class="nav-tab">📦 Opções de Frete</a>
+                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
         </header>
 
@@ -179,22 +181,23 @@ def processar():
         <!-- Painel de Controles -->
         <div class="controls-panel">
             <div class="search-wrapper">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
                 <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos">
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
                     <button type="button" class="filter-pill active" data-filter="all">Todos</button>
-                    <button type="button" class="filter-pill" data-filter="em_transito">🚚 Em Trânsito</button>
-                    <button type="button" class="filter-pill" data-filter="atrasado">⏰ Atrasados</button>
-                    <button type="button" class="filter-pill" data-filter="aguardando_retirada">🏢 Retirada</button>
-                    <button type="button" class="filter-pill" data-filter="entregue">✅ Entregues</button>
-                    <button type="button" class="filter-pill" data-filter="nao_enviado">📭 Não Enviados</button>
-                    <button type="button" class="filter-pill" data-filter="devolvido">↩️ Devolvidos</button>
+                    <button type="button" class="filter-pill" data-filter="em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em Trânsito</button>
+                    <button type="button" class="filter-pill" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
+                    <button type="button" class="filter-pill" data-filter="aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
+                    <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
+                    <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não Enviados</button>
+                    <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
                     <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">✕ Limpar filtros</button>
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
+            <p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p>
         </div>
 
         <!-- Terminal de Logs Visual -->
@@ -321,29 +324,29 @@ def processar():
         # Monta o dashboard de resumo
         dashboard_html = f"""
         <div class="dashboard">
-            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado">
-                <div class="dash-icon dash-icon-red">⏰</div>
+            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem">
+                <div class="dash-icon dash-icon-red"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-red">{len(atrasados_data)}</span>
                     <span class="dash-label">Atrasados</span>
                 </div>
             </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
-                <div class="dash-icon dash-icon-orange">📭</div>
+                <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-orange">{nao_enviados_count}</span>
                     <span class="dash-label">Não Enviados</span>
                 </div>
             </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="em_transito">
-                <div class="dash-icon dash-icon-blue">🚚</div>
+                <div class="dash-icon dash-icon-blue"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">{em_transito_count}</span>
                     <span class="dash-label">Em Trânsito</span>
                 </div>
             </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="entregue">
-                <div class="dash-icon dash-icon-green">✅</div>
+                <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">{entregues_count}</span>
                     <span class="dash-label">Entregues</span>
@@ -351,7 +354,7 @@ def processar():
             </div>
 
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="devolvido">
-                <div class="dash-icon dash-icon-purple">↩️</div>
+                <div class="dash-icon dash-icon-purple"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-purple">{devolvidos_count}</span>
                     <span class="dash-label">Devolvidos</span>
@@ -366,11 +369,12 @@ def processar():
 
         # Monta link para página de atrasados
         if len(atrasados_data) > 0:
-            atrasados_link_html = f'<a href="pedidos_atrasados.html" class="nav-tab atrasados-tab">⏰ Pedidos Atrasados <span class="atrasados-count">{len(atrasados_data)}</span></a>'
+            atrasados_link_html = f'<a href="pedidos_atrasados.html" class="nav-tab atrasados-tab"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados <span class="atrasados-count">{len(atrasados_data)}</span></a>'
         else:
             atrasados_link_html = ""
 
         final_html = html_template.format(
+            icon_sprite=ICON_SPRITE,
             data_geracao=time.strftime("%d/%m/%Y %H:%M:%S"),
             dashboard=dashboard_html,
             content="".join(orders_html),
@@ -451,7 +455,7 @@ def processar():
             tabela_conteudo = """
         <div class="table-wrapper">
             <div class="empty-state">
-                <div class="emoji">🎉</div>
+                <div class="emoji"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <h2>Nenhum pedido atrasado!</h2>
                 <p>Todos os pedidos estão dentro do prazo de 3 dias.</p>
             </div>
@@ -467,21 +471,22 @@ def processar():
     <link rel="stylesheet" href="web/css/components.css?v={int(time.time())}">
 </head>
 <body>
+    {ICON_SPRITE}
     <div class="floating-actions">
         <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <span id="btnThemeText">🌙 Escuro</span>
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
     </div>
     <div class="container">
         <header>
             <div class="header-main">
-                <h1>⏰ Pedidos Atrasados</h1>
+                <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação de atrasados">
                 <a href="relatorio_rastreio.html" class="nav-tab">← Voltar ao Painel Principal</a>
-                <span class="nav-tab active">⏰ Pedidos Atrasados ({total_atrasados})</span>
-                <a href="opcoes_frete.html" class="nav-tab">📦 Opções de Frete</a>
+                <span class="nav-tab active"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
+                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
         </header>
 

@@ -234,6 +234,10 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Log lines:** borda esquerda de 2px conforme nível (info azul-celeste, sucesso verde, erro vermelho).
 - **Traffic lights:** três pontos de 12px (vermelho, amarelo, verde) decorativos no cabeçalho.
 
+### Ícones
+- **Style:** SVG de traço fino (1.75px, cantos arredondados), cor herdada do texto (`currentColor`) e 1.1em de tamanho; nos chips de resumo, 1.6rem na cor do status.
+- **Theme button:** mostra o ícone do tema de destino (sol no escuro, lua no claro).
+
 ### Navigation (`.nav-tabs`)
 - **Style:** pílulas com borda fina. Ativa em azul sólido com texto branco e sombra azul suave.
 - **Hover:** texto e borda em azul.
@@ -250,7 +254,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Don't:
 - **Don't** usar Tinta Sutil (#64748b) para texto informativo sobre fundo branco fora dos placeholders.
 - **Don't** usar Âmbar, Verde ou Tinta Sutil para texto pequeno sem escurecer o tom ou acrescentar texto em Tinta Principal.
-- **Don't** introduzir gradientes, ilustrações ou ícones decorativos fora dos emojis de status já usados.
+- **Don't** usar emoji como ícone nem introduzir gradientes ou ilustrações decorativas. Os ícones são SVG de traço fino de 1.75px, definidos em `Arquivos/correios/icons.py` e servidos como sprite inline em cada página; novos ícones seguem o mesmo traço.
 - **Don't** criar uma segunda cor de ação; o azul é a única cor de decisão.
 - **Don't** aumentar sombras no repouso; a elevação é sempre resposta ao hover.
 

@@ -8,12 +8,12 @@ var initialRenderDone = false;
 
 // Rótulos amigáveis para exibição de filtros
 var STATUS_LABELS = {
-    'nao_enviado': '📭 Não Enviados',
-    'em_transito': '🚚 Em Trânsito',
-    'entregue': '✅ Entregues',
-    'atrasado': '⏰ Atrasados',
-    'aguardando_retirada': '🏢 Aguardando Retirada',
-    'devolvido': '↩️ Devolvidos ao Remetente',
+    'nao_enviado': 'Não Enviados',
+    'em_transito': 'Em Trânsito',
+    'entregue': 'Entregues',
+    'atrasado': 'Atrasados',
+    'aguardando_retirada': 'Aguardando Retirada',
+    'devolvido': 'Devolvidos ao Remetente',
 };
 
 function updateClearButton() {
@@ -77,7 +77,7 @@ function applyFilters() {
             noResults.id = 'noResults';
             noResults.className = 'empty-state';
             noResults.setAttribute('role', 'status');
-            noResults.innerHTML = '<div class="emoji">🔎</div><p>Nenhum pedido corresponde ao filtro ou à busca.</p>';
+            noResults.innerHTML = '<div class="emoji"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></div><p>Nenhum pedido corresponde ao filtro ou à busca.</p>';
             cards[0].parentNode.insertBefore(noResults, cards[0]);
         }
         noResults.hidden = false;

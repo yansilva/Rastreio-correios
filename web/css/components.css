@@ -835,6 +835,61 @@ tbody tr:hover {
    8. Acessibilidade: foco em cartões clicáveis e movimento reduzido
    ========================================================================== */
 
+/* Ícones SVG (sprite inline em cada página): traço fino, cor herdada do texto */
+.icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: -0.18em;
+}
+
+h1 .icon {
+    width: 0.95em;
+    height: 0.95em;
+    margin-right: 4px;
+}
+
+.dash-icon .icon {
+    width: 1.6rem;
+    height: 1.6rem;
+}
+
+.dash-icon-blue   { color: var(--color-info); }
+.dash-icon-orange { color: var(--color-warning); }
+.dash-icon-green  { color: var(--color-success); }
+.dash-icon-purple { color: var(--color-purple); }
+.dash-icon-red    { color: var(--color-danger); }
+
+.emoji .icon {
+    width: 1em;
+    height: 1em;
+    color: var(--color-text-subtle);
+}
+
+/* Botão de tema: mostra o ícone do tema de destino (sol no escuro, lua no claro) */
+.btn-theme .icon-sun { display: none; }
+[data-theme="dark"] .btn-theme .icon-sun { display: inline-block; }
+[data-theme="dark"] .btn-theme .icon-moon { display: none; }
+
+/* Durante a atualização o spinner substitui o ícone */
+.btn-action:disabled .icon-refresh { display: none; }
+
+/* Legenda dos critérios de status, visível sem precisar de hover */
+.status-legend {
+    margin: 14px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.status-legend strong {
+    color: var(--color-text-main);
+}
+
 /* Entrada suave de pedidos e do aviso vazio quando um filtro ou busca os mostra de novo */
 @keyframes cardEnter {
     from { opacity: 0; transform: translateY(4px); }

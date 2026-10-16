@@ -95,7 +95,7 @@ def montar_card_pedido(
                     <div class="order-meta">
                         <span class="badge {classe_selo}">{escape(selo)}</span>
                         {idade_html}
-                        <span class="order-tiny-status">Tiny: {escape(situacao_tiny or "—")}</span>
+                        <span class="order-tiny-status">Situação no Tiny: {escape(situacao_tiny or "—")}</span>
                     </div>
                 </div>
                 <div class="events-container">

@@ -102,7 +102,7 @@ class TestMontarCardPedido(unittest.TestCase):
         card = self._card(['<div class="event">x</div>'], idade="Último evento ontem")
         self.assertIn('class="badge badge-red">Atrasado · 4 dias', card)
         self.assertIn("Último evento ontem", card)
-        self.assertIn("Tiny: Enviado", card)
+        self.assertIn("Situação no Tiny: Enviado", card)
         self.assertIn('data-status="em_transito atrasado"', card)
 
     def test_oculto_e_escape_do_titulo(self):
@@ -117,7 +117,7 @@ class TestMontarCardPedido(unittest.TestCase):
         )
         self.assertIn('class="order-card order-hidden"', card)
         self.assertIn("&lt;b&gt;Cliente &amp; Cia&lt;/b&gt;", card)
-        self.assertIn("Tiny: —", card)
+        self.assertIn("Situação no Tiny: —", card)
 
 
 if __name__ == "__main__":
