@@ -256,4 +256,4 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ## Dark Mode
 
-O modo escuro redefine apenas as superfícies e o texto: fundo `#0b0f19`, cartões `#151c2c`, cabeçalhos `#192237`, borda `#26334d`, texto principal `#f8fafc`, texto discreto `#b6c2d2`. As cores de status mantêm o tom e usam fundos translúcidos (15% de opacidade). Azul Névoa vira `#1e293b`.
+O modo escuro redefine apenas as superfícies e o texto: fundo `#0b0f19`, cartões `#151c2c`, cabeçalhos `#192237`, borda `#26334d`, texto principal `#f8fafc`, texto discreto `#b6c2d2`. As cores de status usam fundos translúcidos (15% de opacidade) e textos mais claros para manter 4.5:1 sobre as superfícies escuras: verde `#4ade80`, âmbar `#fbbf24`, vermelho `#f87171` e laranja `#fb923c`. Console e toast ficam escuros nos dois temas, com tokens próprios (`--console-*`, `--log-*`). Azul Névoa vira `#1e293b`.

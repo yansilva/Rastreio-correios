@@ -402,7 +402,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="console-dot dot-red"></div>
                 <div class="console-dot dot-yellow"></div>
                 <div class="console-dot dot-green"></div>
-                <span style="margin-left: 10px; color: #94a3b8; font-weight: 600; font-size: 0.85rem;">Terminal de Atualização (Ao Vivo)</span>
+                <span style="margin-left: 10px; color: var(--console-muted); font-weight: 600; font-size: 0.85rem;">Terminal de Atualização (Ao Vivo)</span>
             </div>
             <div id="consoleBody" class="console-body" aria-live="polite">
                 <div class="log-line log-info">⚡ Modo Demonstração inicializado com 10 pedidos realistas.</div>

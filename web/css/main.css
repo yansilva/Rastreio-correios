@@ -41,6 +41,27 @@
     --color-purple-bg: #f3e8ff;
     --color-purple-border: #e9d5ff;
 
+    /* Urgência (tabela de atrasados): texto e fundo claro; tags usam tons sólidos fixos */
+    --color-high: #c2410c;
+    --color-high-bg: #ffedd5;
+    --urgency-tag-high: #b91c1c;
+    --urgency-tag-medium: #c2410c;
+    --urgency-tag-low: #b45309;
+
+    /* Console e toast (sempre escuros, nos dois temas) */
+    --console-bg: #0f172a;
+    --console-header: #1e293b;
+    --console-text: #f8fafc;
+    --console-muted: #94a3b8;
+    --log-info: #38bdf8;
+    --log-success-line: #22c55e;
+    --log-success-text: #4ade80;
+    --log-error-line: #ef4444;
+    --log-error-text: #f87171;
+    --dot-red: #ff5f56;
+    --dot-yellow: #ffbd2e;
+    --dot-green: #27c93f;
+
     /* Métricas & Efeitos */
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -68,6 +89,13 @@
     --color-text-subtle: #94a3b8;
     
     --color-primary-light: #1e293b;
+
+    /* Texto de status mais claro sobre superfícies escuras (≥ 4.5:1) */
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
+    --color-high: #fb923c;
+    --color-high-bg: rgba(234, 88, 12, 0.15);
     --color-success-bg: rgba(22, 163, 74, 0.15);
     --color-warning-bg: rgba(217, 119, 6, 0.15);
     --color-danger-bg: rgba(220, 38, 38, 0.15);
