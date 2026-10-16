@@ -4,8 +4,16 @@ Permite testar o painel completo (filtros, busca instantânea, Dark Mode, timeli
 e relatórios de atrasados e frete) sem requerer credenciais ativas do Tiny ERP
 ou dos Correios.
 """
+import sys
 import time
 from pathlib import Path
+
+# Garante que o diretório Arquivos/ esteja no PYTHONPATH (importável fora do script)
+_DIR_ARQUIVOS = str(Path(__file__).resolve().parent)
+if _DIR_ARQUIVOS not in sys.path:
+    sys.path.insert(0, _DIR_ARQUIVOS)
+
+from correios.cards import montar_card_pedido, prioridade, selo_status, status_tokens  # noqa: E402
 
 # Obtém a raiz do projeto
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +37,13 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     # -------------------------------------------------------------------------
     dashboard_html = """
         <div class="dashboard">
+            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado">
+                <div class="dash-icon dash-icon-red">⏰</div>
+                <div class="dash-info">
+                    <span class="dash-number dash-number-red">1</span>
+                    <span class="dash-label">Atrasados</span>
+                </div>
+            </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange">📭</div>
                 <div class="dash-info">
@@ -157,6 +172,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "cliente": "Roberto Albuquerque",
             "situacao": "Atrasado",
             "status": "atrasado",
+            "dias_atraso": 6,
             "eventos": [
                 {
                     "data": "05/09/2026 11:00",
@@ -312,18 +328,28 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
             """)
 
-        card = f"""
-        <div class="order-card" data-status="{o['status']}">
-            <div class="order-header">
-                <div class="order-title">Pedido Tiny #{o['pedido']} — {o['cliente']} ({o['rastreio']})</div>
-                <div class="order-tiny-status">Status Tiny: {o['situacao']}</div>
-            </div>
-            <div class="events-container">
-                {''.join(events_html)}
-            </div>
-        </div>
-        """
-        orders_cards.append(card)
+        # Os status "atrasado" e "aguardando_retirada" da demonstração são derivados de "em_transito"
+        categoria = "em_transito" if o["status"] in ("atrasado", "aguardando_retirada") else o["status"]
+        retirada = o["status"] == "aguardando_retirada"
+        atrasado = o["status"] == "atrasado"
+        selo, classe_selo = selo_status(
+            categoria, retirada=retirada, atrasado=atrasado, dias_atraso=o.get("dias_atraso", 0)
+        )
+
+        card = montar_card_pedido(
+            titulo=f"Pedido Tiny #{o['pedido']} — {o['cliente']} ({o['rastreio']})",
+            tokens=status_tokens(categoria, retirada=retirada, atrasado=atrasado),
+            selo=selo,
+            classe_selo=classe_selo,
+            situacao_tiny=o["situacao"],
+            eventos_html=events_html,
+        )
+        ordem = prioridade(categoria, retirada=retirada, atrasado=atrasado)
+        orders_cards.append((ordem, -o.get("dias_atraso", 0), card))
+
+    # Pedidos que pedem ação primeiro; entre atrasados, os mais antigos antes
+    orders_cards.sort(key=lambda item: (item[0], item[1]))
+    orders_cards = [card for _, _, card in orders_cards]
 
     atrasados_link_html = (
         '<a href="pedidos_atrasados.html" class="nav-tab atrasados-tab">'

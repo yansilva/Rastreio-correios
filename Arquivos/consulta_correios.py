@@ -16,6 +16,13 @@ from correios import (
     CorreiosConfig,
     TrackingService,
 )
+from correios.cards import (
+    montar_card_pedido,
+    prioridade,
+    selo_status,
+    status_tokens,
+    texto_idade,
+)
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -277,27 +284,50 @@ def processar():
                 )
 
             # Visibilidade do card conforme regras de negócio
-            hidden_class = "order-hidden" if TrackingService.deve_ocultar_card(obj_classificado) else ""
+            oculto = TrackingService.deve_ocultar_card(obj_classificado)
 
-            card = f"""
-            <div class="order-card {hidden_class}" data-status="{status_category}">
-                <div class="order-header">
-                    <div class="order-title">Pedido Tiny #{pedido} — {rastreio}</div>
-                    <div class="order-tiny-status">Status Tiny: {situacao_tiny}</div>
-                </div>
-                <div class="events-container">
-                    {"".join(events_html)}
-                </div>
-            </div>
-            """
-            orders_html.append(card)
+            esta_atrasado = atraso is not None
+            dias_atraso = atraso.dias_transito if atraso else 0
+            selo, classe_selo = selo_status(
+                status_category,
+                retirada=obj_classificado.is_retirada,
+                atrasado=esta_atrasado,
+                dias_atraso=dias_atraso,
+            )
+            ultimo_evento = obj_classificado.eventos[0].dt_hr_criado if obj_classificado.eventos else ""
+
+            card = montar_card_pedido(
+                titulo=f"Pedido Tiny #{pedido} — {rastreio}",
+                tokens=status_tokens(
+                    status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
+                ),
+                selo=selo,
+                classe_selo=classe_selo,
+                situacao_tiny=situacao_tiny,
+                eventos_html=events_html,
+                idade=texto_idade(ultimo_evento),
+                oculto=oculto,
+            )
+            ordem = prioridade(status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado)
+            orders_html.append((ordem, -dias_atraso, card))
             time.sleep(0.2)
+
+        # Pedidos que pedem ação primeiro; entre atrasados, os mais antigos antes
+        orders_html.sort(key=lambda item: (item[0], item[1]))
+        orders_html = [card for _, _, card in orders_html]
 
         print(f"\nRelatório gerado. Entregues: {entregues_count} | Devolvidos: {devolvidos_count}")
 
         # Monta o dashboard de resumo
         dashboard_html = f"""
         <div class="dashboard">
+            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado">
+                <div class="dash-icon dash-icon-red">⏰</div>
+                <div class="dash-info">
+                    <span class="dash-number dash-number-red">{len(atrasados_data)}</span>
+                    <span class="dash-label">Atrasados</span>
+                </div>
+            </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange">📭</div>
                 <div class="dash-info">

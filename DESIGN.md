@@ -216,8 +216,8 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Mobile:** a faixa rola na horizontal sem quebrar linha.
 
 ### Cards / Containers
-- **Summary card (`.dash-card`, `.summary-card`):** cantos de 16px, fundo branco, borda fina, 18px × 20px. Hover sobe 2px. Estado ativo usa contorno azul de 2px e fundo Azul Névoa.
-- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com título e status à direita.
+- **Summary card (`.dash-card`, `.summary-card`):** cantos de 16px, fundo branco, borda fina, 18px × 20px. Hover sobe 2px. Estado ativo usa contorno azul de 2px e fundo Azul Névoa. O cartão "Atrasados" (`.dash-card-urgent`) vem primeiro, com borda de status, e ocupa a linha inteira no celular.
+- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com o título à esquerda e, à direita, o selo do status atual (`.badge`), há quanto tempo foi o último evento e o status do Tiny. Só o último evento fica visível; o restante abre em `<details class="order-history">` ("Ver histórico completo"). A lista é ordenada por urgência: aguardando retirada, atrasados (mais antigos antes), devolvidos, em trânsito, não enviados e entregues.
 - **Event timeline:** linha vertical de 3px em Borda Fina, bolinha de 12px no início de cada evento. Eventos críticos ganham a cor do status na barra e na bolinha, com fundo levemente tingido.
 
 ### Inputs / Fields

@@ -36,7 +36,8 @@ function applyFilters() {
         var cardText = card.textContent.toLowerCase();
 
         // Condição 1: Filtro de status
-        var matchesStatus = !activeStatusFilter || cardStatus === activeStatusFilter;
+        // data-status aceita várias categorias separadas por espaço (ex.: "em_transito atrasado")
+        var matchesStatus = !activeStatusFilter || cardStatus.split(/\s+/).indexOf(activeStatusFilter) !== -1;
 
         // Condição 2: Busca por texto (número, cliente, código, cidade)
         var matchesSearch = !term || cardText.includes(term);

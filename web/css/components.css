@@ -52,6 +52,7 @@
 .dash-icon-orange { background: var(--color-warning-bg); }
 .dash-icon-green  { background: var(--color-success-bg); }
 .dash-icon-purple { background: var(--color-purple-bg); }
+.dash-icon-red    { background: var(--color-danger-bg); }
 
 .dash-info {
     display: flex;
@@ -68,6 +69,12 @@
 .dash-number-orange { color: var(--color-warning); }
 .dash-number-green  { color: var(--color-success); }
 .dash-number-purple { color: var(--color-purple); }
+.dash-number-red    { color: var(--color-danger); }
+
+/* Atrasados é o número de que o operador mais precisa: ganha borda de status */
+.dash-card-urgent {
+    border-color: var(--color-danger-border);
+}
 
 .dash-label {
     font-size: 0.78rem;
@@ -268,9 +275,50 @@
     color: var(--color-text-main);
 }
 
+.order-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px 12px;
+    min-width: 0;
+}
+
+.order-age {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
 .order-tiny-status {
     font-size: 0.9rem;
     color: var(--color-text-muted);
+}
+
+/* Histórico recolhido: o último evento fica visível, o restante abre sob demanda */
+.order-history {
+    margin-top: 6px;
+}
+
+.order-history > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 4px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-link);
+    cursor: pointer;
+}
+
+.order-history > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.order-history[open] > summary {
+    margin-bottom: 6px;
 }
 
 .events-container {
@@ -356,6 +404,12 @@
     background: var(--color-purple-bg);
     color: var(--color-purple);
     border: 1px solid var(--color-purple-border);
+}
+
+.badge-blue {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border: 1px solid var(--color-info-border);
 }
 
 /* Status Highlights */
@@ -723,6 +777,16 @@ tbody tr:hover {
         padding: 14px 16px;
         flex-direction: column;
         align-items: flex-start;
+        gap: 8px;
+    }
+
+    .order-meta {
+        justify-content: flex-start;
+    }
+
+    /* Atrasados ocupa a linha inteira no celular, como cartão principal */
+    .dash-card-urgent {
+        grid-column: 1 / -1;
     }
 
     .floating-actions {
@@ -741,9 +805,15 @@ tbody tr:hover {
         flex-shrink: 0;
     }
 
+    /* nowrap: em coluna com wrap, a linha cresce até o conteúdo mais largo (as pílulas) e estoura a página */
     .filters-row {
         flex-direction: column;
+        flex-wrap: nowrap;
         align-items: stretch;
+    }
+
+    .filter-pills {
+        min-width: 0;
     }
 
     .filter-count {
