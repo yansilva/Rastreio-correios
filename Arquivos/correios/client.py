@@ -1,6 +1,8 @@
 """Cliente HTTP para comunicação exclusiva com as APIs dos Correios."""
 import base64
 import logging
+import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
@@ -22,6 +24,26 @@ class CorreiosClient:
     def __init__(self, config: CorreiosConfig | None = None):
         self.config = config or CorreiosConfig()
         self._token: str | None = None
+
+    def _com_tentativas(self, chamada: Callable[[], requests.Response], descricao: str) -> requests.Response:
+        """Repete a chamada quando a conexão cai (reset, abortada); outros erros sobem na hora."""
+        tentativas = max(1, self.config.tentativas_conexao)
+        for numero in range(1, tentativas + 1):
+            try:
+                return chamada()
+            except requests.exceptions.ConnectionError:
+                if numero == tentativas:
+                    raise
+                espera = self.config.espera_entre_tentativas * numero
+                logger.warning(
+                    "Conexão com os Correios interrompida (%s). Nova tentativa %d/%d em %.0fs.",
+                    descricao,
+                    numero + 1,
+                    tentativas,
+                    espera,
+                )
+                time.sleep(espera)
+        raise AssertionError("inalcançável")  # pragma: no cover
 
     def gerar_token(self, forcar_renovacao: bool = False) -> str:
         """
@@ -49,11 +71,14 @@ class CorreiosClient:
         payload = {"numero": self.config.contrato}
 
         try:
-            response = requests.post(
-                self.config.url_token,
-                headers=headers,
-                json=payload,
-                timeout=self.config.timeout_segundos,
+            response = self._com_tentativas(
+                lambda: requests.post(
+                    self.config.url_token,
+                    headers=headers,
+                    json=payload,
+                    timeout=self.config.timeout_segundos,
+                ),
+                "autenticação",
             )
         except requests.exceptions.Timeout as exc:
             logger.error("Tempo limite excedido na autenticação dos Correios (%ss)", self.config.timeout_segundos)
@@ -63,7 +88,9 @@ class CorreiosClient:
         except requests.exceptions.RequestException as exc:
             # nosemgrep: python-logger-credential-disclosure, rules.python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
             logger.error("Falha de rede ao conectar com o serviço de autenticação dos Correios")  # nosemgrep
-            raise CorreiosConnectionError(f"Falha de conexão com os Correios: {exc}") from exc
+            raise CorreiosConnectionError(
+                f"Falha de conexão com os Correios após {max(1, self.config.tentativas_conexao)} tentativas: {exc}"
+            ) from exc
 
         if response.status_code == 201:
             try:
@@ -107,10 +134,13 @@ class CorreiosClient:
         logger.debug("Consultando rastreamento do objeto %s", objeto)
 
         try:
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=self.config.timeout_segundos,
+            response = self._com_tentativas(
+                lambda: requests.get(
+                    url,
+                    headers=headers,
+                    timeout=self.config.timeout_segundos,
+                ),
+                f"rastreio de {objeto}",
             )
         except requests.exceptions.Timeout as exc:
             logger.error("Tempo limite excedido ao rastrear objeto %s", objeto)

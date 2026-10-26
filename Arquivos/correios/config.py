@@ -21,6 +21,9 @@ class CorreiosConfig:
     url_rastreio: str = "https://api.correios.com.br/srorastro/v1/objetos/{objeto}?resultado=T"
     timeout_segundos: float = 30.0
     dias_limite_atraso: int = 3
+    # Quedas de conexão (como o reset 10054) costumam ser passageiras: tenta de novo antes de desistir
+    tentativas_conexao: int = 3
+    espera_entre_tentativas: float = 2.0
 
     def __post_init__(self):
         if not self.id_correios:

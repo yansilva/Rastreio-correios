@@ -174,9 +174,10 @@ class TestCorreiosClient(unittest.TestCase):
         with self.assertRaises(CorreiosTimeoutError):
             client.consultar_objeto("AA123456789BR")
 
+    @patch("correios.client.time.sleep")
     @patch("requests.get")
-    def test_consultar_objeto_erro_conexao(self, mock_get):
-        """Valida que erro de rede dispara CorreiosConnectionError."""
+    def test_consultar_objeto_erro_conexao(self, mock_get, mock_sleep):
+        """Valida que erro de rede persistente dispara CorreiosConnectionError após as tentativas."""
         mock_get.side_effect = requests.exceptions.ConnectionError("Network down")
 
         config = CorreiosConfig(id_correios="123", contrato="456", codigo_acesso="xyz")
@@ -185,6 +186,45 @@ class TestCorreiosClient(unittest.TestCase):
 
         with self.assertRaises(CorreiosConnectionError):
             client.consultar_objeto("AA123456789BR")
+        self.assertEqual(mock_get.call_count, config.tentativas_conexao)
+        self.assertEqual(mock_sleep.call_count, config.tentativas_conexao - 1)
+
+    @patch("correios.client.time.sleep")
+    @patch("requests.post")
+    def test_gerar_token_tenta_de_novo_apos_reset_de_conexao(self, mock_post, mock_sleep):
+        """Um reset de conexão (10054) passageiro não deve derrubar a autenticação."""
+        resposta = MagicMock()
+        resposta.status_code = 201
+        resposta.json.return_value = {"token": "token_ok"}
+        reset = requests.exceptions.ConnectionError("('Connection aborted.', ConnectionResetError(10054))")
+        mock_post.side_effect = [reset, reset, resposta]
+
+        client = CorreiosClient(config=CorreiosConfig(id_correios="123", contrato="456", codigo_acesso="xyz"))
+        self.assertEqual(client.gerar_token(), "token_ok")
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual([c.args[0] for c in mock_sleep.call_args_list], [2.0, 4.0])
+
+    @patch("correios.client.time.sleep")
+    @patch("requests.post")
+    def test_gerar_token_desiste_depois_das_tentativas_com_mensagem_clara(self, mock_post, mock_sleep):
+        mock_post.side_effect = requests.exceptions.ConnectionError("Connection aborted")
+        client = CorreiosClient(config=CorreiosConfig(id_correios="123", contrato="456", codigo_acesso="xyz"))
+        with self.assertRaises(CorreiosConnectionError) as ctx:
+            client.gerar_token()
+        self.assertIn("após 3 tentativas", str(ctx.exception))
+        self.assertEqual(mock_post.call_count, 3)
+
+    @patch("correios.client.time.sleep")
+    @patch("requests.get")
+    def test_timeout_nao_e_repetido(self, mock_get, mock_sleep):
+        """Só quedas de conexão são repetidas; um timeout de leitura sobe direto."""
+        mock_get.side_effect = requests.exceptions.ReadTimeout("lento")
+        client = CorreiosClient(config=CorreiosConfig(id_correios="123", contrato="456", codigo_acesso="xyz"))
+        client._token = "fake_token"
+        with self.assertRaises(CorreiosTimeoutError):
+            client.consultar_objeto("AA123456789BR")
+        self.assertEqual(mock_get.call_count, 1)
+        mock_sleep.assert_not_called()
 
 
 class TestTrackingService(unittest.TestCase):
