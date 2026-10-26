@@ -228,7 +228,7 @@
 
 .filter-pill:hover {
     border-color: var(--color-primary);
-    color: var(--color-primary);
+    color: var(--color-link);
     background: var(--color-primary-light);
 }
 
@@ -572,8 +572,9 @@
 }
 
 .btn-action:disabled {
-    background: var(--color-text-subtle);
-    cursor: not-allowed;
+    /* Slate fixo nos dois temas: o texto "Consultando..." continua legível (branco sobre #475569 ≈ 7,6:1) */
+    background: #475569;
+    cursor: progress;
     transform: none;
     box-shadow: none;
 }
@@ -597,7 +598,7 @@
 .btn-theme:hover {
     background: var(--color-surface-hover);
     border-color: var(--color-primary);
-    color: var(--color-primary);
+    color: var(--color-link);
 }
 
 .btn-theme:focus-visible {

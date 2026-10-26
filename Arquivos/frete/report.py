@@ -588,121 +588,186 @@ class FreteReportGenerator:
         return caminho_html
 
     def _gerar_alert_js(self, pasta_projeto: str, pedidos_com_prazo_longo: list[str]) -> None:
-        """Gera o arquivo alert_frete.js com alertas de prazo longo."""
-        js_content = f"""(function() {{
-    const pedidosComPrazo = {str(pedidos_com_prazo_longo)};
-    if (pedidosComPrazo.length > 0) {{
-        const cacheKey = "alerta_prazo_v2_" + pedidosComPrazo.join("_");
-        if (!localStorage.getItem(cacheKey)) {{
-            
-            // 1. Mostrar o Modal Visual no Centro da Tela
-            const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100vw';
-            overlay.style.height = '100vh';
-            overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            overlay.style.display = 'flex';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.zIndex = '99999';
-            overlay.style.backdropFilter = 'blur(4px)';
+        """Gera o arquivo alert_frete.js com alertas de prazo longo.
 
-            const modal = document.createElement('div');
-            modal.style.backgroundColor = 'var(--card-bg, #ffffff)';
-            modal.style.padding = '30px';
-            modal.style.borderRadius = '16px';
-            modal.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            modal.style.maxWidth = '400px';
-            modal.style.textAlign = 'center';
-            modal.style.color = 'var(--text-main, #1e293b)';
-            modal.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-
-            const icon = document.createElement('div');
-            icon.innerHTML = '&#9888;&#65039;'; // Unicode HTML Entity for Warning sign to avoid encoding bugs
-            icon.style.fontSize = '3rem';
-            icon.style.marginBottom = '15px';
-
-            const title = document.createElement('h2');
-            title.innerText = 'Atencao aos Prazos';
-            title.style.margin = '0 0 10px 0';
-            title.style.fontSize = '1.4rem';
-
-            const text = document.createElement('p');
-            text.innerText = "Os pedidos " + pedidosComPrazo.join(", ") + " possuem prazos de entrega superiores a 3 dias uteis.";
-            text.style.margin = '0 0 20px 0';
-            text.style.lineHeight = '1.5';
-            text.style.color = 'var(--text-sub, #64748b)';
-
-            const btnWrap = document.createElement('div');
-            btnWrap.style.display = 'flex';
-            btnWrap.style.gap = '10px';
-            btnWrap.style.justifyContent = 'center';
-
-            const btnFechar = document.createElement('button');
-            btnFechar.innerText = 'Fechar';
-            btnFechar.style.padding = '10px 20px';
-            btnFechar.style.border = '1px solid var(--border, #e2e8f0)';
-            btnFechar.style.borderRadius = '8px';
-            btnFechar.style.backgroundColor = 'transparent';
-            btnFechar.style.color = 'var(--text-main, #1e293b)';
-            btnFechar.style.cursor = 'pointer';
-            btnFechar.onclick = function() {{
-                document.body.removeChild(overlay);
-            }};
-
-            const btnIr = document.createElement('button');
-            btnIr.innerText = 'Ver Opcoes de Frete';
-            btnIr.style.padding = '10px 20px';
-            btnIr.style.border = 'none';
-            btnIr.style.borderRadius = '8px';
-            btnIr.style.backgroundColor = '#ea580c';
-            btnIr.style.color = 'white';
-            btnIr.style.fontWeight = 'bold';
-            btnIr.style.cursor = 'pointer';
-            btnIr.onclick = function() {{
-                window.location.href = 'opcoes_frete.html';
-            }};
-
-            btnWrap.appendChild(btnFechar);
-            btnWrap.appendChild(btnIr);
-
-            modal.appendChild(icon);
-            modal.appendChild(title);
-            modal.appendChild(text);
-            modal.appendChild(btnWrap);
-            overlay.appendChild(modal);
-
-            document.body.appendChild(overlay);
-
-            // 2. Mostrar a Notificacao do Windows / Navegador
-            if ("Notification" in window) {{
-                function showNotif() {{
-                    let n = new Notification("Alerta de Frete: Prazo Longo (>3 dias)", {{
-                        body: "Os pedidos " + pedidosComPrazo.join(", ") + " possuem prazos superiores a 3 dias uteis.",
-                        icon: "https://cdn-icons-png.flaticon.com/512/1055/1055065.png"
-                    }});
-                    n.onclick = function() {{
-                        window.location.href = "opcoes_frete.html";
-                    }};
-                }}
-                
-                if (Notification.permission === "granted") {{
-                    showNotif();
-                }} else if (Notification.permission !== "denied") {{
-                    Notification.requestPermission().then(function(p) {{
-                        if (p === "granted") showNotif();
-                    }});
-                }}
-            }}
-
-            // Registrar que ja avisamos sobre esse grupo de pedidos
-            localStorage.setItem(cacheKey, "true");
-        }}
-    }}
-}})();"""
+        O modal segue o DESIGN.md (tokens, ícone SVG de traço fino, tema claro/escuro)
+        e é injetado por JS em qualquer página, por isso carrega seus próprios estilos.
+        """
+        js_content = _ALERT_JS_TEMPLATE.replace("__PEDIDOS__", str(pedidos_com_prazo_longo))
 
         caminho_js = os.path.join(pasta_projeto, "alert_frete.js")
         with open(caminho_js, mode='w', encoding='utf-8') as f:
             f.write(js_content)
+
+
+# Modal de aviso de prazo longo (alert_frete.js). Texto bruto: sem f-string, o marcador
+# __PEDIDOS__ é trocado pela lista de pedidos. Cores = tokens do DESIGN.md, redefinidos
+# localmente porque o script roda em qualquer página.
+_ALERT_JS_TEMPLATE = r"""(function() {
+    const pedidosComPrazo = __PEDIDOS__;
+    if (pedidosComPrazo.length === 0) { return; }
+
+    const cacheKey = "alerta_prazo_v2_" + pedidosComPrazo.join("_");
+    let jaAvisado = false;
+    try { jaAvisado = !!localStorage.getItem(cacheKey); } catch (e) { jaAvisado = false; }
+    if (jaAvisado) { return; }
+
+    const mensagem = "Os pedidos " + pedidosComPrazo.join(", ") +
+        " possuem prazos de entrega superiores a 3 dias úteis.";
+
+    // 1. Modal visual (tema atual da pagina, com prefers-color-scheme como reserva)
+    let temaEscuro = false;
+    try {
+        const tema = document.documentElement.getAttribute('data-theme');
+        temaEscuro = tema ? tema === 'dark'
+            : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    } catch (e) { temaEscuro = false; }
+
+    const estilo = document.createElement('style');
+    estilo.textContent = [
+        '.af-overlay{--af-surface:#ffffff;--af-border:#64748b;--af-text:#0f172a;--af-muted:#475569;',
+        '--af-warn:#92400e;--af-warn-bg:#fef3c7;--af-primary:#2563eb;--af-primary-hover:#1d4ed8;',
+        '--af-on-primary:#ffffff;--af-hover:#f1f5f9;',
+        'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;',
+        'padding:16px;background:rgba(15,23,42,0.55);backdrop-filter:blur(4px);',
+        'font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}',
+        '.af-overlay.af-dark{--af-surface:#151c2c;--af-border:#64748b;--af-text:#f8fafc;--af-muted:#b6c2d2;',
+        '--af-warn:#fbbf24;--af-warn-bg:rgba(251,191,36,0.15);--af-hover:#192237;}',
+        '.af-modal{box-sizing:border-box;width:100%;max-width:420px;max-height:100%;overflow:auto;',
+        'padding:28px 24px 24px;text-align:center;background:var(--af-surface);color:var(--af-text);',
+        'border:1px solid var(--af-border);border-radius:16px;',
+        'box-shadow:0 10px 15px -3px rgba(0,0,0,0.3),0 4px 6px -4px rgba(0,0,0,0.2);}',
+        '.af-icon{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;',
+        'margin-bottom:14px;border-radius:9999px;background:var(--af-warn-bg);color:var(--af-warn);}',
+        '.af-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.75;',
+        'stroke-linecap:round;stroke-linejoin:round;}',
+        '.af-title{margin:0 0 8px;font-size:1.25rem;font-weight:700;line-height:1.6;color:var(--af-text);}',
+        '.af-text{margin:0 0 22px;font-size:1rem;line-height:1.6;color:var(--af-muted);}',
+        '.af-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}',
+        '.af-btn{box-sizing:border-box;min-height:44px;min-width:44px;padding:10px 22px;',
+        'border-radius:9999px;font:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;',
+        'border:1px solid var(--af-border);background:transparent;color:var(--af-text);}',
+        '.af-btn:hover{background:var(--af-hover);}',
+        '.af-btn-primary{border-color:var(--af-primary);background:var(--af-primary);color:var(--af-on-primary);}',
+        '.af-btn-primary:hover{background:var(--af-primary-hover);border-color:var(--af-primary-hover);}',
+        '.af-btn:focus-visible{outline:2px solid var(--af-primary);outline-offset:3px;}',
+        '.af-dark .af-btn:focus-visible{outline-color:#93c5fd;}',
+        '@media (prefers-reduced-motion:no-preference){',
+        '.af-overlay{animation:af-fade 0.18s ease-out;}',
+        '.af-modal{animation:af-pop 0.18s ease-out;}}',
+        '@keyframes af-fade{from{opacity:0}to{opacity:1}}',
+        '@keyframes af-pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}'
+    ].join('');
+    document.head.appendChild(estilo);
+
+    const elementoAnterior = document.activeElement;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'af-overlay' + (temaEscuro ? ' af-dark' : '');
+
+    const modal = document.createElement('div');
+    modal.className = 'af-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'af-titulo');
+    modal.setAttribute('aria-describedby', 'af-texto');
+
+    const icon = document.createElement('div');
+    icon.className = 'af-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">' +
+        '<path d="M12 3.5L2.5 20h19L12 3.5z"/><path d="M12 10v4M12 17h.01"/></svg>';
+
+    const title = document.createElement('h2');
+    title.id = 'af-titulo';
+    title.className = 'af-title';
+    title.textContent = 'Atenção aos prazos';
+
+    const text = document.createElement('p');
+    text.id = 'af-texto';
+    text.className = 'af-text';
+    text.textContent = mensagem;
+
+    const btnWrap = document.createElement('div');
+    btnWrap.className = 'af-actions';
+
+    const btnFechar = document.createElement('button');
+    btnFechar.type = 'button';
+    btnFechar.className = 'af-btn';
+    btnFechar.textContent = 'Fechar';
+
+    const btnIr = document.createElement('button');
+    btnIr.type = 'button';
+    btnIr.className = 'af-btn af-btn-primary';
+    btnIr.textContent = 'Ver opções de frete';
+
+    function fechar() {
+        document.removeEventListener('keydown', aoTeclar, true);
+        if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
+        if (estilo.parentNode) { estilo.parentNode.removeChild(estilo); }
+        if (elementoAnterior && typeof elementoAnterior.focus === 'function' &&
+            document.contains(elementoAnterior)) {
+            elementoAnterior.focus();
+        }
+    }
+
+    function aoTeclar(ev) {
+        if (ev.key === 'Escape') {
+            ev.preventDefault();
+            fechar();
+        } else if (ev.key === 'Tab') {
+            // mantem o foco dentro do dialogo
+            const alvos = [btnFechar, btnIr];
+            const i = alvos.indexOf(document.activeElement);
+            ev.preventDefault();
+            if (ev.shiftKey) {
+                alvos[i <= 0 ? alvos.length - 1 : i - 1].focus();
+            } else {
+                alvos[i === -1 || i === alvos.length - 1 ? 0 : i + 1].focus();
+            }
+        }
+    }
+
+    btnFechar.addEventListener('click', fechar);
+    btnIr.addEventListener('click', function() {
+        window.location.href = 'opcoes_frete.html';
+    });
+
+    btnWrap.appendChild(btnFechar);
+    btnWrap.appendChild(btnIr);
+    modal.appendChild(icon);
+    modal.appendChild(title);
+    modal.appendChild(text);
+    modal.appendChild(btnWrap);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown', aoTeclar, true);
+    btnFechar.focus();
+
+    // 2. Mostrar a Notificacao do Windows / Navegador
+    if ("Notification" in window) {
+        function showNotif() {
+            let n = new Notification("Alerta de Frete: Prazo Longo (>3 dias)", {
+                body: mensagem,
+                icon: "https://cdn-icons-png.flaticon.com/512/1055/1055065.png"
+            });
+            n.onclick = function() {
+                window.location.href = "opcoes_frete.html";
+            };
+        }
+
+        try {
+            if (Notification.permission === "granted") {
+                showNotif();
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(function(p) {
+                    if (p === "granted") showNotif();
+                });
+            }
+        } catch (e) { /* notificacao indisponivel */ }
+    }
+
+    // Registrar que ja avisamos sobre esse grupo de pedidos
+    try { localStorage.setItem(cacheKey, "true"); } catch (e) { /* sem persistencia */ }
+})();
+"""
