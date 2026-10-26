@@ -178,9 +178,35 @@ class TestRegerarSemRede(unittest.TestCase):
             self.assertIsNot(resultado, False)
             html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
 
+        # Sem pedido atrasado neste cenário, a tabela de atrasados não tem a coluna Cliente
         # Com cliente: "#7001 — Maria ... (rastreio)", com o HTML do nome escapado; sem cliente: só o rastreio
         self.assertIn("Pedido Tiny #7001 — Maria &lt;b&gt;Souza&lt;/b&gt; (AE000000001BR)", html)
         self.assertIn("Pedido Tiny #7002 — AE000000002BR", html)
+
+    def test_tabela_de_atrasados_mostra_cliente_so_quando_o_csv_traz(self):
+        agora = datetime.now()
+        postado = (agora - timedelta(days=6)).replace(microsecond=0).isoformat()
+        eventos = {"AE000000009BR": {"eventos": [{"dtHrCriado": postado, "descricao": "Objeto postado"}]}}
+
+        def gerar(csv_texto):
+            with tempfile.TemporaryDirectory() as pasta:
+                arquivos = os.path.join(pasta, "Arquivos")
+                os.makedirs(arquivos)
+                Path(arquivos, "rastreios_tiny.csv").write_text(csv_texto, encoding="utf-8")
+                salvar_cache(os.path.join(arquivos, "rastreios_cache.json"), eventos, agora)
+                with patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")), patch(
+                    "sys.stdout", new_callable=io.StringIO
+                ):
+                    consulta_correios.processar(usar_cache=True)
+                return Path(pasta, "pedidos_atrasados.html").read_text(encoding="utf-8")
+
+        com = gerar("Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente\n9001,Enviado,AE000000009BR,Ana <i>Lima</i>\n")
+        self.assertIn("<th>Cliente</th>", com)
+        self.assertIn('data-label="Cliente">Ana &lt;i&gt;Lima&lt;/i&gt;</td>', com)
+
+        sem = gerar("Número do Pedido no Tiny,Situação,Código de Rastreio\n9001,Enviado,AE000000009BR\n")
+        self.assertNotIn("<th>Cliente</th>", sem)
+        self.assertIn('data-label="Pedido"', sem)
 
     def test_sem_cache_devolve_false(self):
         with tempfile.TemporaryDirectory() as pasta:

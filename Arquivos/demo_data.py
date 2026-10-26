@@ -426,8 +426,10 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
-            <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
-            <div class="list-tools">
+            <div class="list-meta">
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
+                <details class="options-menu"><summary>Opções</summary><div class="options-panel">
+                <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
                     <option value="urgencia">Urgência</option>
@@ -436,6 +438,8 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <option value="pedido">Número do pedido</option>
                 </select>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+            </div>
+                </div></details>
             </div>
         </div>
 

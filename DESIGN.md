@@ -32,6 +32,9 @@ colors:
   console-bg: "#0f172a"
   console-header: "#1e293b"
   console-text: "#f8fafc"
+  shadow-soft: "rgba(0, 0, 0, 0.1)"
+  shadow-deep: "rgba(0, 0, 0, 0.3)"
+  warning-tint: "rgba(217, 119, 6, 0.07)"
 typography:
   body:
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
@@ -40,12 +43,12 @@ typography:
     lineHeight: 1.6
   title:
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "1.2rem"
+    fontSize: "1.25rem"
     fontWeight: 700
     lineHeight: 1.6
   label:
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "0.78rem"
+    fontSize: "0.8125rem"
     fontWeight: 600
     letterSpacing: "0.05em"
   display:
@@ -54,10 +57,27 @@ typography:
     fontWeight: 800
     lineHeight: 1.6
     letterSpacing: "-0.025em"
+  number:
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "1.75rem"
+    fontWeight: 800
+    lineHeight: 1.1
+  secondary:
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 600
+    lineHeight: 1.6
+  badge:
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 700
+    letterSpacing: "0.05em"
 rounded:
   sm: "6px"
   md: "10px"
   lg: "16px"
+  card: "12px"
+  row: "8px"
   full: "9999px"
 components:
   button-primary:
@@ -151,6 +171,8 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 
 **The Contrast Floor Rule.** Texto em qualquer cor de status precisa de 4.5:1 sobre o fundo onde aparece. Os tons de texto (Verde, Âmbar, Vermelho e Tinta Discreta) foram escurecidos para atingir esse mínimo; ícones e bordas podem usar os tons mais claros.
 
+**The Control Edge Rule.** Campos e botões cujo contorno é o único limite visível usam `--color-border-strong` (#64748b), com pelo menos 3:1 contra o fundo nos dois temas (WCAG 1.4.11). A borda fina `--color-border` fica para cartões e divisórias decorativas. O texto dos selos usa os tokens `--color-*-text`: tom mais escuro no tema claro e mais claro no escuro, sempre com 5,7:1 ou mais sobre o fundo do selo.
+
 ## Typography
 
 **Body Font:** Inter, com pilha de fallback do sistema (-apple-system, Segoe UI, Roboto, Arial).
@@ -162,14 +184,18 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 Observação: `web/css/main.css` declara Inter sem carregá-la; o navegador usa o fallback do sistema quando Inter não está instalada.
 
 ### Hierarchy
+Rampa de sete tamanhos; todo `font-size` do CSS cai num deles.
 - **Display** (800, 2.25rem / 1.6, -0.025em): título do painel, apenas uma vez por página.
-- **Headline / Number** (800, 1.75rem / 1.1): números dos cartões de resumo.
-- **Title** (700, 1.2rem / 1.6): nome do pedido no cabeçalho de cada cartão.
+- **Number** (800, 1.75rem / 1.1): números dos cartões de resumo.
+- **Title** (700, 1.25rem / 1.6): nome do pedido no cabeçalho de cada cartão.
 - **Body** (400, 1rem / 1.6): descrições de evento. Manter linhas curtas nos cartões.
-- **Label** (600–700, 0.78rem, 0.05em, caixa-alta): rótulos de cartões, cabeçalhos de tabela e badges.
-
+- **Secondary** (400–600, 0.875rem): metadados, situação no Tiny, botões de texto, campos.
+- **Label** (600–700, 0.8125rem): rótulos de cartões, datas, legenda, contadores e cabeçalhos de tabela.
+- **Badge** (700, 0.75rem, 0.05em, caixa-alta): selos e tags de urgência; é o menor tamanho permitido.
 ### Named Rules
 **The Number First Rule.** Em cada cartão de resumo, o número vem antes do rótulo. O rótulo é uma legenda, não o foco.
+
+**The Ramp Rule.** Nenhum texto fica abaixo de 12px, e todo tamanho novo precisa cair num dos sete degraus acima. Valores soltos (como 0.84rem ao lado de 0.85rem) foram eliminados.
 
 ## Layout
 

@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from html import escape
 
 from dotenv import load_dotenv
 
@@ -215,8 +216,10 @@ def processar(usar_cache=False):
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
-            <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
-            <div class="list-tools">
+            <div class="list-meta">
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
+                <details class="options-menu"><summary>Opções</summary><div class="options-panel">
+                <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
                     <option value="urgencia">Urgência</option>
@@ -226,6 +229,8 @@ def processar(usar_cache=False):
                 </select>
                 <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os dados já consultados às {hora_dados}, sem chamar o Tiny nem os Correios">Recarregar dados salvos de {hora_dados}</button>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+            </div>
+                </div></details>
             </div>
         </div>
 
@@ -318,6 +323,7 @@ def processar(usar_cache=False):
                 atrasados_data.append(
                     {
                         "pedido": atraso.pedido,
+                        "cliente": cliente,
                         "rastreio": atraso.rastreio,
                         "situacao_tiny": atraso.situacao_tiny,
                         "data_postagem": atraso.data_postagem,
@@ -482,6 +488,9 @@ def processar(usar_cache=False):
         altos = len([x for x in atrasados_data if 5 <= x["dias_transito"] < 7])
         atencao = len([x for x in atrasados_data if x["dias_transito"] < 5])
 
+        # A coluna Cliente só aparece quando o CSV do Tiny trouxe o nome (campo novo, vazio em CSVs antigos)
+        tem_cliente = any(x.get("cliente") for x in atrasados_data)
+        th_cliente = "<th>Cliente</th>" if tem_cliente else ""
         rows_html = ""
         for item in atrasados_data:
             dias = item["dias_transito"]
@@ -496,10 +505,12 @@ def processar(usar_cache=False):
                 urgencia_label = "ATENÇÃO"
 
             status_label = {"em_transito": "Em Trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
+            td_cliente = f'<td data-label="Cliente">{escape(item.get("cliente", ""))}</td>' if tem_cliente else ""
 
             rows_html += f"""
             <tr class="{urgencia_class}">
                 <td data-label="Pedido"><strong>#{item["pedido"]}</strong></td>
+                {td_cliente}
                 <td data-label="Rastreio"><code>{item["rastreio"]}</code></td>
                 <td data-label="Postagem">{item["data_postagem"]}</td>
                 <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias</span></td>
@@ -517,6 +528,7 @@ def processar(usar_cache=False):
                 <thead>
                     <tr>
                         <th>Pedido</th>
+                        {th_cliente}
                         <th>Rastreio</th>
                         <th>Postagem</th>
                         <th>Dias</th>

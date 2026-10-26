@@ -44,7 +44,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
+    font-size: 1.75rem;
     flex-shrink: 0;
 }
 
@@ -99,11 +99,11 @@
     min-height: 36px;
     padding: 6px 14px;
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-text-main);
     background: transparent;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-full);
     cursor: pointer;
     transition: var(--transition);
@@ -114,7 +114,7 @@
 }
 
 .action-chip strong {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--color-danger);
 }
@@ -168,7 +168,7 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-text-subtle);
-    font-size: 1.1rem;
+    font-size: 1rem;
     pointer-events: none;
 }
 
@@ -177,7 +177,7 @@
     padding: 14px 18px 14px 46px;
     font-size: 1rem;
     font-family: inherit;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
     color: var(--color-text-main);
@@ -214,9 +214,9 @@
 .filter-pill {
     padding: 7px 14px;
     border-radius: var(--radius-full);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     background: transparent;
     color: var(--color-text-muted);
     cursor: pointer;
@@ -246,11 +246,11 @@
 /* 2c. Botão Limpar */
 .btn-clear-filter {
     background: transparent;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     color: var(--color-text-muted);
     font-weight: 600;
     cursor: pointer;
-    font-size: 0.84rem;
+    font-size: 0.8125rem;
     padding: 7px 14px;
     border-radius: var(--radius-full);
     transition: var(--transition);
@@ -276,7 +276,7 @@
 
 /* 2d. Contador de Resultados */
 .filter-count {
-    font-size: 0.84rem;
+    font-size: 0.8125rem;
     color: var(--color-text-subtle);
     font-weight: 500;
     margin-left: auto;
@@ -293,8 +293,31 @@
     display: none;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
+}
+
+.filter-banner-close {
+    min-height: 36px;
+    padding: 6px 14px;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+    background: transparent;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+}
+
+.filter-banner-close:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.filter-banner-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .filter-banner.visible {
@@ -334,7 +357,7 @@
 
 .order-title {
     font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     color: var(--color-text-main);
 }
 
@@ -348,13 +371,13 @@
 }
 
 .order-age {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-text-muted);
 }
 
 .order-tiny-status {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
 }
 
@@ -368,7 +391,7 @@
     align-items: center;
     min-height: 36px;
     padding: 4px 0;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-link);
     cursor: pointer;
@@ -419,7 +442,7 @@
 }
 
 .event-date {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
     font-weight: 500;
 }
@@ -430,7 +453,7 @@
 }
 
 .event-detail {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
     margin-top: 5px;
     font-style: italic;
@@ -453,19 +476,19 @@
 
 .badge-yellow {
     background: var(--color-warning-bg);
-    color: var(--color-warning);
+    color: var(--color-warning-text);
     border: 1px solid var(--color-warning-border);
 }
 
 .badge-green {
     background: var(--color-success-bg);
-    color: var(--color-success);
+    color: var(--color-success-text);
     border: 1px solid var(--color-success-border);
 }
 
 .badge-purple {
     background: var(--color-purple-bg);
-    color: var(--color-purple);
+    color: var(--color-purple-text);
     border: 1px solid var(--color-purple-border);
 }
 
@@ -524,7 +547,7 @@
     padding: 12px 22px;
     border-radius: var(--radius-full);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1rem;
     cursor: pointer;
     box-shadow: var(--shadow-lg);
     display: flex;
@@ -558,10 +581,10 @@
 .btn-theme {
     background: var(--color-surface);
     color: var(--color-text-main);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     padding: 10px 18px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     border-radius: var(--radius-full);
     cursor: pointer;
     box-shadow: var(--shadow-sm);
@@ -617,7 +640,7 @@
     display: none;
     z-index: 2000;
     font-weight: 600;
-    font-size: 0.92rem;
+    font-size: 0.875rem;
     animation: slideDown 0.25s ease;
 }
 
@@ -645,7 +668,7 @@
     background: var(--console-header);
     padding: 10px 18px;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--console-muted);
@@ -659,7 +682,7 @@
     max-height: 220px;
     overflow-y: auto;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.84rem;
+    font-size: 0.8125rem;
     line-height: 1.6;
 }
 
@@ -714,14 +737,14 @@
 }
 
 .summary-number {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 4px;
 }
 
 .summary-label {
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -745,7 +768,7 @@
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.92rem;
+    font-size: 0.875rem;
     text-align: left;
 }
 
@@ -784,12 +807,12 @@ tbody tr:hover {
     padding: 4px 10px;
     border-radius: var(--radius-full);
     font-weight: 700;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
 }
 
 .dias-badge.urgencia-alta { background: var(--color-danger-bg); color: var(--color-danger); }
-.dias-badge.urgencia-media { background: var(--color-high-bg); color: var(--color-high); }
-.dias-badge.urgencia-baixa { background: var(--color-warning-bg); color: var(--color-warning); }
+.dias-badge.urgencia-media { background: var(--color-high-bg); color: var(--color-high-text); }
+.dias-badge.urgencia-baixa { background: var(--color-warning-bg); color: var(--color-warning-text); }
 
 .urgencia-tag {
     font-size: 0.75rem;
@@ -811,7 +834,7 @@ tbody tr:hover {
 }
 
 .empty-state .emoji {
-    font-size: 3rem;
+    font-size: 2.25rem;
     margin-bottom: 10px;
 }
 
@@ -838,7 +861,7 @@ tbody tr:hover {
     }
 
     .dash-number {
-        font-size: 1.4rem;
+        font-size: 1.25rem;
     }
 
     .order-header {
@@ -988,7 +1011,7 @@ h1 .icon {
 /* Legenda dos critérios de status, visível sem precisar de hover */
 .status-legend {
     margin: 14px 0 0;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
 }
 
@@ -998,7 +1021,7 @@ h1 .icon {
 
 .status-legend-details {
     margin: 6px 0 0;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
 }
 
@@ -1007,7 +1030,7 @@ h1 .icon {
     align-items: center;
     min-height: 36px;
     padding: 4px 0;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-link);
     cursor: pointer;
@@ -1029,6 +1052,46 @@ h1 .icon {
 
 .status-legend-details strong {
     color: var(--color-text-main);
+}
+
+/* Linha da legenda e do menu «Opções»: ficam lado a lado e recolhidos, para encurtar o topo */
+.list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4px 16px;
+    margin-top: 6px;
+}
+
+.options-menu > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 4px 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-link);
+    cursor: pointer;
+}
+
+.options-menu > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.options-panel {
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.options-panel .list-tools {
+    margin-top: 0;
 }
 
 /* Atrasados no celular: cada linha da tabela vira um cartão empilhado */
@@ -1069,7 +1132,7 @@ h1 .icon {
     .table-wrapper td[data-label]::before {
         content: attr(data-label);
         display: block;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -1094,7 +1157,7 @@ h1 .icon {
 }
 
 .sort-label {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-text-muted);
 }
@@ -1103,10 +1166,10 @@ h1 .icon {
     min-height: 36px;
     padding: 6px 12px;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--color-text-main);
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-full);
     cursor: pointer;
 }
@@ -1145,7 +1208,7 @@ h1 .icon {
     min-height: 36px;
     padding: 6px 4px;
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-link);
     background: none;
@@ -1177,6 +1240,16 @@ h1 .icon {
 
 /* Ajustes do celular para as regras acima (ficam depois delas para prevalecer na cascata) */
 @media (max-width: 640px) {
+    .list-meta {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .options-menu > summary,
+    .status-legend-details > summary {
+        min-height: 44px;
+    }
+
     .header-tools {
         position: static;
         display: flex;
