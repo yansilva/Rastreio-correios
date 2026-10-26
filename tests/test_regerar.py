@@ -152,6 +152,36 @@ class TestRegerarSemRede(unittest.TestCase):
         self.assertIn("Recarregar dados salvos de", html)
         self.assertIn("Consultar Tiny e Correios", html)
 
+    def test_nome_do_cliente_do_csv_aparece_no_titulo_e_na_busca(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente\n"
+                "7001,Enviado,AE000000001BR,Maria <b>Souza</b>\n"
+                "7002,Enviado,AE000000002BR,\n",
+                encoding="utf-8",
+            )
+            salvar_cache(
+                os.path.join(arquivos, "rastreios_cache.json"),
+                {
+                    "AE000000001BR": {"eventos": [{"dtHrCriado": "2026-10-14T10:00:00", "descricao": "Objeto postado"}]},
+                    "AE000000002BR": {"eventos": [{"dtHrCriado": "2026-10-14T10:00:00", "descricao": "Objeto postado"}]},
+                },
+                datetime(2026, 10, 14, 11, 0, 0),
+            )
+            with patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ):
+                resultado = consulta_correios.processar(usar_cache=True)
+
+            self.assertIsNot(resultado, False)
+            html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+
+        # Com cliente: "#7001 — Maria ... (rastreio)", com o HTML do nome escapado; sem cliente: só o rastreio
+        self.assertIn("Pedido Tiny #7001 — Maria &lt;b&gt;Souza&lt;/b&gt; (AE000000001BR)", html)
+        self.assertIn("Pedido Tiny #7002 — AE000000002BR", html)
+
     def test_sem_cache_devolve_false(self):
         with tempfile.TemporaryDirectory() as pasta:
             falso_modulo = self._montar(pasta, com_cache=False)

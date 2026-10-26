@@ -278,6 +278,7 @@ def processar(usar_cache=False):
 
             rastreio = venda.get("Código de Rastreio")
             situacao_tiny = venda.get("Situação")
+            cliente = (venda.get("Cliente") or "").strip()
 
             print(f"Processando {pedido}...")
             if usar_cache:
@@ -355,7 +356,12 @@ def processar(usar_cache=False):
             )
 
             card = montar_card_pedido(
-                titulo=f"Pedido Tiny #{pedido} — {rastreio}",
+                # Com o nome do cliente (campo novo do CSV), o título fica como na demonstração; sem ele, só o rastreio
+                titulo=(
+                    f"Pedido Tiny #{pedido} — {cliente} ({rastreio})"
+                    if cliente
+                    else f"Pedido Tiny #{pedido} — {rastreio}"
+                ),
                 tokens=status_tokens(
                     status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
                 ),

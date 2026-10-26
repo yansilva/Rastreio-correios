@@ -10,6 +10,8 @@ class PedidoTiny:
     numero: str
     situacao: str
     codigo_rastreamento: str | None = None
+    # Nome do cliente, como o Tiny devolve em `nome` na pesquisa de pedidos ('' quando ausente)
+    cliente: str = ""
 
     @classmethod
     def de_dicionario(cls, item: dict[str, Any]) -> "PedidoTiny":
@@ -24,5 +26,6 @@ class PedidoTiny:
             id=str(dados.get("id", "")),
             numero=str(dados.get("numero", "")),
             situacao=str(dados.get("situacao", "")),
-            codigo_rastreamento=dados.get("codigo_rastreamento")
+            codigo_rastreamento=dados.get("codigo_rastreamento"),
+            cliente=str(dados.get("nome") or "").strip(),
         )

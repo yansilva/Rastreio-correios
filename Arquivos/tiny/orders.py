@@ -69,7 +69,8 @@ class TinyOrderService:
         """
         Exporta a lista de pedidos filtrados para o arquivo CSV de compatibilidade.
         
-        Mantém o cabeçalho original: ['Número do Pedido no Tiny', 'Situação', 'Código de Rastreio'].
+        Mantém as três colunas originais ('Número do Pedido no Tiny', 'Situação', 'Código de Rastreio')
+        e acrescenta 'Cliente' ao final, para quem lê o CSV por posição.
         """
         if not caminho_saida:
             pasta_arquivos = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,10 +83,10 @@ class TinyOrderService:
 
         with open(caminho_saida, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            writer.writerow(["Número do Pedido no Tiny", "Situação", "Código de Rastreio"])
+            writer.writerow(["Número do Pedido no Tiny", "Situação", "Código de Rastreio", "Cliente"])
 
             for p in pedidos_validos:
-                writer.writerow([p.numero, p.situacao, p.codigo_rastreamento])
+                writer.writerow([p.numero, p.situacao, p.codigo_rastreamento, p.cliente])
 
         logger.info("Arquivo CSV gerado com sucesso em '%s' com %d registros.", caminho_saida, len(pedidos_validos))
         return caminho_saida, len(pedidos_validos)
