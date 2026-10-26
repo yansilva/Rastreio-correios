@@ -116,15 +116,57 @@ class TestTinyClient(unittest.TestCase):
             client.pesquisar_pedidos("01/01/2026", "31/01/2026")
         self.assertIn("Tempo limite", str(ctx.exception))
 
+    @patch("tiny.client.time.sleep")
     @patch("requests.get")
-    def test_pesquisa_erro_conexao(self, mock_get):
-        """Valida que falha de rede dispara TinyConnectionError."""
+    def test_pesquisa_erro_conexao(self, mock_get, mock_sleep):
+        """Valida que falha de rede persistente dispara TinyConnectionError após as tentativas."""
         mock_get.side_effect = requests.exceptions.ConnectionError("DNS failure")
 
         client = TinyClient(config=TinyConfig(token="fake_token_123"))
         with self.assertRaises(TinyConnectionError) as ctx:
             client.pesquisar_pedidos("01/01/2026", "31/01/2026")
         self.assertIn("Falha de conexão", str(ctx.exception))
+        self.assertIn("após 3 tentativas", str(ctx.exception))
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("tiny.client.time.sleep")
+    @patch("requests.get")
+    def test_pesquisa_tenta_de_novo_apos_ssl_eof(self, mock_get, mock_sleep):
+        """Um corte de conexão no handshake (SSL EOF) passageiro não deve derrubar a consulta."""
+        resposta = MagicMock()
+        resposta.status_code = 200
+        resposta.json.return_value = {"retorno": {"status": "OK", "pedidos": []}}
+        ssl_eof = requests.exceptions.SSLError("SSLEOFError(8, 'UNEXPECTED_EOF_WHILE_READING')")
+        mock_get.side_effect = [ssl_eof, ssl_eof, resposta]
+
+        client = TinyClient(config=TinyConfig(token="fake_token_123"))
+        self.assertEqual(client.pesquisar_pedidos("01/01/2026", "31/01/2026")["retorno"]["status"], "OK")
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual([c.args[0] for c in mock_sleep.call_args_list], [2.0, 4.0])
+
+    @patch("tiny.client.time.sleep")
+    @patch("requests.get")
+    def test_mensagem_de_erro_nao_vaza_o_token(self, mock_get, mock_sleep):
+        """A URL da requisição leva o token na query string: a mensagem final deve mascará-lo."""
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "HTTPSConnectionPool(host='api.tiny.com.br'): url: /api2/pedidos.pesquisa.php?token=segredo_xyz&formato=json"
+        )
+        client = TinyClient(config=TinyConfig(token="segredo_xyz"))
+        with self.assertRaises(TinyConnectionError) as ctx:
+            client.pesquisar_pedidos("01/01/2026", "31/01/2026")
+        self.assertNotIn("segredo_xyz", str(ctx.exception))
+        self.assertIn("token=***", str(ctx.exception))
+
+    @patch("tiny.client.time.sleep")
+    @patch("requests.get")
+    def test_timeout_nao_e_repetido(self, mock_get, mock_sleep):
+        mock_get.side_effect = requests.exceptions.ReadTimeout("lento")
+        client = TinyClient(config=TinyConfig(token="fake_token_123"))
+        with self.assertRaises(TinyTimeoutError):
+            client.pesquisar_pedidos("01/01/2026", "31/01/2026")
+        self.assertEqual(mock_get.call_count, 1)
+        mock_sleep.assert_not_called()
 
     @patch("requests.get")
     def test_pesquisar_todos_pedidos_fim_paginacao_erro_6(self, mock_get):
@@ -173,7 +215,9 @@ class TestTinyOrderService(unittest.TestCase):
     def test_exportacao_csv(self):
         """Valida a estrutura e conteúdo do arquivo CSV gerado."""
         pedidos = [
-            PedidoTiny(id="1", numero="2001", situacao="Aprovado", codigo_rastreamento="AA123456789BR"),
+            PedidoTiny(
+                id="1", numero="2001", situacao="Aprovado", codigo_rastreamento="AA123456789BR", cliente="Maria Souza"
+            ),
             PedidoTiny(id="2", numero="2002", situacao="Cancelado", codigo_rastreamento="AA987654321BR"),
         ]
 
@@ -189,8 +233,16 @@ class TestTinyOrderService(unittest.TestCase):
             with open(csv_path, encoding="utf-8") as f:
                 linhas = f.read().splitlines()
 
-            self.assertEqual(linhas[0], "Número do Pedido no Tiny,Situação,Código de Rastreio")
-            self.assertEqual(linhas[1], "2001,Aprovado,AA123456789BR")
+            # As três colunas originais continuam nas mesmas posições; "Cliente" vem ao final
+            self.assertEqual(linhas[0], "Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente")
+            self.assertEqual(linhas[1], "2001,Aprovado,AA123456789BR,Maria Souza")
+
+    def test_pedido_le_o_nome_do_cliente_da_api(self):
+        """O Tiny devolve o nome do cliente em `nome`; sem o campo, o cliente fica vazio."""
+        com_nome = PedidoTiny.de_dicionario({"pedido": {"id": "9", "numero": "9", "situacao": "Enviado", "nome": " Ana  "}})
+        sem_nome = PedidoTiny.de_dicionario({"pedido": {"id": "10", "numero": "10", "situacao": "Enviado"}})
+        self.assertEqual(com_nome.cliente, "Ana")
+        self.assertEqual(sem_nome.cliente, "")
 
 
 class TestTinyRetrocompatibilidade(unittest.TestCase):

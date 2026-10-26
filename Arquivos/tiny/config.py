@@ -21,6 +21,9 @@ class TinyConfig:
     timeout_segundos: float = 30.0
     delay_paginacao_segundos: float = 0.5
     dias_atras_padrao: int = 30
+    # Quedas de conexão (reset, SSL EOF) costumam ser passageiras: tenta de novo antes de desistir
+    tentativas_conexao: int = 3
+    espera_entre_tentativas: float = 2.0
 
     def __post_init__(self):
         if not self.token:

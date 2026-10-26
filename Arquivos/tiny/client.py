@@ -1,6 +1,7 @@
 """Cliente HTTP para comunicação exclusiva com a API do Tiny ERP."""
 import logging
 import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
@@ -26,6 +27,30 @@ class TinyClient:
             raise TinyAuthError(
                 "Token do Tiny ERP não configurado. Defina a variável de ambiente TOKEN_TINY ou passe explicitamente na configuração."
             )
+
+    def _sem_token(self, texto: str) -> str:
+        """Troca o token por *** em qualquer mensagem de erro que contenha a URL da requisição."""
+        return texto.replace(self.config.token, "***") if self.config.token else texto
+
+    def _com_tentativas(self, chamada: Callable[[], requests.Response], descricao: str) -> requests.Response:
+        """Repete a chamada quando a conexão cai (reset, SSL EOF); outros erros sobem na hora."""
+        tentativas = max(1, self.config.tentativas_conexao)
+        for numero in range(1, tentativas + 1):
+            try:
+                return chamada()
+            except requests.exceptions.ConnectionError:
+                if numero == tentativas:
+                    raise
+                espera = self.config.espera_entre_tentativas * numero
+                logger.warning(
+                    "Conexão com o Tiny interrompida (%s). Nova tentativa %d/%d em %.0fs.",
+                    descricao,
+                    numero + 1,
+                    tentativas,
+                    espera,
+                )
+                time.sleep(espera)
+        raise AssertionError("inalcançável")  # pragma: no cover
 
     def pesquisar_pedidos(
         self,
@@ -56,10 +81,13 @@ class TinyClient:
         )
 
         try:
-            response = requests.get(
-                self.config.url_pesquisa,
-                params=params,
-                timeout=self.config.timeout_segundos,
+            response = self._com_tentativas(
+                lambda: requests.get(
+                    self.config.url_pesquisa,
+                    params=params,
+                    timeout=self.config.timeout_segundos,
+                ),
+                f"página {pagina}",
             )
         except requests.exceptions.Timeout as exc:
             logger.error("Timeout de %ss excedido na chamada ao Tiny ERP", self.config.timeout_segundos)
@@ -67,8 +95,13 @@ class TinyClient:
                 f"Tempo limite de {self.config.timeout_segundos}s excedido ao consultar o Tiny ERP."
             ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Erro de conexão com o Tiny ERP: %s", exc)
-            raise TinyConnectionError(f"Falha de conexão com a API do Tiny ERP: {exc}") from exc
+            # A URL da requisição leva o token na query string: mascara antes de registrar ou repassar
+            detalhe = self._sem_token(str(exc))
+            logger.error("Erro de conexão com o Tiny ERP: %s", detalhe)
+            raise TinyConnectionError(
+                f"Falha de conexão com a API do Tiny ERP após {max(1, self.config.tentativas_conexao)} tentativas: "
+                f"{detalhe}"
+            ) from exc
 
         if response.status_code != 200:
             logger.error("Tiny API retornou status HTTP %d: %s", response.status_code, response.text[:200])
