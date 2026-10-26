@@ -1,4 +1,5 @@
 """Inicialização, lifecycle e execução do servidor HTTP multithreaded."""
+import socket
 import socketserver
 import sys
 import threading
@@ -9,6 +10,17 @@ from .config import ServerConfig
 from .handler import RastreioRequestHandler
 from .logger import ServerLogQueue, StreamToQueue, logger
 from .service import UpdateManager
+
+
+def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
+    """Verifica se uma porta TCP já está ocupada por outro processo."""
+    check_host = host if host not in ("0.0.0.0", "") else "127.0.0.1"
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex((check_host, port)) == 0
+    except Exception:
+        return False
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -60,7 +72,14 @@ def iniciar_servidor(
     if capturar_stdout:
         sys.stdout = StreamToQueue(original_stream=original_stdout, log_queue=log_queue)
 
-    server_address = (cfg.host if cfg.host not in ("127.0.0.1", "") else "", cfg.port)
+    if is_port_in_use(cfg.port, cfg.host):
+        logger.warning(
+            f"Atenção: A porta {cfg.port} já está em uso por outro processo. "
+            "Se você tiver instâncias antigas em segundo plano, finalize-as para evitar conflitos."
+        )
+
+    # Escuta exatamente o host configurado: 127.0.0.1 por padrão (só esta máquina); 0.0.0.0 só se SERVER_HOST pedir
+    server_address = (cfg.host, cfg.port)
 
     logger.info("=" * 60)
     logger.info("INICIANDO SERVIDOR DO PAINEL DE RASTREIO E FRETE")

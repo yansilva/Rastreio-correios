@@ -18,12 +18,14 @@ from correios import (
 )
 from correios.cache import carregar_cache, salvar_cache
 from correios.cards import (
+    PRIORIDADE_STATUS,
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
     montar_card_pedido,
     prioridade,
     selo_status,
+    sem_postagem,
     status_tokens,
     texto_idade,
 )
@@ -85,8 +87,8 @@ def formatar_evento_html(evento):
     badge = ""
 
     if "RETIRADA" in desc_upper or "RETIRADA" in det_upper:
-        status_class = "status-critical"
-        badge = '<span class="badge badge-red">AGUARDANDO RETIRADA</span>'
+        status_class = "status-warning"
+        badge = '<span class="badge badge-yellow">AGUARDANDO RETIRADA</span>'
     elif "REMETENTE" in desc_upper:
         status_class = "status-devolvido"
         badge = '<span class="badge badge-purple">DEVOLVIDO AO REMETENTE</span>'
@@ -130,14 +132,15 @@ def processar(usar_cache=False):
         # Cache das respostas dos Correios, na mesma pasta do script
         caminho_cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), CACHE_ARQUIVO)
         objetos_cache = {}
-        data_dados = time.strftime("%d/%m/%Y %H:%M:%S")
+        momento_dados = datetime.now()
         if usar_cache:
             carregado = carregar_cache(caminho_cache)
             if carregado is None:
                 print("Erro: não há dados em cache. Clique em Consultar Tiny e Correios primeiro.")
                 return False
             objetos_cache, momento_dados = carregado
-            data_dados = momento_dados.strftime("%d/%m/%Y %H:%M:%S")
+        data_dados = momento_dados.strftime("%d/%m/%Y %H:%M:%S")
+        if usar_cache:
             print(f"Regerando o relatório com os dados consultados em {data_dados} (sem chamar as APIs).")
 
         # Garante que procuramos o CSV na mesma pasta do script
@@ -179,11 +182,9 @@ def processar(usar_cache=False):
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
-                    Relatório gerado em: {data_geracao}
-                    <span class="meta-dados">| Dados consultados em: {data_dados}</span>
-                    <span id="next-check" style="margin-left: 10px; opacity: 0.9;">
-                        | <svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima verificação automática em: <strong id="countdown-timer">carregando...</strong>
-                    </span>
+                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Dados de <time id="dadosEm" datetime="{iso_dados}">{data_dados_curta}</time> <span id="dadosIdade" class="meta-idade"></span></span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
+                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima consulta automática em <strong id="countdown-timer">carregando...</strong></span>
                 </div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
@@ -340,6 +341,18 @@ def processar(usar_cache=False):
                 dias_atraso=dias_atraso,
             )
             ultimo_evento = obj_classificado.eventos[0].dt_hr_criado if obj_classificado.eventos else ""
+            # A etiqueta é o evento mais antigo da lista; se o Tiny diz "enviado" e ela tem mais de N dias, avisa
+            data_etiqueta = obj_classificado.eventos[-1].dt_hr_criado if obj_classificado.eventos else ""
+            dias_etiqueta = dias_desde(data_etiqueta)
+            semp = sem_postagem(status_category, situacao_tiny, dias_etiqueta)
+            if semp:
+                selo = f"Sem postagem · {dias_etiqueta} dias"
+                classe_selo = "badge-yellow"
+            divergencia = (
+                f"Tiny diz '{situacao_tiny}', mas os Correios só têm a etiqueta há {dias_etiqueta} dias"
+                if semp
+                else divergencia_tiny(status_category, situacao_tiny)
+            )
 
             card = montar_card_pedido(
                 titulo=f"Pedido Tiny #{pedido} — {rastreio}",
@@ -357,9 +370,13 @@ def processar(usar_cache=False):
                 ),
                 numero=str(pedido),
                 idade_dias=dias_desde(ultimo_evento),
-                divergencia=divergencia_tiny(status_category, situacao_tiny),
+                divergencia=divergencia,
             )
-            ordem = prioridade(status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado)
+            ordem = (
+                PRIORIDADE_STATUS["sem_postagem"]
+                if semp
+                else prioridade(status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado)
+            )
             orders_html.append((ordem, -dias_atraso, card))
             if not usar_cache:
                 time.sleep(0.2)
@@ -430,6 +447,8 @@ def processar(usar_cache=False):
             icon_sprite=ICON_SPRITE,
             data_geracao=time.strftime("%d/%m/%Y %H:%M:%S"),
             data_dados=data_dados,
+            data_dados_curta=momento_dados.strftime("%d/%m %H:%M"),
+            iso_dados=momento_dados.isoformat(timespec="seconds"),
             hora_dados=data_dados[11:16],
             dashboard=dashboard_html,
             content="".join(orders_html),
@@ -527,13 +546,13 @@ def processar(usar_cache=False):
 </head>
 <body>
     {ICON_SPRITE}
-    <div class="floating-actions">
-        <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-    </div>
     <div class="container">
         <header>
+            <div class="header-tools">
+                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
@@ -560,7 +579,7 @@ def processar(usar_cache=False):
             </div>
             <div class="summary-card">
                 <div class="summary-number num-atencao">{atencao}</div>
-                <div class="summary-label">Atenção (4-3 dias)</div>
+                <div class="summary-label">Atenção (4 dias)</div>
             </div>
         </div>
 

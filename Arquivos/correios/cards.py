@@ -4,13 +4,17 @@ from datetime import datetime
 from html import escape
 
 # Ordem em que os pedidos aparecem: o que pede ação do operador vem primeiro e os casos encerrados vão ao fim
+# Dias com só a etiqueta nos Correios antes de avisar que o pedido "enviado" no Tiny não foi postado
+DIAS_SEM_POSTAGEM = 2
+
 PRIORIDADE_STATUS = {
     "aguardando_retirada": 0,
     "atrasado": 1,
-    "em_transito": 2,
-    "nao_enviado": 3,
-    "devolvido": 4,
-    "entregue": 5,
+    "sem_postagem": 2,
+    "em_transito": 3,
+    "nao_enviado": 4,
+    "devolvido": 5,
+    "entregue": 6,
 }
 
 
@@ -30,6 +34,14 @@ def divergencia_tiny(categoria: str, situacao_tiny: str) -> str:
     if categoria == "devolvido" and tiny in ("enviado", "entregue"):
         return f"Devolvido nos Correios, mas o Tiny mostra '{situacao_tiny}'"
     return ""
+
+
+def sem_postagem(categoria: str, situacao_tiny: str, dias_etiqueta: int | None) -> bool:
+    """O Tiny diz 'enviado', mas os Correios só têm a etiqueta há mais de DIAS_SEM_POSTAGEM dias."""
+    if categoria != "nao_enviado" or dias_etiqueta is None:
+        return False
+    tiny = _normalizar(situacao_tiny)
+    return tiny in ("enviado", "postado", "em transito") and dias_etiqueta > DIAS_SEM_POSTAGEM
 
 
 def esta_encerrado(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> bool:
@@ -67,7 +79,7 @@ def selo_status(
     if categoria == "entregue":
         return "Entregue", "badge-green"
     if retirada:
-        return "Aguardando retirada", "badge-red"
+        return "Aguardando retirada", "badge-yellow"
     if atrasado:
         return f"Atrasado · {dias_atraso} dias", "badge-red"
     if categoria == "em_transito":

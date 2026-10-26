@@ -207,11 +207,11 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "10/09/2026 14:20",
-                    "badge": '<span class="badge badge-red">AGUARDANDO RETIRADA</span>',
+                    "badge": '<span class="badge badge-yellow">AGUARDANDO RETIRADA</span>',
                     "desc": "Objeto aguardando retirada na agência dos Correios",
                     "local": "SAO PAULO/SP",
                     "detalhe": "AC República — Prazo de permanência: 7 dias corridos",
-                    "class": "status-critical",
+                    "class": "status-warning",
                 },
                 {
                     "data": "09/09/2026 17:00",
@@ -487,13 +487,13 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 </head>
 <body>
     {ICON_SPRITE}
-    <div class="floating-actions">
-        <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-    </div>
     <div class="container">
         <header>
+            <div class="header-tools">
+                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao}</div>
@@ -520,7 +520,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             </div>
             <div class="summary-card">
                 <div class="summary-number num-atencao">0</div>
-                <div class="summary-label">Atenção (3-4 dias)</div>
+                <div class="summary-label">Atenção (4 dias)</div>
             </div>
         </div>
 

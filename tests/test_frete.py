@@ -536,6 +536,15 @@ class TestFreteReportGenerator(unittest.TestCase):
             )
             self.assertIn("Pedido #1001", conteudo_escrito)
             self.assertIn("SEDEX", conteudo_escrito)
+            # Ícones SVG do sprite no lugar de emojis; tema no topo; ids usados pelo JS
+            self.assertIn('<symbol id="i-clock"', conteudo_escrito)
+            self.assertIn('<use href="#i-map-pin">', conteudo_escrito)
+            self.assertIn('class="header-tools"', conteudo_escrito)
+            self.assertNotIn("position: fixed", conteudo_escrito)
+            for emoji in ("📦", "📅", "📍", "⚠️", "🌓", "📭"):
+                self.assertNotIn(emoji, conteudo_escrito)
+            for ident in ("filtrarPorValor", "valMin", "valMax", "filterCount", "data-valor"):
+                self.assertIn(ident, conteudo_escrito)
 
 
 # ============== TESTES DE COMPATIBILIDADE ==============

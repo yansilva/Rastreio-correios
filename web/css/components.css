@@ -85,7 +85,7 @@
 }
 
 .action-strip-title {
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -119,6 +119,11 @@
     color: var(--color-danger);
 }
 
+.action-chip[data-filter="aguardando_retirada"] .icon,
+.action-chip[data-filter="aguardando_retirada"] strong {
+    color: var(--color-warning);
+}
+
 .action-chip:hover {
     border-color: var(--color-primary);
     background: var(--color-primary-light);
@@ -135,7 +140,7 @@
 }
 
 .dash-label {
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     color: var(--color-text-muted);
     font-weight: 600;
     text-transform: uppercase;
@@ -433,7 +438,7 @@
 
 /* Badges */
 .badge {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: 99px;
     font-weight: bold;
@@ -478,6 +483,11 @@
 
 .status-critical::before {
     background: var(--color-danger);
+}
+
+.status-warning {
+    background: rgba(217, 119, 6, 0.07);
+    border-radius: 0 8px 8px 0;
 }
 
 .status-warning::before {
@@ -743,7 +753,7 @@ thead th {
     background: var(--color-header-bg);
     color: var(--color-text-muted);
     font-weight: 700;
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 14px 18px;
@@ -782,7 +792,7 @@ tbody tr:hover {
 .dias-badge.urgencia-baixa { background: var(--color-warning-bg); color: var(--color-warning); }
 
 .urgencia-tag {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: var(--radius-sm);
     font-weight: 800;
@@ -1030,9 +1040,18 @@ h1 .icon {
     margin-left: auto;
 }
 
-.meta-dados {
-    margin-left: 10px;
-    opacity: 0.9;
+.meta-sep {
+    margin: 0 8px;
+    color: var(--color-text-subtle);
+}
+
+.meta-idade {
+    font-weight: 600;
+}
+
+/* Dados com mais de 2 h: o aviso muda de cor, sem depender só da cor (o texto já diz "há N h") */
+.meta-idade-antiga {
+    color: var(--color-warning);
 }
 
 .btn-link:disabled {

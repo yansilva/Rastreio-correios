@@ -11,6 +11,8 @@ import os
 import time
 from typing import Any
 
+from correios.icons import ICON_SPRITE, icone
+
 from .config import FreteConfig
 
 logger = logging.getLogger("frete.report")
@@ -77,13 +79,13 @@ class FreteReportGenerator:
 
                     msg_prazo_html = ""
                     if info.get("msg_prazo"):
-                        msg_prazo_html = f'\n                    <div class="servico-msg-prazo" title="{info["msg_prazo"]}">⚠️ {info["msg_prazo"]}</div>'
+                        msg_prazo_html = f'\n                    <div class="servico-msg-prazo" title="{info["msg_prazo"]}">{icone("alert-triangle")} {info["msg_prazo"]}</div>'
 
                     servicos_html += f"""
                 <div class="servico-card disponivel">
                     <div class="servico-nome">{nome}</div>
                     <div class="servico-preco">{preco_display}</div>
-                    <div class="servico-prazo">📅 {prazo_display}</div>{msg_prazo_html}
+                    <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}
                 </div>"""
                 else:
                     servicos_html += f"""
@@ -96,12 +98,12 @@ class FreteReportGenerator:
         <div class="pedido-card" data-valor="{valor_float}">
             <div class="pedido-header">
                 <div class="pedido-left">
-                    <span class="pedido-numero">Pedido #{pedido['numero']} <span style="font-size: 0.9rem; font-weight: normal; color: #16a34a; margin-left: 8px;">{valor_fmt}</span></span>
+                    <span class="pedido-numero">Pedido #{pedido['numero']} <span class="pedido-valor">{valor_fmt}</span></span>
                     <span class="pedido-cliente">{pedido.get('nome_cliente', '—')}</span>
                 </div>
                 <div class="pedido-right">
                     <span class="pedido-badge">{pedido['situacao']}</span>
-                    <span class="pedido-destino">📍 {pedido.get('destino_label', '—')} — CEP {pedido.get('cep_destino', '—')}</span>
+                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} — CEP {pedido.get('cep_destino', '—')}</span>
                 </div>
             </div>
             <div class="servicos-grid">
@@ -111,9 +113,9 @@ class FreteReportGenerator:
 
         # Estado vazio
         if not pedidos_com_frete:
-            cards_html = """
+            cards_html = f"""
         <div class="empty-state">
-            <div class="emoji">📭</div>
+            <div class="emoji">{icone("inbox")}</div>
             <h2>Nenhum pedido em aberto</h2>
             <p>Todos os pedidos do período já foram enviados ou não possuem CEP de destino.</p>
         </div>"""
@@ -126,95 +128,167 @@ class FreteReportGenerator:
     <title>Opções de Frete — Correios</title>
     <style>
         :root {{
-            --primary: #2563eb;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-sub: #475569;
-            --border: #e2e8f0;
-            --green: #15803d;
-            --red: #b91c1c;
+            --color-primary: #2563eb;
+            --color-primary-hover: #1d4ed8;
+            --color-primary-light: #eff6ff;
+            --color-link: #2563eb;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-surface-hover: #f1f5f9;
+            --color-header-bg: #f1f5f9;
+            --color-border: #e2e8f0;
+            --color-text-main: #0f172a;
+            --color-text-muted: #475569;
+            --color-text-subtle: #64748b;
+            --color-success: #15803d;
+            --color-success-bg: #dcfce7;
+            --color-success-border: #bbf7d0;
+            --color-warning: #b45309;
+            --color-warning-bg: #fef3c7;
+            --color-warning-border: #fde68a;
+            --color-badge-fg: #1d4ed8;
+            --color-badge-bg: #eff6ff;
+            --color-badge-border: #bfdbfe;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }}
         [data-theme="dark"] {{
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f1f5f9;
-            --text-sub: #94a3b8;
-            --border: #334155;
+            --color-bg: #0b0f19;
+            --color-surface: #151c2c;
+            --color-surface-hover: #1e283d;
+            --color-header-bg: #192237;
+            --color-border: #26334d;
+            --color-text-main: #f8fafc;
+            --color-text-muted: #b6c2d2;
+            --color-text-subtle: #94a3b8;
+            --color-primary-light: #1e293b;
+            --color-link: #93c5fd;
+            --color-success: #4ade80;
+            --color-success-bg: rgba(22, 163, 74, 0.15);
+            --color-success-border: rgba(74, 222, 128, 0.35);
+            --color-warning: #fbbf24;
+            --color-warning-bg: rgba(217, 119, 6, 0.15);
+            --color-warning-border: rgba(251, 191, 36, 0.35);
+            --color-badge-fg: #93c5fd;
+            --color-badge-bg: rgba(37, 99, 235, 0.18);
+            --color-badge-border: rgba(147, 197, 253, 0.35);
         }}
+        *, *::before, *::after {{ box-sizing: border-box; }}
         body {{
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text-main);
             margin: 0;
-            padding: 20px;
-            line-height: 1.5;
+            padding: 24px 20px 48px;
+            line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
         }}
-        .container {{ max-width: 1000px; margin: 0 auto; }}
-        header {{ text-align: center; margin-bottom: 30px; }}
+        .container {{ max-width: 1040px; margin: 0 auto; }}
+        header {{ position: relative; text-align: center; margin-bottom: 30px; }}
         h1 {{
             margin: 0;
-            font-size: 2.2rem;
-            color: var(--primary);
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: var(--color-primary);
         }}
-        .meta {{ color: var(--text-sub); margin-top: 8px; }}
+        [data-theme="dark"] h1 {{ color: var(--color-link); }}
+        .meta {{ color: var(--color-text-muted); margin-top: 8px; font-size: 0.9rem; }}
         .config-info {{
             display: inline-block;
             margin-top: 10px;
             padding: 6px 16px;
-            background: var(--border);
-            border-radius: 8px;
-            font-size: 0.82rem;
-            color: var(--text-sub);
+            background: var(--color-header-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
         }}
+
+        /* Ícones SVG (sprite inline): traço fino, cor herdada do texto */
+        .icon {{
+            width: 1.1em;
+            height: 1.1em;
+            flex-shrink: 0;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: -0.18em;
+        }}
+        h1 .icon {{ width: 0.95em; height: 0.95em; margin-right: 4px; }}
 
         .back-link {{
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 10px 22px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
+            background: var(--color-primary);
+            color: #ffffff;
             text-decoration: none;
-            border-radius: 99px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            min-height: 44px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }}
+        .back-link:hover {{ background: var(--color-primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }}
+
+        /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
+        .header-tools {{ position: absolute; top: 0; right: 0; }}
+        .btn-theme {{
+            background: var(--color-surface);
+            color: var(--color-text-main);
+            border: 1px solid var(--color-border);
+            padding: 10px 18px;
+            min-height: 44px;
+            font: inherit;
             font-weight: 600;
             font-size: 0.9rem;
-            margin-top: 14px;
-            min-height: 44px;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-            transition: all 0.2s ease;
-        }}
-        .back-link:hover {{ transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45); }}
-
-        .btn-theme {{
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--card-bg);
-            color: var(--text-main);
-            border: 2px solid var(--border);
-            padding: 8px 16px;
-            min-height: 44px;
-            border-radius: 99px;
-            font-weight: 600;
+            border-radius: var(--radius-full);
             cursor: pointer;
-            z-index: 1000;
-            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
         }}
-        .btn-theme:hover {{ transform: translateY(-2px); }}
+        .btn-theme:hover {{
+            background: var(--color-surface-hover);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }}
+        [data-theme="dark"] .btn-theme:hover {{ color: var(--color-link); }}
+        .btn-theme:active {{ transform: scale(0.97); }}
+        /* Mostra o tema de destino: lua/"Escuro" no claro, sol/"Claro" no escuro */
+        .btn-theme .icon-sun, .btn-theme .tema-claro {{ display: none; }}
+        [data-theme="dark"] .btn-theme .icon-sun, [data-theme="dark"] .btn-theme .tema-claro {{ display: inline-block; }}
+        [data-theme="dark"] .btn-theme .icon-moon, [data-theme="dark"] .btn-theme .tema-escuro {{ display: none; }}
+
+        .back-link:focus-visible, .btn-theme:focus-visible {{
+            outline: 2px solid var(--color-primary);
+            outline-offset: 3px;
+        }}
+        [data-theme="dark"] .back-link:focus-visible, [data-theme="dark"] .btn-theme:focus-visible {{ outline-color: var(--color-link); }}
 
         /* Filter Bar */
         .filter-bar {{
             display: flex;
             align-items: center;
             gap: 16px;
-            background: var(--card-bg);
+            background: var(--color-surface);
             padding: 16px 24px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
             margin-bottom: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-sm);
             flex-wrap: wrap;
         }}
         .filter-group {{
@@ -225,66 +299,70 @@ class FreteReportGenerator:
         .filter-group label {{
             font-size: 0.9rem;
             font-weight: 600;
-            color: var(--text-sub);
+            color: var(--color-text-muted);
         }}
         .filter-group input {{
             padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text-main);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text-main);
+            font: inherit;
             font-size: 0.95rem;
             min-height: 44px;
-            box-sizing: border-box;
             width: 120px;
-            outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }}
-        .filter-group input:focus {{
-            border-color: var(--primary);
+        .filter-group input::placeholder {{ color: var(--color-text-subtle); }}
+        .filter-group input:focus-visible {{
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
         }}
         .filter-count {{
             margin-left: auto;
             font-size: 0.9rem;
-            color: var(--text-sub);
+            color: var(--color-text-muted);
             font-weight: 600;
         }}
 
         /* Summary Cards */
         .summary {{
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
             margin-bottom: 30px;
-            flex-wrap: wrap;
         }}
         .summary-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px 28px;
-            flex: 1;
-            min-width: 180px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            box-shadow: var(--shadow-sm);
             text-align: center;
+            animation: fadeIn 0.4s ease forwards;
         }}
-        .summary-number {{ font-size: 2.5rem; font-weight: 800; line-height: 1.2; }}
-        .summary-label {{ font-size: 0.82rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }}
-        .num-blue {{ color: var(--primary); }}
-        .num-green {{ color: var(--green); }}
+        .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
+        .summary-number {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; }}
+        .summary-label {{ font-size: 0.78rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }}
+        .num-blue {{ color: var(--color-primary); }}
+        [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
+        .num-green {{ color: var(--color-success); }}
 
         /* Pedido Cards */
         .pedido-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 14px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
             margin-bottom: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-md);
             animation: fadeIn 0.4s ease forwards;
         }}
         .pedido-header {{
-            padding: 18px 24px;
-            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            background: var(--color-header-bg);
+            border-bottom: 1px solid var(--color-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -292,24 +370,23 @@ class FreteReportGenerator:
             gap: 12px;
         }}
         .pedido-left {{ display: flex; flex-direction: column; gap: 4px; }}
-        .pedido-numero {{ font-weight: 800; font-size: 1.15rem; }}
-        .pedido-cliente {{ color: var(--text-sub); font-size: 0.9rem; }}
+        .pedido-numero {{ font-weight: 700; font-size: 1.2rem; }}
+        .pedido-valor {{ font-size: 0.9rem; font-weight: 600; color: var(--color-success); margin-left: 8px; }}
+        .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.9rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
-            background: #dbeafe;
-            color: #1d4ed8;
-            padding: 3px 12px;
+            background: var(--color-badge-bg);
+            color: var(--color-badge-fg);
+            border: 1px solid var(--color-badge-border);
+            padding: 2px 10px;
             border-radius: 99px;
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
-        }}
-        [data-theme="dark"] .pedido-badge {{
-            background: #1e3a8a;
-            color: #bfdbfe;
+            letter-spacing: 0.05em;
         }}
         .pedido-destino {{
-            color: var(--text-sub);
+            color: var(--color-text-muted);
             font-size: 0.85rem;
         }}
 
@@ -321,107 +398,105 @@ class FreteReportGenerator:
             padding: 18px 24px;
         }}
         .servico-card {{
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 16px;
             text-align: center;
-            transition: all 0.2s ease;
+            transition: var(--transition);
         }}
         .servico-card.disponivel {{
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border-color: #bbf7d0;
-        }}
-        [data-theme="dark"] .servico-card.disponivel {{
-            background: linear-gradient(135deg, #052e16, #14532d);
-            border-color: #166534;
+            background: var(--color-success-bg);
+            border-color: var(--color-success-border);
         }}
         .servico-card.disponivel:hover {{
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }}
         .servico-card.indisponivel {{
-            background: var(--bg);
-            opacity: 0.6;
+            background: var(--color-header-bg);
         }}
         .servico-nome {{
             font-weight: 800;
             font-size: 1rem;
             margin-bottom: 8px;
-            color: var(--text-main);
+            color: var(--color-text-main);
         }}
         .servico-preco {{
             font-size: 1.4rem;
             font-weight: 800;
-            color: var(--green);
+            color: var(--color-success);
             margin-bottom: 4px;
         }}
-        [data-theme="dark"] .servico-preco {{
-            color: #4ade80;
-        }}
         .servico-prazo {{
-            font-size: 0.82rem;
-            color: var(--text-sub);
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
             font-weight: 500;
         }}
         .servico-status {{
-            color: var(--text-sub);
+            color: var(--color-text-muted);
             font-size: 0.85rem;
-            font-style: italic;
         }}
         .servico-msg-prazo {{
-            font-size: 0.72rem;
-            color: #b45309;
+            font-size: 0.8rem;
+            color: var(--color-warning);
             margin-top: 8px;
             padding: 6px 10px;
-            background: rgba(217, 119, 6, 0.08);
-            border: 1px solid rgba(217, 119, 6, 0.15);
+            background: var(--color-warning-bg);
+            border: 1px solid var(--color-warning-border);
             border-radius: 6px;
             text-align: left;
             word-break: break-word;
-            line-height: 1.3;
-        }}
-        [data-theme="dark"] .servico-msg-prazo {{
-            color: #f59e0b;
-            background: rgba(245, 158, 11, 0.08);
-            border-color: rgba(245, 158, 11, 0.15);
+            line-height: 1.4;
         }}
 
         .empty-state {{
             text-align: center;
             padding: 60px 20px;
-            color: var(--text-sub);
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 14px;
+            color: var(--color-text-muted);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
         }}
-        .empty-state .emoji {{ font-size: 3rem; margin-bottom: 10px; }}
+        .empty-state .emoji {{ font-size: 3rem; margin-bottom: 10px; line-height: 1; }}
+        .empty-state .emoji .icon {{ width: 1em; height: 1em; color: var(--color-text-subtle); }}
 
         @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
-        .summary-card {{ animation: fadeIn 0.4s ease forwards; }}
-        .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
 
         @media (prefers-reduced-motion: reduce) {{
             *, *::before, *::after {{
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }}
-            .back-link:hover, .btn-theme:hover, .servico-card.disponivel:hover {{ transform: none; }}
+            .back-link:hover, .btn-theme:active, .servico-card.disponivel:hover {{ transform: none; }}
         }}
 
-        @media (max-width: 600px) {{
-            .pedido-header {{ flex-direction: column; align-items: flex-start; }}
+        @media (max-width: 640px) {{
+            body {{ padding: 16px 12px 40px; }}
+            .header-tools {{ position: static; display: flex; justify-content: flex-end; margin-bottom: 8px; }}
+            h1 {{ font-size: 1.75rem; }}
+            .filter-bar {{ flex-direction: column; align-items: stretch; padding: 16px; }}
+            .filter-group {{ justify-content: space-between; }}
+            .filter-group input {{ flex: 1; max-width: 160px; }}
+            .filter-count {{ margin-left: 0; text-align: center; }}
+            .pedido-header {{ flex-direction: column; align-items: flex-start; padding: 16px; }}
             .pedido-right {{ align-items: flex-start; }}
-            .servicos-grid {{ grid-template-columns: 1fr; }}
+            .servicos-grid {{ grid-template-columns: 1fr; padding: 16px; }}
         }}
     </style>
 </head>
 <body>
-    <button class="btn-theme" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro">🌓 Tema</button>
+    {ICON_SPRITE}
     <div class="container">
         <header>
-            <h1>📦 Opções de Frete Correios</h1>
+            <div class="header-tools">
+                <button type="button" class="btn-theme" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro">
+                    {icone("moon")}{icone("sun")}
+                    <span class="tema-escuro">Escuro</span><span class="tema-claro">Claro</span>
+                </button>
+            </div>
+            <h1>{icone("package")} Opções de Frete Correios</h1>
             <div class="meta">Consulta de serviços disponíveis para pedidos em aberto — Gerado em: {data_geracao}</div>
-            <div class="config-info">📐 Pacote padrão: {config.peso_gramas/1000:.1f}kg — {config.comprimento}x{config.largura}x{config.altura} cm — Origem CEP: {config.cep_origem}</div>
+            <div class="config-info">{icone("package")} Pacote padrão: {config.peso_gramas/1000:.1f}kg — {config.comprimento}x{config.largura}x{config.altura} cm — Origem CEP: {config.cep_origem}</div>
             <br>
             <a href="relatorio_rastreio.html" class="back-link">← Voltar ao Painel Principal</a>
         </header>

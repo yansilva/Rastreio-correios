@@ -100,7 +100,8 @@ class TestRegerarSemRede(unittest.TestCase):
 
             self.assertIsNot(resultado, False)
             html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
-            self.assertIn("Dados consultados em: 14/10/2026 23:30:00", html)
+            self.assertIn('<time id="dadosEm" datetime="2026-10-14T23:30:00">14/10 23:30</time>', html)
+            self.assertIn('id="dadosIdade"', html)
             self.assertIn('data-status="entregue"', html)
             self.assertIn("Tiny desatualizado", html)
             self.assertTrue(Path(pasta, "pedidos_atrasados.html").exists())

@@ -10,12 +10,14 @@ if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
 from correios.cards import (  # noqa: E402
+    PRIORIDADE_STATUS,
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
     montar_card_pedido,
     prioridade,
     selo_status,
+    sem_postagem,
     status_tokens,
     texto_idade,
 )
@@ -44,7 +46,7 @@ class TestSeloStatus(unittest.TestCase):
     def test_retirada_antes_de_atrasado(self):
         self.assertEqual(
             selo_status("em_transito", retirada=True, atrasado=True, dias_atraso=5),
-            ("Aguardando retirada", "badge-red"),
+            ("Aguardando retirada", "badge-yellow"),
         )
 
     def test_atrasado_mostra_dias(self):
@@ -111,6 +113,24 @@ class TestDivergenciaTiny(unittest.TestCase):
     def test_sem_situacao_ou_em_transito(self):
         self.assertEqual(divergencia_tiny("devolvido", ""), "")
         self.assertEqual(divergencia_tiny("em_transito", "Enviado"), "")
+
+
+class TestSemPostagem(unittest.TestCase):
+    def test_enviado_no_tiny_com_etiqueta_antiga(self):
+        from correios.cards import DIAS_SEM_POSTAGEM
+
+        self.assertTrue(sem_postagem("nao_enviado", "Enviado", DIAS_SEM_POSTAGEM + 1))
+        self.assertTrue(sem_postagem("nao_enviado", "ENVIADO ", 9))
+
+    def test_etiqueta_recente_ou_status_coerente_nao_avisa(self):
+        self.assertFalse(sem_postagem("nao_enviado", "Enviado", 1))
+        self.assertFalse(sem_postagem("nao_enviado", "Pronto para envio", 9))
+        self.assertFalse(sem_postagem("em_transito", "Enviado", 9))
+        self.assertFalse(sem_postagem("nao_enviado", "Enviado", None))
+
+    def test_prioridade_fica_entre_atrasado_e_em_transito(self):
+        self.assertLess(PRIORIDADE_STATUS["atrasado"], PRIORIDADE_STATUS["sem_postagem"])
+        self.assertLess(PRIORIDADE_STATUS["sem_postagem"], PRIORIDADE_STATUS["em_transito"])
 
 
 class TestEstaEncerrado(unittest.TestCase):

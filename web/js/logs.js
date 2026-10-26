@@ -125,6 +125,31 @@ async function atualizarDados() {
     }
 }
 
+// Idade dos dados ("há 12 min"), atualizada na tela; acima de 2 h o aviso ganha destaque
+function atualizarIdadeDados() {
+    const marca = document.getElementById('dadosEm');
+    const alvo = document.getElementById('dadosIdade');
+    if (!marca || !alvo) return;
+
+    const instante = new Date(marca.getAttribute('datetime'));
+    if (isNaN(instante.getTime())) return;
+
+    const minutos = Math.max(0, Math.round((Date.now() - instante.getTime()) / 60000));
+    let texto;
+    if (minutos < 1) {
+        texto = '(agora)';
+    } else if (minutos < 60) {
+        texto = `(há ${minutos} min)`;
+    } else if (minutos < 24 * 60) {
+        texto = `(há ${Math.floor(minutos / 60)} h)`;
+    } else {
+        const dias = Math.floor(minutos / (24 * 60));
+        texto = `(há ${dias} ${dias === 1 ? 'dia' : 'dias'})`;
+    }
+    alvo.textContent = texto;
+    alvo.classList.toggle('meta-idade-antiga', minutos >= 120);
+}
+
 // Regera a página a partir do cache em disco, sem consultar o Tiny nem os Correios
 async function regerarPagina() {
     const btn = document.getElementById('btnRegenerate');
@@ -216,6 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRegenerate) {
         btnRegenerate.addEventListener('click', regerarPagina);
     }
+
+    atualizarIdadeDados();
+    setInterval(atualizarIdadeDados, 30000);
 
     // 2. Sincronização periódica da próxima atualização com o backend
     verificarProximaAtualizacao();

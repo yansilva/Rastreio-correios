@@ -24,7 +24,7 @@ if str(ARQUIVOS_DIR) not in sys.path:
 
 from server.config import ServerConfig
 from server.handler import RastreioRequestHandler
-from server.launcher import ThreadedTCPServer, abrir_navegador
+from server.launcher import ThreadedTCPServer, abrir_navegador, is_port_in_use
 from server.logger import (
     ServerLogQueue,
     StreamToQueue,
@@ -156,6 +156,56 @@ class TestServerLogger(unittest.TestCase):
 
         self.assertIn("Log impresso", mock_stream.getvalue())
         self.assertEqual(log_queue.get(timeout=0.5), "Log impresso via print")
+
+    def test_stream_to_queue_tolera_pipe_quebrado_winerror_233(self):
+        class BrokenPipeStream:
+            def write(self, data):
+                err = OSError("Não há processo no outro extremo do pipe")
+                err.winerror = 233
+                raise err
+
+            def flush(self):
+                err = OSError("Não há processo no outro extremo do pipe")
+                err.winerror = 233
+                raise err
+
+        log_queue = ServerLogQueue(maxsize=10)
+        stream_wrapper = StreamToQueue(BrokenPipeStream(), log_queue)
+
+        # Não deve lançar exceção mesmo com WinError 233
+        written = stream_wrapper.write("Mensagem durante WinError 233\n")
+        stream_wrapper.flush()
+
+        self.assertEqual(written, len("Mensagem durante WinError 233\n"))
+        self.assertEqual(log_queue.get(timeout=0.5), "Mensagem durante WinError 233")
+        self.assertIsNone(stream_wrapper.original_stream)
+
+    def test_stream_to_queue_tolera_broken_pipe_error(self):
+        class BrokenStream:
+            def write(self, data):
+                raise BrokenPipeError("Broken pipe")
+
+            def flush(self):
+                raise BrokenPipeError("Broken pipe")
+
+        log_queue = ServerLogQueue(maxsize=10)
+        stream_wrapper = StreamToQueue(BrokenStream(), log_queue)
+
+        written = stream_wrapper.write("Mensagem durante BrokenPipe\n")
+        stream_wrapper.flush()
+
+        self.assertEqual(written, len("Mensagem durante BrokenPipe\n"))
+        self.assertEqual(log_queue.get(timeout=0.5), "Mensagem durante BrokenPipe")
+        self.assertIsNone(stream_wrapper.original_stream)
+
+    def test_stream_to_queue_propriedades_stream(self):
+        mock_stream = io.StringIO()
+        log_queue = ServerLogQueue(maxsize=10)
+        stream_wrapper = StreamToQueue(mock_stream, log_queue)
+
+        self.assertIsInstance(stream_wrapper.encoding, str)
+        self.assertIsInstance(stream_wrapper.errors, str)
+        self.assertFalse(stream_wrapper.isatty())
 
 
 class TestUpdateManager(unittest.TestCase):
@@ -335,6 +385,10 @@ class TestLauncher(unittest.TestCase):
     def test_threaded_tcp_server_properties(self):
         self.assertTrue(ThreadedTCPServer.allow_reuse_address)
         self.assertTrue(ThreadedTCPServer.daemon_threads)
+
+    def test_is_port_in_use(self):
+        # Testa chamada com porta improvável de estar em uso (ex: 59199)
+        self.assertFalse(is_port_in_use(59199, "127.0.0.1"))
 
 
 class TestFachadaRetrocompatibilidade(unittest.TestCase):

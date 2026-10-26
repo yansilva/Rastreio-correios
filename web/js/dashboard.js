@@ -174,13 +174,35 @@ function ordenarPedidos(modo) {
     cartoes.forEach(function(cartao) { lista.appendChild(cartao); });
 }
 
-function alternarHistoricos() {
+// Preferências da tela (ordem e históricos abertos) sobrevivem à atualização da página
+function lerPreferencia(chave) {
+    try {
+        return localStorage.getItem('painel.' + chave);
+    } catch (e) {
+        return null;
+    }
+}
+
+function gravarPreferencia(chave, valor) {
+    try {
+        localStorage.setItem('painel.' + chave, valor);
+    } catch (e) {
+        // Sem persistência: a escolha vale só para esta página
+    }
+}
+
+function definirHistoricos(abrir) {
     var botao = document.getElementById('btnToggleHistory');
+    document.querySelectorAll('.order-card details.order-history').forEach(function(d) { d.open = abrir; });
+    if (botao) botao.textContent = abrir ? 'Recolher históricos' : 'Expandir históricos';
+}
+
+function alternarHistoricos() {
     var detalhes = document.querySelectorAll('.order-card:not(.order-hidden) details.order-history');
     if (!detalhes.length) return;
     var abrir = Array.prototype.some.call(detalhes, function(d) { return !d.open; });
-    detalhes.forEach(function(d) { d.open = abrir; });
-    if (botao) botao.textContent = abrir ? 'Recolher históricos' : 'Expandir históricos';
+    definirHistoricos(abrir);
+    gravarPreferencia('historicos', abrir ? 'abertos' : 'recolhidos');
 }
 
 function clearAllFilters() {
@@ -246,7 +268,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     var seletorOrdem = document.getElementById('sortSelect');
     if (seletorOrdem) {
-        seletorOrdem.addEventListener('change', function() { ordenarPedidos(seletorOrdem.value); });
+        seletorOrdem.addEventListener('change', function() {
+            ordenarPedidos(seletorOrdem.value);
+            gravarPreferencia('ordem', seletorOrdem.value);
+        });
+        // Restaura a ordem escolhida antes da última atualização (só valores que o seletor oferece)
+        var ordemSalva = lerPreferencia('ordem');
+        var existe = ordemSalva && Array.prototype.some.call(seletorOrdem.options, function(o) { return o.value === ordemSalva; });
+        if (existe && ordemSalva !== 'urgencia') {
+            seletorOrdem.value = ordemSalva;
+            ordenarPedidos(ordemSalva);
+        }
+    }
+    if (lerPreferencia('historicos') === 'abertos') {
+        definirHistoricos(true);
     }
     var botaoHistoricos = document.getElementById('btnToggleHistory');
     if (botaoHistoricos) {

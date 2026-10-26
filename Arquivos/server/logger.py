@@ -64,14 +64,43 @@ class StreamToQueue:
         self.original_stream = original_stream
         self.log_queue = log_queue
 
-    def write(self, data: str) -> None:
+    def write(self, data: str) -> int:
         if self.original_stream and hasattr(self.original_stream, "write"):
-            self.original_stream.write(data)
-            if hasattr(self.original_stream, "flush"):
-                self.original_stream.flush()
-        if data and data.strip():
+            try:
+                self.original_stream.write(data)
+                if hasattr(self.original_stream, "flush"):
+                    self.original_stream.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                # O pipe de saída padrão foi desconectado pelo processo pai ou terminal
+                self.original_stream = None
+
+        if data and str(data).strip():
             self.log_queue.put(data)
+        return len(data) if isinstance(data, str) else 0
 
     def flush(self) -> None:
         if self.original_stream and hasattr(self.original_stream, "flush"):
-            self.original_stream.flush()
+            try:
+                self.original_stream.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                self.original_stream = None
+
+    @property
+    def encoding(self) -> str:
+        if self.original_stream and hasattr(self.original_stream, "encoding"):
+            return getattr(self.original_stream, "encoding", "utf-8") or "utf-8"
+        return "utf-8"
+
+    @property
+    def errors(self) -> str:
+        if self.original_stream and hasattr(self.original_stream, "errors"):
+            return getattr(self.original_stream, "errors", "replace") or "replace"
+        return "replace"
+
+    def isatty(self) -> bool:
+        if self.original_stream and hasattr(self.original_stream, "isatty"):
+            try:
+                return bool(self.original_stream.isatty())
+            except Exception:
+                return False
+        return False
