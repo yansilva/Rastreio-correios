@@ -131,12 +131,38 @@ function applyFilters() {
     initialRenderDone = true;
 }
 
+// Filtro e busca sobrevivem à atualização da página (sessionStorage: só nesta aba)
+function salvarFiltro() {
+    try {
+        sessionStorage.setItem('painel.filtro', JSON.stringify({ status: activeStatusFilter, busca: currentSearchTerm }));
+    } catch (e) {
+        // Sem persistência: o filtro vale só enquanto a página estiver aberta
+    }
+}
+
+function restaurarFiltro() {
+    try {
+        var salvo = JSON.parse(sessionStorage.getItem('painel.filtro') || 'null');
+        if (!salvo) return;
+        var statusValidos = ['nao_enviado', 'em_transito', 'entregue', 'atrasado', 'aguardando_retirada', 'devolvido'];
+        if (statusValidos.indexOf(salvo.status) !== -1) activeStatusFilter = salvo.status;
+        if (typeof salvo.busca === 'string') {
+            currentSearchTerm = salvo.busca;
+            var campo = document.getElementById('searchInput');
+            if (campo) campo.value = salvo.busca;
+        }
+    } catch (e) {
+        // Dado inválido ou storage indisponível: começa sem filtro
+    }
+}
+
 function filterOrders(status) {
     if (status === 'all' || status === null || status === activeStatusFilter) {
         activeStatusFilter = null;
     } else {
         activeStatusFilter = status;
     }
+    salvarFiltro();
     applyFilters();
 
     if (activeStatusFilter) {
@@ -212,6 +238,7 @@ function clearAllFilters() {
     if (searchInput) {
         searchInput.value = '';
     }
+    salvarFiltro();
     applyFilters();
 }
 
@@ -222,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
             currentSearchTerm = e.target.value;
+            salvarFiltro();
             applyFilters();
         });
     }
@@ -306,10 +334,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Escape' && searchInput.value) {
                 searchInput.value = '';
                 currentSearchTerm = '';
+                salvarFiltro();
                 applyFilters();
             }
         });
     }
+
+    // Restaura filtro e busca da sessão antes da primeira renderização
+    restaurarFiltro();
 
     // Aplica contagem inicial
     applyFilters();

@@ -426,7 +426,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
-            <p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p>
+            <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
             <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -540,14 +540,14 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </thead>
                 <tbody>
                     <tr class="urgencia-alta">
-                        <td><strong>#41732</strong></td>
-                        <td><code>BR112233445BR</code></td>
-                        <td>02/09/2026</td>
-                        <td><span class="dias-badge urgencia-alta">6 dias</span></td>
-                        <td><span class="urgencia-tag urgencia-alta">ALTA</span></td>
-                        <td>Objeto em transferência - trânsito lento</td>
-                        <td>RECIFE/PE</td>
-                        <td>Em Trânsito</td>
+                        <td data-label="Pedido"><strong>#41732</strong></td>
+                        <td data-label="Rastreio"><code>BR112233445BR</code></td>
+                        <td data-label="Postagem">02/09/2026</td>
+                        <td data-label="Dias"><span class="dias-badge urgencia-alta">6 dias</span></td>
+                        <td data-label="Urgência"><span class="urgencia-tag urgencia-alta">ALTA</span></td>
+                        <td data-label="Último Evento">Objeto em transferência - trânsito lento</td>
+                        <td data-label="Local">RECIFE/PE</td>
+                        <td data-label="Status">Em Trânsito</td>
                     </tr>
                 </tbody>
             </table>

@@ -471,7 +471,7 @@
 
 .badge-blue {
     background: var(--color-info-bg);
-    color: var(--color-info);
+    color: var(--color-info-text);
     border: 1px solid var(--color-info-border);
 }
 
@@ -994,6 +994,87 @@ h1 .icon {
 
 .status-legend strong {
     color: var(--color-text-main);
+}
+
+.status-legend-details {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.status-legend-details > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 4px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-link);
+    cursor: pointer;
+}
+
+.status-legend-details > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.status-legend-details[open] > summary {
+    margin-bottom: 4px;
+}
+
+.status-legend-details p {
+    margin: 0;
+}
+
+.status-legend-details strong {
+    color: var(--color-text-main);
+}
+
+/* Atrasados no celular: cada linha da tabela vira um cartão empilhado */
+@media (max-width: 640px) {
+    .table-wrapper table,
+    .table-wrapper thead,
+    .table-wrapper tbody,
+    .table-wrapper tr,
+    .table-wrapper td {
+        display: block;
+    }
+
+    .table-wrapper thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .table-wrapper tbody tr {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .table-wrapper tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table-wrapper tbody td {
+        border-bottom: none;
+        padding: 6px 16px;
+        overflow-wrap: anywhere;
+    }
+
+    .table-wrapper td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
 }
 
 /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */

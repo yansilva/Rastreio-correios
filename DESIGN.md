@@ -144,7 +144,7 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 - **Âmbar Atenção** (#b45309) com fundo (#fef3c7): aguardando retirada e alerta moderado.
 - **Verde Entregue** (#15803d) com fundo (#dcfce7): entregue.
 - **Roxo Devolvido** (#9333ea) com fundo (#f3e8ff): devolvido.
-- **Azul Informação** (#0284c7) com fundo (#e0f2fe): informação neutra.
+- **Azul Informação** (#0284c7) com fundo (#e0f2fe): informação neutra. Para texto sobre esse fundo (selo "Em trânsito") use o token `--color-info-text` (#0369a1 no claro, ≈5,9:1; no escuro continua #0284c7).
 
 ### Named Rules
 **The One Signal Rule.** O azul de ação aparece em no máximo um elemento de decisão por área visível. Cor de status é reservada para estado do pedido; nunca usar vermelho ou verde como decoração.

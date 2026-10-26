@@ -215,7 +215,7 @@ def processar(usar_cache=False):
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
-            <p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p>
+            <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
             <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -493,14 +493,14 @@ def processar(usar_cache=False):
 
             rows_html += f"""
             <tr class="{urgencia_class}">
-                <td><strong>#{item["pedido"]}</strong></td>
-                <td><code>{item["rastreio"]}</code></td>
-                <td>{item["data_postagem"]}</td>
-                <td><span class="dias-badge {urgencia_class}">{dias} dias</span></td>
-                <td><span class="urgencia-tag {urgencia_class}">{urgencia_label}</span></td>
-                <td>{item["ultimo_evento"]}</td>
-                <td>{item["ultimo_local"]}</td>
-                <td>{status_label}</td>
+                <td data-label="Pedido"><strong>#{item["pedido"]}</strong></td>
+                <td data-label="Rastreio"><code>{item["rastreio"]}</code></td>
+                <td data-label="Postagem">{item["data_postagem"]}</td>
+                <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias</span></td>
+                <td data-label="Urgência"><span class="urgencia-tag {urgencia_class}">{urgencia_label}</span></td>
+                <td data-label="Último Evento">{item["ultimo_evento"]}</td>
+                <td data-label="Local">{item["ultimo_local"]}</td>
+                <td data-label="Status">{status_label}</td>
             </tr>
             """
 
