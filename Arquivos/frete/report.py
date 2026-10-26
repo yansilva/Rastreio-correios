@@ -3,8 +3,8 @@
 Responsabilidade exclusiva: montar e salvar os arquivos de saída.
 NÃO consulta APIs, NÃO decide qual frete recomendar.
 
-O HTML e CSS são idênticos ao gerado anteriormente por consulta_frete.py
-para manter compatibilidade com o painel e alert_frete.js.
+O visual segue o DESIGN.md (tokens, rampa de fontes, ícones SVG do sprite) e
+mantém compatibilidade com o painel e alert_frete.js.
 """
 import logging
 import os
@@ -115,7 +115,7 @@ class FreteReportGenerator:
         if not pedidos_com_frete:
             cards_html = f"""
         <div class="empty-state">
-            <div class="emoji">{icone("inbox")}</div>
+            <div class="empty-icon">{icone("inbox")}</div>
             <h2>Nenhum pedido em aberto</h2>
             <p>Todos os pedidos do período já foram enviados ou não possuem CEP de destino.</p>
         </div>"""
@@ -146,9 +146,13 @@ class FreteReportGenerator:
             --color-warning: #b45309;
             --color-warning-bg: #fef3c7;
             --color-warning-border: #fde68a;
+            --color-success-text: #166534;
+            --color-warning-text: #92400e;
+            --color-border-strong: #64748b;
             --color-badge-fg: #1d4ed8;
             --color-badge-bg: #eff6ff;
             --color-badge-border: #bfdbfe;
+            --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 16px;
             --radius-full: 9999px;
@@ -173,6 +177,8 @@ class FreteReportGenerator:
             --color-warning: #fbbf24;
             --color-warning-bg: rgba(217, 119, 6, 0.15);
             --color-warning-border: rgba(251, 191, 36, 0.35);
+            --color-success-text: #4ade80;
+            --color-warning-text: #fbbf24;
             --color-badge-fg: #93c5fd;
             --color-badge-bg: rgba(37, 99, 235, 0.18);
             --color-badge-border: rgba(147, 197, 253, 0.35);
@@ -197,7 +203,7 @@ class FreteReportGenerator:
             color: var(--color-primary);
         }}
         [data-theme="dark"] h1 {{ color: var(--color-link); }}
-        .meta {{ color: var(--color-text-muted); margin-top: 8px; font-size: 0.9rem; }}
+        .meta {{ color: var(--color-text-muted); margin-top: 8px; font-size: 0.875rem; }}
         .config-info {{
             display: inline-block;
             margin-top: 10px;
@@ -205,7 +211,7 @@ class FreteReportGenerator:
             background: var(--color-header-bg);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--color-text-muted);
         }}
 
@@ -233,7 +239,7 @@ class FreteReportGenerator:
             text-decoration: none;
             border-radius: var(--radius-full);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             margin-top: 16px;
             min-height: 44px;
             box-shadow: var(--shadow-sm);
@@ -246,12 +252,12 @@ class FreteReportGenerator:
         .btn-theme {{
             background: var(--color-surface);
             color: var(--color-text-main);
-            border: 1px solid var(--color-border);
+            border: 1px solid var(--color-border-strong);
             padding: 10px 18px;
             min-height: 44px;
             font: inherit;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             border-radius: var(--radius-full);
             cursor: pointer;
             box-shadow: var(--shadow-sm);
@@ -297,18 +303,18 @@ class FreteReportGenerator:
             gap: 10px;
         }}
         .filter-group label {{
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             font-weight: 600;
             color: var(--color-text-muted);
         }}
         .filter-group input {{
             padding: 8px 12px;
-            border: 1px solid var(--color-border);
+            border: 1px solid var(--color-border-strong);
             border-radius: var(--radius-md);
             background: var(--color-bg);
             color: var(--color-text-main);
             font: inherit;
-            font-size: 0.95rem;
+            font-size: 1rem;
             min-height: 44px;
             width: 120px;
             transition: border-color 0.2s, box-shadow 0.2s;
@@ -321,7 +327,7 @@ class FreteReportGenerator:
         }}
         .filter-count {{
             margin-left: auto;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             color: var(--color-text-muted);
             font-weight: 600;
         }}
@@ -344,7 +350,7 @@ class FreteReportGenerator:
         }}
         .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
         .summary-number {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; }}
-        .summary-label {{ font-size: 0.78rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }}
+        .summary-label {{ font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }}
         .num-blue {{ color: var(--color-primary); }}
         [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
         .num-green {{ color: var(--color-success); }}
@@ -353,7 +359,7 @@ class FreteReportGenerator:
         .pedido-card {{
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: 12px;
+            border-radius: var(--radius-lg);
             margin-bottom: 20px;
             overflow: hidden;
             box-shadow: var(--shadow-md);
@@ -370,16 +376,16 @@ class FreteReportGenerator:
             gap: 12px;
         }}
         .pedido-left {{ display: flex; flex-direction: column; gap: 4px; }}
-        .pedido-numero {{ font-weight: 700; font-size: 1.2rem; }}
-        .pedido-valor {{ font-size: 0.9rem; font-weight: 600; color: var(--color-success); margin-left: 8px; }}
-        .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.9rem; }}
+        .pedido-numero {{ font-weight: 700; font-size: 1.25rem; }}
+        .pedido-valor {{ font-size: 0.875rem; font-weight: 600; color: var(--color-success-text); margin-left: 8px; }}
+        .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.875rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
             background: var(--color-badge-bg);
             color: var(--color-badge-fg);
             border: 1px solid var(--color-badge-border);
             padding: 2px 10px;
-            border-radius: 99px;
+            border-radius: var(--radius-full);
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
@@ -387,7 +393,7 @@ class FreteReportGenerator:
         }}
         .pedido-destino {{
             color: var(--color-text-muted);
-            font-size: 0.85rem;
+            font-size: 0.875rem;
         }}
 
         /* Serviços Grid */
@@ -422,28 +428,28 @@ class FreteReportGenerator:
             color: var(--color-text-main);
         }}
         .servico-preco {{
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 800;
-            color: var(--color-success);
+            color: var(--color-success-text);
             margin-bottom: 4px;
         }}
         .servico-prazo {{
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--color-text-muted);
             font-weight: 500;
         }}
         .servico-status {{
             color: var(--color-text-muted);
-            font-size: 0.85rem;
+            font-size: 0.875rem;
         }}
         .servico-msg-prazo {{
-            font-size: 0.8rem;
-            color: var(--color-warning);
+            font-size: 0.8125rem;
+            color: var(--color-warning-text);
             margin-top: 8px;
             padding: 6px 10px;
             background: var(--color-warning-bg);
             border: 1px solid var(--color-warning-border);
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             text-align: left;
             word-break: break-word;
             line-height: 1.4;
@@ -457,8 +463,8 @@ class FreteReportGenerator:
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
         }}
-        .empty-state .emoji {{ font-size: 3rem; margin-bottom: 10px; line-height: 1; }}
-        .empty-state .emoji .icon {{ width: 1em; height: 1em; color: var(--color-text-subtle); }}
+        .empty-state .empty-icon {{ font-size: 3rem; margin-bottom: 10px; line-height: 1; }}
+        .empty-state .empty-icon .icon {{ width: 1em; height: 1em; color: var(--color-text-subtle); }}
 
         @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 
