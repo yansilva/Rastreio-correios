@@ -44,14 +44,12 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     # 1. Dashboard de Resumo
     # -------------------------------------------------------------------------
     dashboard_html = """
+        <section class="action-strip" aria-label="Pedidos que precisam de ação">
+            <span class="action-strip-title">Precisam de ação</span>
+            <button type="button" class="action-chip" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg><strong>1</strong> Atrasados</button>
+            <button type="button" class="action-chip" data-filter="aguardando_retirada" title="Objeto na agência, esperando o destinatário"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg><strong>1</strong> Aguardando retirada</button>
+        </section>
         <div class="dashboard">
-            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem">
-                <div class="dash-icon dash-icon-red"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg></div>
-                <div class="dash-info">
-                    <span class="dash-number dash-number-red">1</span>
-                    <span class="dash-label">Atrasados</span>
-                </div>
-            </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
@@ -462,9 +460,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     </div>
 
     <div class="floating-actions">
-        <button id="btnUpdate" class="btn-action btn-update" aria-label="Atualizar dados" title="Sincronizar dados com o Tiny e Correios">
+        <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
             <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
+            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
         </button>
     </div>
 

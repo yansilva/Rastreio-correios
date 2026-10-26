@@ -161,7 +161,7 @@ class UpdateManager:
 
         importlib.reload(consulta_correios)
         if consulta_correios.processar(usar_cache=True) is False:
-            raise RuntimeError("não há dados em cache; clique em Atualizar Dados primeiro")
+            raise RuntimeError("não há dados em cache; clique em Consultar Tiny e Correios primeiro")
 
     @staticmethod
     def _default_runner() -> None:

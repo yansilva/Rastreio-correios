@@ -134,7 +134,7 @@ def processar(usar_cache=False):
         if usar_cache:
             carregado = carregar_cache(caminho_cache)
             if carregado is None:
-                print("Erro: não há dados em cache. Clique em Atualizar Dados primeiro.")
+                print("Erro: não há dados em cache. Clique em Consultar Tiny e Correios primeiro.")
                 return False
             objetos_cache, momento_dados = carregado
             data_dados = momento_dados.strftime("%d/%m/%Y %H:%M:%S")
@@ -223,7 +223,7 @@ def processar(usar_cache=False):
                     <option value="antigo">Último evento mais antigo</option>
                     <option value="pedido">Número do pedido</option>
                 </select>
-                <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os últimos dados já consultados, sem chamar o Tiny nem os Correios">Regerar página</button>
+                <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os dados já consultados às {hora_dados}, sem chamar o Tiny nem os Correios">Recarregar dados salvos de {hora_dados}</button>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
             </div>
         </div>
@@ -246,9 +246,9 @@ def processar(usar_cache=False):
     </div>
 
     <div class="floating-actions">
-        <button id="btnUpdate" class="btn-action btn-update" aria-label="Atualizar dados" title="Sincronizar dados com o Tiny e Correios">
+        <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
             <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Atualizar Dados</span>
+            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
         </button>
     </div>
 
@@ -266,6 +266,7 @@ def processar(usar_cache=False):
         devolvidos_count = 0
         nao_enviados_count = 0
         em_transito_count = 0
+        retiradas_count = 0
 
         PEDIDOS_IGNORADOS = ["39192"]
 
@@ -329,6 +330,8 @@ def processar(usar_cache=False):
             oculto = TrackingService.deve_ocultar_card(obj_classificado)
 
             esta_atrasado = atraso is not None
+            if obj_classificado.is_retirada and status_category not in ("entregue", "devolvido"):
+                retiradas_count += 1
             dias_atraso = atraso.dias_transito if atraso else 0
             selo, classe_selo = selo_status(
                 status_category,
@@ -375,14 +378,12 @@ def processar(usar_cache=False):
 
         # Monta o dashboard de resumo
         dashboard_html = f"""
+        <section class="action-strip" aria-label="Pedidos que precisam de ação">
+            <span class="action-strip-title">Precisam de ação</span>
+            <button type="button" class="action-chip" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg><strong>{len(atrasados_data)}</strong> Atrasados</button>
+            <button type="button" class="action-chip" data-filter="aguardando_retirada" title="Objeto na agência, esperando o destinatário"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg><strong>{retiradas_count}</strong> Aguardando retirada</button>
+        </section>
         <div class="dashboard">
-            <div class="dash-card dash-card-urgent dash-clickable" role="button" tabindex="0" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem">
-                <div class="dash-icon dash-icon-red"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg></div>
-                <div class="dash-info">
-                    <span class="dash-number dash-number-red">{len(atrasados_data)}</span>
-                    <span class="dash-label">Atrasados</span>
-                </div>
-            </div>
             <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
@@ -429,6 +430,7 @@ def processar(usar_cache=False):
             icon_sprite=ICON_SPRITE,
             data_geracao=time.strftime("%d/%m/%Y %H:%M:%S"),
             data_dados=data_dados,
+            hora_dados=data_dados[11:16],
             dashboard=dashboard_html,
             content="".join(orders_html),
             atrasados_link=atrasados_link_html,

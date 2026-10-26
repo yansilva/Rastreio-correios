@@ -1,10 +1,11 @@
 """Testes do cache dos Correios e da regeração do relatório sem chamar as APIs."""
 import io
 import os
+import re
 import sys
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -103,6 +104,52 @@ class TestRegerarSemRede(unittest.TestCase):
             self.assertIn('data-status="entregue"', html)
             self.assertIn("Tiny desatualizado", html)
             self.assertTrue(Path(pasta, "pedidos_atrasados.html").exists())
+
+    def test_resumo_soma_o_total_e_faixa_de_acao_conta_o_que_pede_acao(self):
+        agora = datetime.now()
+
+        def evento(dias, descricao):
+            quando = (agora - timedelta(days=dias, hours=1)).replace(microsecond=0).isoformat()
+            return {"dtHrCriado": quando, "descricao": descricao, "unidade": {"endereco": {"cidade": "SAO PAULO", "uf": "SP"}}}
+
+        pedidos = {
+            "SY1": ("Enviado", [evento(0, "Objeto aguardando retirada no endereço indicado"), evento(3, "Objeto postado")]),
+            "SY2": ("Enviado", [evento(2, "Objeto em transferência"), evento(6, "Objeto postado")]),
+            "SY3": ("Enviado", [evento(1, "Objeto em transferência"), evento(2, "Objeto postado")]),
+            "SY4": ("Enviado", [evento(0, "Objeto entregue ao destinatário"), evento(3, "Objeto postado")]),
+            "SY5": ("Não entregue", [evento(1, "Objeto devolvido ao remetente"), evento(9, "Objeto postado")]),
+            "SY6": ("Pronto para envio", []),
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            linhas = "".join(f"{100 + i},{situacao},{codigo}\n" for i, (codigo, (situacao, _)) in enumerate(pedidos.items()))
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n" + linhas, encoding="utf-8"
+            )
+            salvar_cache(
+                os.path.join(arquivos, "rastreios_cache.json"),
+                {codigo: ({"eventos": eventos} if eventos else None) for codigo, (_, eventos) in pedidos.items()},
+                agora - timedelta(minutes=12),
+            )
+            with patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ):
+                resultado = consulta_correios.processar(usar_cache=True)
+
+            self.assertIsNot(resultado, False)
+            html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+
+        total_cartoes = html.count('class="order-card')
+        numeros_resumo = [int(n) for n in re.findall(r'class="dash-number[^"]*">(\d+)</span>', html)]
+        self.assertEqual(total_cartoes, len(pedidos))
+        self.assertEqual(sum(numeros_resumo), total_cartoes)
+
+        self.assertRegex(html, r'data-filter="atrasado"[^>]*>.*?<strong>1</strong> Atrasados')
+        self.assertRegex(html, r'data-filter="aguardando_retirada"[^>]*>.*?<strong>1</strong> Aguardando retirada')
+        self.assertNotIn("dash-card-urgent", html)
+        self.assertIn("Recarregar dados salvos de", html)
+        self.assertIn("Consultar Tiny e Correios", html)
 
     def test_sem_cache_devolve_false(self):
         with tempfile.TemporaryDirectory() as pasta:

@@ -110,6 +110,14 @@ function applyFilters() {
         }
     });
 
+    document.querySelectorAll('.action-chip').forEach(function(chip) {
+        if (activeStatusFilter && chip.getAttribute('data-filter') === activeStatusFilter) {
+            chip.classList.add('active');
+        } else {
+            chip.classList.remove('active');
+        }
+    });
+
     document.querySelectorAll('.filter-pill').forEach(function(pill) {
         if (pill.getAttribute('data-filter') === (activeStatusFilter || 'all')) {
             pill.classList.add('active');
@@ -214,6 +222,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 filterOrders(card.getAttribute('data-filter'));
             }
+        });
+    });
+
+    // 3b. Botões da faixa "Precisam de ação" (são <button>: Enter e Espaço já funcionam)
+    document.querySelectorAll('.action-chip[data-filter]').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            filterOrders(chip.getAttribute('data-filter'));
         });
     });
 

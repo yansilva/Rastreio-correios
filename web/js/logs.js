@@ -52,7 +52,7 @@ async function atualizarDados() {
     try {
         if (btn) btn.disabled = true;
         if (spinner) spinner.style.display = 'block';
-        if (btnText) btnText.textContent = 'Atualizando...';
+        if (btnText) btnText.textContent = 'Consultando...';
 
         if (consoleBody) consoleBody.innerHTML = '';
         if (consoleDiv) consoleDiv.style.display = 'block';
@@ -93,7 +93,7 @@ async function atualizarDados() {
                 showToast('❌ Conexão de logs interrompida. Tente atualizar novamente.', '#dc2626');
                 if (btn) btn.disabled = false;
                 if (spinner) spinner.style.display = 'none';
-                if (btnText) btnText.textContent = 'Atualizar Dados';
+                if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
             };
         } else if (response.status === 429) {
             let remaining = 0;
@@ -109,19 +109,19 @@ async function atualizarDados() {
             if (consoleDiv) consoleDiv.style.display = 'none';
             if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';
-            if (btnText) btnText.textContent = 'Atualizar Dados';
+            if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
         } else {
             showToast('❌ Erro na resposta do servidor.', '#dc2626');
             if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';
-            if (btnText) btnText.textContent = 'Atualizar Dados';
+            if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
         }
     } catch (err) {
         console.error('Falha ao conectar com o servidor:', err);
         showToast('❌ Servidor offline ou inacessível.', '#dc2626');
         if (btn) btn.disabled = false;
         if (spinner) spinner.style.display = 'none';
-        if (btnText) btnText.textContent = 'Atualizar Dados';
+        if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
     }
 }
 

@@ -71,9 +71,67 @@
 .dash-number-purple { color: var(--color-purple); }
 .dash-number-red    { color: var(--color-danger); }
 
-/* Atrasados é o número de que o operador mais precisa: ganha borda de status */
-.dash-card-urgent {
-    border-color: var(--color-danger-border);
+/* Faixa "Precisam de ação": fica acima do resumo, que soma o total de pedidos */
+.action-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-danger-border);
+    border-radius: var(--radius-lg);
+}
+
+.action-strip-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-danger);
+}
+
+.action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 14px;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.action-chip .icon {
+    color: var(--color-danger);
+}
+
+.action-chip strong {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-danger);
+}
+
+.action-chip:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.action-chip:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.action-chip.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
 }
 
 .dash-label {
@@ -818,9 +876,13 @@ tbody tr:hover {
         white-space: nowrap;
     }
 
-    /* Atrasados ocupa a linha inteira no celular, como cartão principal */
-    .dash-card-urgent {
-        grid-column: 1 / -1;
+    /* Faixa de ação: título em linha própria e botões com alvo de toque de 44px */
+    .action-strip-title {
+        flex-basis: 100%;
+    }
+
+    .action-chip {
+        min-height: 44px;
     }
 
     .floating-actions {
