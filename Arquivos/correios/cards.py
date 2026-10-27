@@ -108,6 +108,36 @@ def texto_idade(dt_iso: str, agora: datetime | None = None) -> str:
     return f"Último evento há {dias} dias"
 
 
+def zero(numero: int) -> str:
+    """Classe CSS que apaga a ênfase de um contador zerado (zero não pede atenção)."""
+    return " is-zero" if numero == 0 else ""
+
+
+def faixa_acao(atrasados: int, retiradas: int) -> str:
+    """Faixa 'Precisam de ação': botões de filtro, ou uma linha calma quando não há nada a fazer."""
+    if atrasados == 0 and retiradas == 0:
+        return (
+            '<section class="action-strip action-strip-ok" aria-label="Pedidos que precisam de ação">'
+            '<svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg>'
+            "<span>Nada atrasado nem aguardando retirada</span></section>"
+        )
+
+    def chip(filtro: str, icone: str, titulo: str, numero: int, rotulo: str) -> str:
+        return (
+            f'<button type="button" class="action-chip{zero(numero)}" data-filter="{filtro}" title="{titulo}">'
+            f'<svg class="icon icon-{icone}" aria-hidden="true" focusable="false"><use href="#i-{icone}"></use></svg>'
+            f"<strong>{numero}</strong> {rotulo}</button>"
+        )
+
+    return (
+        '<section class="action-strip" aria-label="Pedidos que precisam de ação">'
+        '<span class="action-strip-title">Precisam de ação</span>'
+        + chip("atrasado", "clock", "Mais de 3 dias em trânsito desde a postagem", atrasados, "Atrasados")
+        + chip("aguardando_retirada", "building", "Objeto na agência, esperando o destinatário", retiradas, "Aguardando retirada")
+        + "</section>"
+    )
+
+
 def montar_card_pedido(
     *,
     titulo: str,
@@ -122,6 +152,7 @@ def montar_card_pedido(
     numero: str = "",
     idade_dias: int | None = None,
     divergencia: str = "",
+    rastreio: str = "",
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido."""
     classe = "order-card"
@@ -133,6 +164,12 @@ def montar_card_pedido(
     divergencia_html = (
         f'<span class="badge badge-yellow" title="{escape(divergencia, quote=True)}">Tiny desatualizado</span>'
         if divergencia
+        else ""
+    )
+    copiar_html = (
+        f'<button type="button" class="btn-copy" data-copy="{escape(rastreio, quote=True)}" '
+        f'aria-label="Copiar código de rastreio {escape(rastreio, quote=True)}">Copiar rastreio</button>'
+        if rastreio
         else ""
     )
     atributos = f'data-status="{tokens}"'
@@ -152,12 +189,13 @@ def montar_card_pedido(
     return f"""
             <div class="{classe}" {atributos}>
                 <div class="order-header">
-                    <div class="order-title">{escape(titulo)}</div>
+                    <h2 class="order-title">{escape(titulo)}</h2>
                     <div class="order-meta">
                         <span class="badge {classe_selo}">{escape(selo)}</span>
                         {divergencia_html}
                         {idade_html}
                         <span class="order-tiny-status">Situação no Tiny: {escape(situacao_tiny or "—")}</span>
+                        {copiar_html}
                     </div>
                 </div>
                 <div class="events-container">

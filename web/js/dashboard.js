@@ -26,6 +26,57 @@ function updateClearButton() {
     }
 }
 
+// Mensagens do estado vazio: filtro sem pedidos pode ser boa notícia; busca sem resultado oferece a saída
+var MENSAGENS_VAZIO = {
+    'atrasado': 'Nenhum pedido atrasado. Tudo dentro do prazo.',
+    'aguardando_retirada': 'Nenhum objeto aguardando retirada.',
+};
+
+function preencherVazio(caixa, termo) {
+    var texto;
+    if (termo) {
+        var filtro = activeStatusFilter ? ' em ' + (STATUS_LABELS[activeStatusFilter] || activeStatusFilter) : '';
+        texto = 'Nenhum pedido encontrado para “' + termo + '”' + filtro + '.';
+    } else {
+        texto = MENSAGENS_VAZIO[activeStatusFilter] || 'Nenhum pedido em ' + (STATUS_LABELS[activeStatusFilter] || 'este filtro') + '.';
+    }
+    var icone = termo ? 'i-search' : 'i-check-circle';
+    while (caixa.firstChild) caixa.removeChild(caixa.firstChild);
+
+    var emoji = document.createElement('div');
+    emoji.className = 'emoji';
+    emoji.innerHTML = '<svg class="icon" aria-hidden="true" focusable="false"><use href="#' + icone + '"></use></svg>';
+    var p = document.createElement('p');
+    p.textContent = texto;
+    caixa.appendChild(emoji);
+    caixa.appendChild(p);
+
+    if (termo || activeStatusFilter) {
+        var botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'btn-link';
+        botao.textContent = termo ? 'Limpar busca' : 'Mostrar todos os pedidos';
+        botao.addEventListener('click', termo ? limparBusca : clearAllFilters);
+        caixa.appendChild(botao);
+    }
+}
+
+function limparBusca() {
+    currentSearchTerm = '';
+    var campo = document.getElementById('searchInput');
+    if (campo) {
+        campo.value = '';
+        campo.focus();
+    }
+    salvarFiltro();
+    applyFilters();
+}
+
+function marcarPressionado(elemento, ativo) {
+    elemento.classList.toggle('active', ativo);
+    elemento.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+}
+
 function applyFilters() {
     var cards = document.querySelectorAll('.order-card');
     var term = currentSearchTerm.toLowerCase().trim();
@@ -77,9 +128,9 @@ function applyFilters() {
             noResults.id = 'noResults';
             noResults.className = 'empty-state';
             noResults.setAttribute('role', 'status');
-            noResults.innerHTML = '<div class="emoji"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></div><p>Nenhum pedido corresponde ao filtro ou à busca.</p>';
             cards[0].parentNode.insertBefore(noResults, cards[0]);
         }
+        preencherVazio(noResults, term);
         noResults.hidden = false;
     } else if (noResults) {
         noResults.hidden = true;
@@ -102,28 +153,13 @@ function applyFilters() {
     }
 
     // Atualiza classes ativas nos cards de resumo e botões de filtro
-    document.querySelectorAll('.dash-card').forEach(function(dc) {
-        if (activeStatusFilter && dc.getAttribute('data-filter') === activeStatusFilter) {
-            dc.classList.add('active');
-        } else {
-            dc.classList.remove('active');
-        }
-    });
-
-    document.querySelectorAll('.action-chip').forEach(function(chip) {
-        if (activeStatusFilter && chip.getAttribute('data-filter') === activeStatusFilter) {
-            chip.classList.add('active');
-        } else {
-            chip.classList.remove('active');
-        }
+    // aria-pressed acompanha a classe: o estado do filtro também chega a leitores de tela
+    document.querySelectorAll('.dash-card, .action-chip').forEach(function(el) {
+        marcarPressionado(el, !!activeStatusFilter && el.getAttribute('data-filter') === activeStatusFilter);
     });
 
     document.querySelectorAll('.filter-pill').forEach(function(pill) {
-        if (pill.getAttribute('data-filter') === (activeStatusFilter || 'all')) {
-            pill.classList.add('active');
-        } else {
-            pill.classList.remove('active');
-        }
+        marcarPressionado(pill, pill.getAttribute('data-filter') === (activeStatusFilter || 'all'));
     });
 
     // Mostra/esconde botão Limpar
@@ -231,6 +267,31 @@ function alternarHistoricos() {
     gravarPreferencia('historicos', abrir ? 'abertos' : 'recolhidos');
 }
 
+function copiarRastreio(botao) {
+    var codigo = botao.getAttribute('data-copy');
+    var avisar = function(ok) {
+        if (typeof showToast === 'function') {
+            showToast(ok ? 'Rastreio ' + codigo + ' copiado' : 'Não foi possível copiar o rastreio', ok ? '#15803d' : '#b91c1c', 2000);
+        }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(codigo).then(function() { avisar(true); }, function() { avisar(false); });
+        return;
+    }
+    // Contexto sem Clipboard API: seleciona um campo temporário e usa o comando antigo
+    var campo = document.createElement('textarea');
+    campo.value = codigo;
+    campo.setAttribute('readonly', '');
+    campo.style.position = 'fixed';
+    campo.style.opacity = '0';
+    document.body.appendChild(campo);
+    campo.select();
+    var copiou = false;
+    try { copiou = document.execCommand('copy'); } catch (e) { copiou = false; }
+    document.body.removeChild(campo);
+    avisar(copiou);
+}
+
 function clearAllFilters() {
     activeStatusFilter = null;
     currentSearchTerm = '';
@@ -287,6 +348,13 @@ document.addEventListener('DOMContentLoaded', function() {
         pill.addEventListener('click', function() {
             var filter = pill.getAttribute('data-filter');
             filterOrders(filter);
+        });
+    });
+
+    // 4b. Copiar o código de rastreio do cartão
+    document.querySelectorAll('.btn-copy[data-copy]').forEach(function(botao) {
+        botao.addEventListener('click', function() {
+            copiarRastreio(botao);
         });
     });
 

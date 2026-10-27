@@ -14,12 +14,14 @@ from correios.cards import (  # noqa: E402
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
+    faixa_acao,
     montar_card_pedido,
     prioridade,
     selo_status,
     sem_postagem,
     status_tokens,
     texto_idade,
+    zero,
 )
 
 
@@ -206,6 +208,35 @@ class TestMontarCardPedido(unittest.TestCase):
         self.assertIn('class="order-card order-hidden"', card)
         self.assertIn("&lt;b&gt;Cliente &amp; Cia&lt;/b&gt;", card)
         self.assertIn("Situação no Tiny: —", card)
+
+    def test_titulo_e_um_cabecalho_de_segundo_nivel(self):
+        card = self._card(['<div class="event">x</div>'])
+        self.assertIn('<h2 class="order-title">Pedido Tiny #1 — AB123BR</h2>', card)
+
+    def test_botao_copiar_so_com_rastreio_e_com_escape(self):
+        self.assertNotIn("btn-copy", self._card(['<div class="event">x</div>']))
+        card = self._card(['<div class="event">x</div>'], rastreio='AB"1')
+        self.assertIn('data-copy="AB&quot;1"', card)
+        self.assertIn("Copiar rastreio", card)
+
+
+class TestFaixaAcao(unittest.TestCase):
+    def test_sem_nada_a_fazer_vira_linha_calma(self):
+        faixa = faixa_acao(0, 0)
+        self.assertIn("action-strip-ok", faixa)
+        self.assertIn("Nada atrasado nem aguardando retirada", faixa)
+        self.assertNotIn("<button", faixa)
+
+    def test_com_pendencia_mostra_os_dois_botoes_e_apaga_o_zero(self):
+        faixa = faixa_acao(3, 0)
+        self.assertIn("Precisam de ação", faixa)
+        self.assertIn('class="action-chip" data-filter="atrasado"', faixa)
+        self.assertIn('class="action-chip is-zero" data-filter="aguardando_retirada"', faixa)
+        self.assertIn("<strong>3</strong> Atrasados", faixa)
+
+    def test_zero_so_marca_contador_zerado(self):
+        self.assertEqual(zero(0), " is-zero")
+        self.assertEqual(zero(2), "")
 
 
 if __name__ == "__main__":

@@ -23,12 +23,14 @@ from correios.cards import (
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
+    faixa_acao,
     montar_card_pedido,
     prioridade,
     selo_status,
     sem_postagem,
     status_tokens,
     texto_idade,
+    zero,
 )
 from correios.icons import ICON_SPRITE
 
@@ -171,6 +173,7 @@ def processar(usar_cache=False):
 </head>
 <body>
     {icon_sprite}
+    <a class="skip-link" href="#conteudo">Pular para os pedidos</a>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <div class="container">
@@ -201,7 +204,7 @@ def processar(usar_cache=False):
         <div class="controls-panel">
             <div class="search-wrapper">
                 <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Buscar pedido, cliente, rastreio ou cidade..." aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+                <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
@@ -246,7 +249,7 @@ def processar(usar_cache=False):
         </div>
 
         <!-- Lista de Cards de Pedidos -->
-        <main class="orders-list">
+        <main class="orders-list" id="conteudo" tabindex="-1">
             {content}
         </main>
     </div>
@@ -383,6 +386,7 @@ def processar(usar_cache=False):
                 numero=str(pedido),
                 idade_dias=dias_desde(ultimo_evento),
                 divergencia=divergencia,
+                rastreio=str(rastreio or ""),
             )
             ordem = (
                 PRIORIDADE_STATUS["sem_postagem"]
@@ -407,27 +411,23 @@ def processar(usar_cache=False):
 
         # Monta o dashboard de resumo
         dashboard_html = f"""
-        <section class="action-strip" aria-label="Pedidos que precisam de ação">
-            <span class="action-strip-title">Precisam de ação</span>
-            <button type="button" class="action-chip" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg><strong>{len(atrasados_data)}</strong> Atrasados</button>
-            <button type="button" class="action-chip" data-filter="aguardando_retirada" title="Objeto na agência, esperando o destinatário"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg><strong>{retiradas_count}</strong> Aguardando retirada</button>
-        </section>
+        {faixa_acao(len(atrasados_data), retiradas_count)}
         <div class="dashboard">
-            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="nao_enviado">
+            <div class="dash-card dash-clickable{zero(nao_enviados_count)}" role="button" tabindex="0" data-filter="nao_enviado">
                 <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-orange">{nao_enviados_count}</span>
                     <span class="dash-label">Não Enviados</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="em_transito">
+            <div class="dash-card dash-clickable{zero(em_transito_count)}" role="button" tabindex="0" data-filter="em_transito">
                 <div class="dash-icon dash-icon-blue"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">{em_transito_count}</span>
                     <span class="dash-label">Em Trânsito</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="entregue">
+            <div class="dash-card dash-clickable{zero(entregues_count)}" role="button" tabindex="0" data-filter="entregue">
                 <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">{entregues_count}</span>
@@ -435,7 +435,7 @@ def processar(usar_cache=False):
                 </div>
             </div>
 
-            <div class="dash-card dash-clickable" role="button" tabindex="0" data-filter="devolvido">
+            <div class="dash-card dash-clickable{zero(devolvidos_count)}" role="button" tabindex="0" data-filter="devolvido">
                 <div class="dash-icon dash-icon-purple"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-purple">{devolvidos_count}</span>
@@ -445,7 +445,6 @@ def processar(usar_cache=False):
         </div>
         <div id="filterBanner" class="filter-banner">
             <span class="filter-banner-text" id="filterBannerText"></span>
-            <button class="filter-banner-close" onclick="filterOrders(null)">✕ Mostrar Todos</button>
         </div>
         """
 

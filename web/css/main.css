@@ -211,6 +211,15 @@ h1 {
     gap: 8px;
 }
 
+.nav-tab:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+[data-theme="dark"] h1 {
+    color: var(--color-link);
+}
+
 .nav-tab:hover {
     color: var(--color-link);
     border-color: var(--color-primary);

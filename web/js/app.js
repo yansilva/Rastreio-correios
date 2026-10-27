@@ -45,7 +45,11 @@ function setTheme(theme) {
 function toggleTheme() {
     var current = getCurrentTheme();
     var next = current === 'light' ? 'dark' : 'light';
+    // Sem transições durante a troca: cada elemento mudaria de cor em um ritmo e a tela piscaria
+    var raiz = document.documentElement;
+    raiz.classList.add('theme-switching');
     setTheme(next);
+    window.setTimeout(function() { raiz.classList.remove('theme-switching'); }, 80);
 }
 
 // Inicializa o tema imediatamente para evitar FOUC (Flash of Unstyled Content)

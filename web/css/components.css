@@ -65,11 +65,22 @@
     line-height: 1.1;
 }
 
-.dash-number-blue   { color: var(--color-primary); }
-.dash-number-orange { color: var(--color-warning); }
-.dash-number-green  { color: var(--color-success); }
-.dash-number-purple { color: var(--color-purple); }
+/* Números grandes usam os tons de texto (contraste >= 4,5:1 nos dois temas) */
+.dash-number-blue   { color: var(--color-link); }
+.dash-number-orange { color: var(--color-warning-text); }
+.dash-number-green  { color: var(--color-success-text); }
+.dash-number-purple { color: var(--color-purple-text); }
 .dash-number-red    { color: var(--color-danger); }
+
+/* Contador zerado não pede atenção: sem cor de categoria */
+.dash-card.is-zero .dash-number {
+    color: var(--color-text-muted);
+}
+
+.dash-card.is-zero .dash-icon {
+    background: var(--color-header-bg);
+    color: var(--color-text-subtle);
+}
 
 /* Faixa "Precisam de ação": fica acima do resumo, que soma o total de pedidos */
 .action-strip {
@@ -122,6 +133,21 @@
 .action-chip[data-filter="aguardando_retirada"] .icon,
 .action-chip[data-filter="aguardando_retirada"] strong {
     color: var(--color-warning);
+}
+
+/* Chip zerado: neutro, sem o vermelho de alarme */
+.action-chip.is-zero .icon,
+.action-chip.is-zero strong {
+    color: var(--color-text-subtle);
+}
+
+/* Nada a fazer: uma linha calma no lugar da faixa de alarme */
+.action-strip-ok {
+    border-color: var(--color-success-border);
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .action-chip:hover {
@@ -193,6 +219,11 @@
 .search-input:focus {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.search-input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 /* 2b. Barra de Ações (limpar) e Filtros */
@@ -277,7 +308,7 @@
 /* 2d. Contador de Resultados */
 .filter-count {
     font-size: 0.8125rem;
-    color: var(--color-text-subtle);
+    color: var(--color-text-muted);
     font-weight: 500;
     margin-left: auto;
     white-space: nowrap;
@@ -295,29 +326,6 @@
     justify-content: space-between;
     font-size: 0.875rem;
     font-weight: 600;
-}
-
-.filter-banner-close {
-    min-height: 36px;
-    padding: 6px 14px;
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-text-main);
-    background: transparent;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-full);
-    cursor: pointer;
-}
-
-.filter-banner-close:hover {
-    border-color: var(--color-primary);
-    background: var(--color-primary-light);
-}
-
-.filter-banner-close:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
 }
 
 .filter-banner.visible {
@@ -356,9 +364,36 @@
 }
 
 .order-title {
+    margin: 0;
     font-weight: bold;
     font-size: 1.25rem;
+    line-height: 1.4;
     color: var(--color-text-main);
+    letter-spacing: normal;
+}
+
+/* Copiar o código de rastreio: ação do cartão, com alvo de toque de 44px */
+.btn-copy {
+    min-height: 44px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-link);
+    background: none;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+}
+
+.btn-copy:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.btn-copy:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .order-meta {
@@ -412,9 +447,8 @@
 }
 
 .event {
-    padding: 15px 0;
+    padding: 15px 12px 15px 20px;
     border-left: 3px solid var(--color-border);
-    padding-left: 20px;
     position: relative;
     margin-bottom: 10px;
 }
@@ -1309,5 +1343,148 @@ h1 .icon {
     #noResults:not([hidden]) {
         animation-name: cardFade;
         animation-duration: 150ms;
+    }
+}
+
+/* Link "pular para os pedidos": só aparece quando recebe o foco do teclado */
+.skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 2000;
+    padding: 10px 16px;
+    font-weight: 600;
+    color: #ffffff;
+    background: var(--color-primary);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 12px;
+}
+
+.orders-list:focus {
+    outline: none;
+}
+
+/* Troca de tema sem piscar: sem transições por um instante */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+    transition: none !important;
+}
+
+/* Estado vazio com saída própria (limpar busca ou voltar a todos os pedidos) */
+.empty-state .btn-link {
+    margin-top: 8px;
+    min-height: 44px;
+}
+
+/* Celular: o primeiro pedido tem que aparecer logo, sem uma tela inteira de cabeçalho e resumo */
+@media (max-width: 640px) {
+    /* Tema vira só o ícone, no canto, e o título ocupa a largura restante */
+    .header-tools {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin-bottom: 0;
+    }
+
+    .header-tools .btn-theme {
+        min-width: 44px;
+        padding: 10px;
+        justify-content: center;
+    }
+
+    .header-tools .btn-theme #btnThemeText {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .header-main {
+        padding: 0 52px;
+    }
+
+    header {
+        margin-bottom: 16px;
+    }
+
+    /* Resumo em uma linha por cartão: número ao lado do rótulo, sem o ícone grande */
+    .dash-card {
+        padding: 8px 12px;
+        min-height: 44px;
+    }
+
+    .dash-card .dash-icon {
+        display: none;
+    }
+
+    .dash-info {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    /* Faixa de ação: título pequeno e os dois botões lado a lado */
+    .action-strip-title {
+        flex-basis: 100%;
+        font-size: 0.75rem;
+    }
+
+    .action-strip .action-chip {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 6px 8px;
+    }
+
+    .action-strip {
+        gap: 4px 8px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+    }
+
+    .action-strip-ok {
+        flex-wrap: nowrap;
+    }
+
+    /* Pílulas rolam de lado sem barra de rolagem aparente */
+    .filter-pills {
+        scrollbar-width: none;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    .order-history > summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Título numa linha só e dados em duas linhas limpas, sem o separador solto */
+    .header-main h1 {
+        font-size: 1.25rem;
+        flex-wrap: nowrap;
+        justify-content: center;
+    }
+
+    .header-main .meta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        font-size: 0.8125rem;
+    }
+
+    .header-main .meta-sep {
+        display: none;
     }
 }
