@@ -1488,3 +1488,31 @@ h1 .icon {
         display: none;
     }
 }
+
+/* Opções como popover ancorado ao botão: abre sobre a lista, sem empurrá-la */
+@media (min-width: 641px) {
+    .options-menu {
+        position: relative;
+    }
+
+    .options-menu[open] > .options-panel {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 30;
+        min-width: 360px;
+        margin-top: 4px;
+        border-color: var(--color-border-strong);
+        box-shadow: var(--shadow-lg);
+    }
+}
+
+/* Resumo: "Não enviados" é neutro (ainda não é problema) e o título deixa de competir com os números */
+.dash-icon-slate { background: var(--color-header-bg); color: var(--color-text-muted); }
+.dash-number-slate { color: var(--color-text-main); }
+
+@media (min-width: 641px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+}

@@ -384,6 +384,20 @@ document.addEventListener('DOMContentLoaded', function() {
         botaoHistoricos.addEventListener('click', alternarHistoricos);
     }
 
+    // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele
+    var menuOpcoes = document.querySelector('.options-menu');
+    if (menuOpcoes) {
+        document.addEventListener('click', function(e) {
+            if (menuOpcoes.open && !menuOpcoes.contains(e.target)) menuOpcoes.open = false;
+        });
+        menuOpcoes.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && menuOpcoes.open) {
+                menuOpcoes.open = false;
+                menuOpcoes.querySelector('summary').focus();
+            }
+        });
+    }
+
     // 6. Atalho "/" foca a busca (fora de campos de texto); Esc limpa a busca
     document.addEventListener('keydown', function(e) {
         var alvo = e.target;

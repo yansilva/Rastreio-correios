@@ -49,9 +49,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         {faixa_acao(1, 1)}
         <div class="dashboard">
             <div class="dash-card dash-clickable{zero(2)}" role="button" tabindex="0" data-filter="nao_enviado">
-                <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
+                <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
-                    <span class="dash-number dash-number-orange">2</span>
+                    <span class="dash-number dash-number-slate">2</span>
                     <span class="dash-label">Não Enviados</span>
                 </div>
             </div>

@@ -414,9 +414,9 @@ def processar(usar_cache=False):
         {faixa_acao(len(atrasados_data), retiradas_count)}
         <div class="dashboard">
             <div class="dash-card dash-clickable{zero(nao_enviados_count)}" role="button" tabindex="0" data-filter="nao_enviado">
-                <div class="dash-icon dash-icon-orange"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
+                <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
-                    <span class="dash-number dash-number-orange">{nao_enviados_count}</span>
+                    <span class="dash-number dash-number-slate">{nao_enviados_count}</span>
                     <span class="dash-label">Não Enviados</span>
                 </div>
             </div>
