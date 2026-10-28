@@ -1516,3 +1516,40 @@ h1 .icon {
         font-size: 1.75rem;
     }
 }
+
+/* Visão compacta: uma faixa por pedido, sem o histórico, para varrer dezenas de pedidos */
+.orders-list.is-compact .order-card {
+    margin-bottom: 8px;
+    border-radius: var(--radius-md);
+    box-shadow: none;
+}
+
+.orders-list.is-compact .order-header {
+    padding: 8px 14px;
+    border-bottom: none;
+    gap: 6px 12px;
+    flex-wrap: wrap;
+}
+
+.orders-list.is-compact .order-title {
+    font-size: 0.875rem;
+}
+
+.orders-list.is-compact .events-container {
+    padding: 0 14px 8px;
+}
+
+.orders-list.is-compact .order-history {
+    display: none;
+}
+
+.orders-list.is-compact .event {
+    padding: 0 0 0 12px;
+    margin: 0;
+    font-size: 0.8125rem;
+}
+
+.orders-list.is-compact .event-detail,
+.orders-list.is-compact .event::before {
+    display: none;
+}

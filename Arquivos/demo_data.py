@@ -437,6 +437,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <option value="pedido">Número do pedido</option>
                 </select>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+                <button type="button" id="btnToggleView" class="btn-link" aria-pressed="false">Visão compacta</button>
             </div>
                 </div></details>
             </div>

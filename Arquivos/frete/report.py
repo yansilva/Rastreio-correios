@@ -754,8 +754,7 @@ _ALERT_JS_TEMPLATE = r"""(function() {
     if ("Notification" in window) {
         function showNotif() {
             let n = new Notification("Alerta de Frete: Prazo Longo (>3 dias)", {
-                body: mensagem,
-                icon: "https://cdn-icons-png.flaticon.com/512/1055/1055065.png"
+                body: mensagem
             });
             n.onclick = function() {
                 window.location.href = "opcoes_frete.html";

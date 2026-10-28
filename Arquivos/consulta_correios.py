@@ -232,6 +232,7 @@ def processar(usar_cache=False):
                 </select>
                 <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os dados já consultados às {hora_dados}, sem chamar o Tiny nem os Correios">Recarregar dados salvos de {hora_dados}</button>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
+                <button type="button" id="btnToggleView" class="btn-link" aria-pressed="false">Visão compacta</button>
             </div>
                 </div></details>
             </div>

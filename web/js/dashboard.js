@@ -384,6 +384,24 @@ document.addEventListener('DOMContentLoaded', function() {
         botaoHistoricos.addEventListener('click', alternarHistoricos);
     }
 
+    // 5a. Visão compacta (uma faixa por pedido), lembrada entre atualizações
+    var botaoVisao = document.getElementById('btnToggleView');
+    var listaPedidos = document.querySelector('.orders-list');
+    function definirVisao(compacta) {
+        if (!listaPedidos || !botaoVisao) return;
+        listaPedidos.classList.toggle('is-compact', compacta);
+        botaoVisao.setAttribute('aria-pressed', compacta ? 'true' : 'false');
+        botaoVisao.textContent = compacta ? 'Visão em cartões' : 'Visão compacta';
+    }
+    if (botaoVisao) {
+        botaoVisao.addEventListener('click', function() {
+            var compacta = !listaPedidos.classList.contains('is-compact');
+            definirVisao(compacta);
+            gravarPreferencia('visao', compacta ? 'compacta' : 'cartoes');
+        });
+        if (lerPreferencia('visao') === 'compacta') definirVisao(true);
+    }
+
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele
     var menuOpcoes = document.querySelector('.options-menu');
     if (menuOpcoes) {
