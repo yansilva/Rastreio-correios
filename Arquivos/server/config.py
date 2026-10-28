@@ -27,6 +27,7 @@ class ServerConfig:
             ".svg",
             ".ico",
             ".webp",
+            ".woff2",
         }
     )
 

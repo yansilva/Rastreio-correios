@@ -2,6 +2,15 @@
    Design Tokens & Estilos Globais — Rastreio Correios Web
    ========================================================================== */
 
+/* Inter variável embutida (licença SIL OFL em web/fonts/Inter-LICENSE.txt); sem ela vale o fallback do sistema */
+@font-face {
+    font-family: 'Inter';
+    src: url('../fonts/InterVariable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     /* Paleta Principal */
     --color-primary: #2563eb;

@@ -179,6 +179,8 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # Determina mimetype
         mime, _ = mimetypes.guess_type(str(safe_file))
+        if safe_file.suffix.lower() == ".woff2":
+            mime = "font/woff2"  # o registro do Windows nem sempre conhece woff2
         if not mime:
             mime = "application/octet-stream"
         if mime.startswith("text/") or mime in ("application/javascript", "application/json"):

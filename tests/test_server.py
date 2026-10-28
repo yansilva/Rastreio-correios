@@ -121,6 +121,16 @@ class TestServerSecurity(unittest.TestCase):
             if arquivo_teste.exists():
                 arquivo_teste.unlink()
 
+    def test_fonte_inter_embutida_e_liberada_pelo_servidor(self):
+        permitidas = ServerConfig().allowed_extensions
+        resolvido = resolve_safe_path(
+            base_dir=self.base_dir,
+            requested_url_path="/web/fonts/InterVariable.woff2",
+            allowed_extensions=permitidas,
+        )
+        self.assertIsNotNone(resolvido)
+        self.assertGreater(resolvido.stat().st_size, 100_000)
+
 
 class TestServerLogger(unittest.TestCase):
     """Testes de logging, sanitização e fila SSE."""
