@@ -188,11 +188,11 @@ def processar(usar_cache=False):
                 <div class="meta">
                     <span class="meta-dados" title="Relatório gerado em {data_geracao}">Dados de <time id="dadosEm" datetime="{iso_dados}">{data_dados_curta}</time> <span id="dadosIdade" class="meta-idade"></span></span>
                     <span class="meta-sep" aria-hidden="true">·</span>
-                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima consulta automática em <strong id="countdown-timer">carregando...</strong></span>
+                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima consulta automática em <strong id="countdown-timer">—</strong></span>
                 </div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel Geral</a>
+                <a href="relatorio_rastreio.html" class="nav-tab active"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
                 {atrasados_link}
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
@@ -450,9 +450,6 @@ def processar(usar_cache=False):
                 </div>
             </div>
         </div>
-        <div id="filterBanner" class="filter-banner">
-            <span class="filter-banner-text" id="filterBannerText"></span>
-        </div>
         """
 
         # Monta link para página de atrasados
@@ -582,26 +579,26 @@ def processar(usar_cache=False):
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação de atrasados">
-                <a href="relatorio_rastreio.html" class="nav-tab">← Voltar ao Painel Principal</a>
+                <a href="relatorio_rastreio.html" class="nav-tab">← Voltar ao Painel</a>
                 <span class="nav-tab active"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
         </header>
 
         <div class="summary">
-            <div class="summary-card">
+            <div class="summary-card{zero(total_atrasados)}">
                 <div class="summary-number num-total">{total_atrasados}</div>
                 <div class="summary-label">Total Atrasados</div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card{zero(criticos)}">
                 <div class="summary-number num-critico">{criticos}</div>
                 <div class="summary-label">Crítico (7+ dias)</div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card{zero(altos)}">
                 <div class="summary-number num-alto">{altos}</div>
                 <div class="summary-label">Alto (5-6 dias)</div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card{zero(atencao)}">
                 <div class="summary-number num-atencao">{atencao}</div>
                 <div class="summary-label">Atenção (4 dias)</div>
             </div>

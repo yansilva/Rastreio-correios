@@ -28,6 +28,12 @@ def _fmt_prazo(prazo: Any) -> str:
     return f"{prazo} dia útil" if prazo == 1 else f"{prazo} dias úteis"
 
 
+def _fmt_cep(cep: Any) -> str:
+    """CEP no formato 00000-000 quando tem 8 dígitos; qualquer outro valor segue como veio."""
+    digitos = "".join(c for c in str(cep or "") if c.isdigit())
+    return f"{digitos[:5]}-{digitos[5:]}" if len(digitos) == 8 else str(cep or "—")
+
+
 def _motivo_indisponivel(info: dict[str, Any]) -> str:
     """Motivo curto de indisponibilidade; ignora textos vazios, genéricos ou longos (erros técnicos)."""
     for chave in ("motivo", "erro"):
@@ -160,7 +166,7 @@ class FreteReportGenerator:
                 </div>
                 <div class="pedido-right">
                     <span class="pedido-badge">{pedido['situacao']}</span>
-                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} — CEP {pedido.get('cep_destino', '—')}</span>
+                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP {_fmt_cep(pedido.get('cep_destino', '—'))}</span>
                 </div>
             </div>
             <div class="servicos-grid">
@@ -567,7 +573,7 @@ class FreteReportGenerator:
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
         }}
-        .empty-state .empty-icon {{ font-size: 2.25rem; margin-bottom: 10px; line-height: 1; }}
+        .empty-state .empty-icon {{ font-size: 1.75rem; margin-bottom: 10px; line-height: 1; }}
         .empty-state h2 {{ margin: 0 0 6px; font-size: 1.25rem; color: var(--color-text-main); }}
         .empty-state p {{ margin: 0 0 16px; }}
         .empty-state.filtro-vazio {{ padding: 32px 20px; }}
@@ -628,10 +634,10 @@ class FreteReportGenerator:
                 </button>
             </div>
             <h1>{icone("package")} Opções de Frete Correios</h1>
-            <div class="meta">Consulta de serviços disponíveis para pedidos em aberto — Gerado em: {data_geracao}</div>
-            <div class="config-info">{icone("package")} Pacote padrão: {config.peso_gramas/1000:.1f}kg — {config.comprimento}x{config.largura}x{config.altura} cm — Origem CEP: {config.cep_origem}</div>
+            <div class="meta">Consulta de serviços disponíveis para pedidos em aberto · Gerado em {data_geracao}</div>
+            <div class="config-info">{icone("package")} Pacote padrão: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · Origem CEP: {_fmt_cep(config.cep_origem)}</div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel Geral</a>
+                <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel</a>
                 <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
             </nav>
         </header>

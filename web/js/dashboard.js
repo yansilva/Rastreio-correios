@@ -90,6 +90,8 @@ function definirVisao(modo) {
     if (seletor) seletor.value = modo;
     listaPedidos.classList.toggle('is-compact', modo === 'compacta');
     listaPedidos.hidden = modo === 'tabela';
+    // Na tabela a ordem vem dos cabeçalhos: o select "Ordenar por" some para não haver dois controles de ordem
+    document.body.classList.toggle('view-tabela', modo === 'tabela');
     var envoltorio = document.getElementById('ordersTableWrap');
     if (modo === 'tabela') {
         if (!envoltorio) {
@@ -229,7 +231,9 @@ function atualizarTabela() {
     if (!linhas.length) {
         var tdVazio = corpo.insertRow().insertCell();
         tdVazio.colSpan = COLUNAS_TABELA.length + 1;
-        tdVazio.textContent = 'Nenhum pedido neste filtro.';
+        tdVazio.className = 'empty-state';
+        tdVazio.setAttribute('role', 'status');
+        preencherVazio(tdVazio, currentSearchTerm.toLowerCase().trim());
     }
     linhas.forEach(function(l) {
         var tr = corpo.insertRow();
@@ -534,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 3b. Botões da faixa "Precisam de ação" (são <button>: Enter e Espaço já funcionam)
     document.querySelectorAll('.action-chip[data-filter]').forEach(function(chip) {
         chip.addEventListener('click', function() {
+            if (chip.getAttribute('aria-disabled') === 'true') return;
             filterOrders(chip.getAttribute('data-filter'));
         });
     });
@@ -541,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. Clique nas Pílulas de Filtro
     document.querySelectorAll('.filter-pill[data-filter]').forEach(function(pill) {
         pill.addEventListener('click', function() {
+            if (pill.getAttribute('aria-disabled') === 'true') return;
             var filter = pill.getAttribute('data-filter');
             filterOrders(filter);
         });
@@ -617,6 +623,14 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('aria-disabled', 'true');
         card.setAttribute('tabindex', '-1');
     });
+    // Pílulas e chips sem pedidos também não filtram (a lista só ficaria vazia); "Todos" fica sempre ativa
+    document.querySelectorAll('.filter-pill[data-filter], .action-chip[data-filter]').forEach(function(el) {
+        var filtro = el.getAttribute('data-filter');
+        if (filtro !== 'all' && !totais[filtro]) {
+            el.setAttribute('aria-disabled', 'true');
+            el.title = 'Nenhum pedido neste status';
+        }
+    });
 
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele
     var menuOpcoes = document.querySelector('.options-menu');
@@ -624,10 +638,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('click', function(e) {
             if (menuOpcoes.open && !menuOpcoes.contains(e.target)) menuOpcoes.open = false;
         });
-        menuOpcoes.addEventListener('keydown', function(e) {
+        // Esc fecha o menu de qualquer ponto da página; o foco só volta ao botão quando estava dentro dele
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && menuOpcoes.open) {
+                var estavaDentro = menuOpcoes.contains(document.activeElement);
                 menuOpcoes.open = false;
-                menuOpcoes.querySelector('summary').focus();
+                if (estavaDentro) menuOpcoes.querySelector('summary').focus();
             }
         });
     }

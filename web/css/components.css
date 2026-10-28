@@ -869,7 +869,7 @@ tbody tr:hover {
 }
 
 .empty-state .emoji {
-    font-size: 2.25rem;
+    font-size: 1.75rem;
     margin-bottom: 10px;
 }
 
@@ -1647,4 +1647,75 @@ h1 .icon {
 
 .header-main .meta {
     text-wrap: balance;
+}
+
+/* Contagem na pílula ativa: fundo escuro sob o branco (>= 4,5:1) */
+.filter-pill.active .pill-count {
+    background: rgba(0, 0, 0, 0.28);
+    color: #ffffff;
+}
+
+/* Pílula ou chip sem pedidos: visível, mas sem clique */
+.filter-pill[aria-disabled="true"],
+.action-chip[aria-disabled="true"] {
+    color: var(--color-text-subtle);
+    border-style: dashed;
+    cursor: default;
+}
+
+.filter-pill[aria-disabled="true"]:hover,
+.action-chip[aria-disabled="true"]:hover {
+    color: var(--color-text-subtle);
+    border-color: var(--color-border-strong);
+    background: transparent;
+}
+
+/* Pílulas um pouco mais compactas: as sete cabem numa linha em 1280px */
+.filter-pills {
+    gap: 6px;
+}
+
+.filter-pill {
+    padding: 7px 11px;
+}
+
+/* Na visão Tabela a ordem vem dos cabeçalhos */
+.view-tabela #sortSelect,
+.view-tabela label[for="sortSelect"] {
+    display: none;
+}
+
+.th-sort {
+    white-space: nowrap;
+}
+
+/* Desktop: cabeçalho da tabela fixo ao rolar listas longas (o contêiner não rola na horizontal) */
+@media (min-width: 641px) {
+    .orders-table-wrap {
+        overflow: visible;
+    }
+
+    .orders-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--color-header-bg);
+    }
+}
+
+/* Totais zerados da página de atrasados ficam neutros */
+.summary-card.is-zero .summary-number {
+    color: var(--color-text-muted);
+}
+
+/* Skip link com o mesmo anel de foco dos demais controles */
+.skip-link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Alvos de pelo menos 40px */
+.btn-theme,
+.order-history > summary {
+    min-height: 40px;
 }

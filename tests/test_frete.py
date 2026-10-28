@@ -624,7 +624,7 @@ class TestFreteReportGenerator(unittest.TestCase):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
         self.assertIn('<nav class="nav-tabs"', html)
         self.assertIn('href="relatorio_rastreio.html" class="nav-tab"', html)
-        self.assertIn("Painel Geral", html)
+        self.assertIn("Painel</a>", html)
         self.assertIn('class="nav-tab active" aria-current="page"', html)
         self.assertIn("Opções de Frete</a>", html)
         self.assertNotIn("Voltar ao Painel Principal", html)
@@ -641,6 +641,20 @@ class TestFreteReportGenerator(unittest.TestCase):
 
 
 # ============== TESTES DE COMPATIBILIDADE ==============
+
+
+class TestFormatacaoFrete(unittest.TestCase):
+    def test_cep_com_oito_digitos_ganha_hifen(self):
+        from frete.report import _fmt_cep
+
+        self.assertEqual(_fmt_cep("70386040"), "70386-040")
+        self.assertEqual(_fmt_cep("05617-010"), "05617-010")
+
+    def test_cep_invalido_segue_como_veio(self):
+        from frete.report import _fmt_cep
+
+        self.assertEqual(_fmt_cep("123"), "123")
+        self.assertEqual(_fmt_cep(None), "—")
 
 
 class TestConsultaFreteRetrocompatibilidade(unittest.TestCase):
