@@ -1553,3 +1553,57 @@ h1 .icon {
 .orders-list.is-compact .event::before {
     display: none;
 }
+
+/* Visão em tabela: cabeçalhos ordenáveis e ações por linha */
+.orders-list[hidden],
+.orders-table-wrap[hidden] {
+    display: none;
+}
+
+.orders-table-wrap {
+    margin-bottom: 24px;
+}
+
+.th-sort {
+    min-height: 36px;
+    padding: 6px 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: left;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.th-sort:hover {
+    color: var(--color-link);
+}
+
+.th-sort:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.orders-table-actions {
+    white-space: nowrap;
+}
+
+.orders-table-actions .btn-copy {
+    min-height: 36px;
+    margin-right: 6px;
+    padding: 4px 10px;
+}
+
+@media (max-width: 640px) {
+    .orders-table-actions .btn-copy {
+        min-height: 44px;
+    }
+}
+
+.orders-table .badge,
+.orders-table td[data-label="Rastreio"] {
+    white-space: nowrap;
+}

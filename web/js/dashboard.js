@@ -72,6 +72,171 @@ function limparBusca() {
     applyFilters();
 }
 
+// Visão em tabela: uma linha por pedido visível, ordenável pelos cabeçalhos, com ações por linha
+var listaPedidos = null;
+var ordemTabela = { chave: 'ordem', dir: 1 };
+var COLUNAS_TABELA = [
+    { chave: 'pedido', rotulo: 'Pedido' },
+    { chave: 'cliente', rotulo: 'Cliente' },
+    { chave: 'rastreio', rotulo: 'Rastreio' },
+    { chave: 'status', rotulo: 'Status' },
+    { chave: 'idade', rotulo: 'Último evento' },
+    { chave: 'tiny', rotulo: 'Tiny' },
+];
+
+function definirVisao(modo) {
+    if (!listaPedidos) return;
+    var seletor = document.getElementById('viewSelect');
+    if (seletor) seletor.value = modo;
+    listaPedidos.classList.toggle('is-compact', modo === 'compacta');
+    listaPedidos.hidden = modo === 'tabela';
+    var envoltorio = document.getElementById('ordersTableWrap');
+    if (modo === 'tabela') {
+        if (!envoltorio) {
+            envoltorio = document.createElement('div');
+            envoltorio.id = 'ordersTableWrap';
+            envoltorio.className = 'table-wrapper orders-table-wrap';
+            listaPedidos.parentNode.insertBefore(envoltorio, listaPedidos);
+        }
+        envoltorio.hidden = false;
+        atualizarTabela();
+    } else if (envoltorio) {
+        envoltorio.hidden = true;
+    }
+}
+
+function textoDe(elemento) {
+    return elemento ? elemento.textContent.replace(/\s+/g, ' ').trim() : '';
+}
+
+function linhasDaTabela() {
+    var linhas = [];
+    document.querySelectorAll('.order-card:not(.order-hidden)').forEach(function(card) {
+        var dias = parseFloat(card.getAttribute('data-idade'));
+        var tiny = textoDe(card.querySelector('.order-tiny-status')).replace(/^Situação no Tiny:\s*/, '');
+        var selo = card.querySelector('.badge');
+        linhas.push({
+            card: card,
+            ordem: Number(card.getAttribute('data-ordem')) || 0,
+            pedido: parseFloat(card.getAttribute('data-pedido')),
+            cliente: card.getAttribute('data-cliente') || '',
+            rastreio: card.getAttribute('data-rastreio') || '',
+            status: textoDe(selo),
+            classeSelo: selo ? selo.className : 'badge',
+            idade: isNaN(dias) ? null : dias,
+            idadeTexto: textoDe(card.querySelector('.order-age')) || '—',
+            tiny: tiny,
+        });
+    });
+    return linhas;
+}
+
+function compararLinhas(a, b) {
+    var chave = ordemTabela.chave, va = a[chave], vb = b[chave];
+    var vazioA = va === null || va === undefined || va === '' || (typeof va === 'number' && isNaN(va));
+    var vazioB = vb === null || vb === undefined || vb === '' || (typeof vb === 'number' && isNaN(vb));
+    if (vazioA || vazioB) return vazioA === vazioB ? a.ordem - b.ordem : (vazioA ? 1 : -1);
+    var resultado = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'pt-BR', { sensitivity: 'base', numeric: true });
+    return (resultado * ordemTabela.dir) || (a.ordem - b.ordem);
+}
+
+function ordenarTabelaPor(chave) {
+    if (ordemTabela.chave === chave) {
+        ordemTabela.dir = -ordemTabela.dir;
+    } else {
+        ordemTabela = { chave: chave, dir: 1 };
+    }
+    atualizarTabela();
+}
+
+function verCartao(card) {
+    definirVisao('cartoes');
+    gravarPreferencia('visao', 'cartoes');
+    card.scrollIntoView({ block: 'start' });
+    card.setAttribute('tabindex', '-1');
+    card.focus();
+}
+
+function celula(texto, rotulo) {
+    var td = document.createElement('td');
+    td.setAttribute('data-label', rotulo);
+    td.textContent = texto;
+    return td;
+}
+
+function botaoDeLinha(rotulo, aoClicar) {
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'btn-copy';
+    botao.textContent = rotulo;
+    botao.addEventListener('click', aoClicar);
+    return botao;
+}
+
+function atualizarTabela() {
+    var envoltorio = document.getElementById('ordersTableWrap');
+    if (!envoltorio || envoltorio.hidden) return;
+    var linhas = linhasDaTabela().sort(compararLinhas);
+
+    var tabela = document.createElement('table');
+    tabela.className = 'orders-table';
+    var cabeca = tabela.createTHead().insertRow();
+    COLUNAS_TABELA.forEach(function(coluna) {
+        var th = document.createElement('th');
+        th.scope = 'col';
+        var ativa = ordemTabela.chave === coluna.chave;
+        th.setAttribute('aria-sort', ativa ? (ordemTabela.dir === 1 ? 'ascending' : 'descending') : 'none');
+        var botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'th-sort';
+        botao.textContent = coluna.rotulo + (ativa ? (ordemTabela.dir === 1 ? ' ▲' : ' ▼') : '');
+        botao.addEventListener('click', function() { ordenarTabelaPor(coluna.chave); });
+        th.appendChild(botao);
+        cabeca.appendChild(th);
+    });
+    var thAcoes = document.createElement('th');
+    thAcoes.scope = 'col';
+    thAcoes.textContent = 'Ações';
+    cabeca.appendChild(thAcoes);
+
+    var corpo = tabela.createTBody();
+    if (!linhas.length) {
+        var tdVazio = corpo.insertRow().insertCell();
+        tdVazio.colSpan = COLUNAS_TABELA.length + 1;
+        tdVazio.textContent = 'Nenhum pedido neste filtro.';
+    }
+    linhas.forEach(function(l) {
+        var tr = corpo.insertRow();
+        tr.appendChild(celula(isNaN(l.pedido) ? '—' : '#' + l.pedido, 'Pedido'));
+        tr.appendChild(celula(l.cliente || '—', 'Cliente'));
+        tr.appendChild(celula(l.rastreio || '—', 'Rastreio'));
+        var tdStatus = document.createElement('td');
+        tdStatus.setAttribute('data-label', 'Status');
+        var selo = document.createElement('span');
+        selo.className = l.classeSelo;
+        selo.textContent = l.status || '—';
+        tdStatus.appendChild(selo);
+        tr.appendChild(tdStatus);
+        tr.appendChild(celula(l.idadeTexto.replace(/^Último evento\s*/, '') || '—', 'Último evento'));
+        tr.appendChild(celula(l.tiny || '—', 'Tiny'));
+
+        var tdAcoes = document.createElement('td');
+        tdAcoes.setAttribute('data-label', 'Ações');
+        tdAcoes.className = 'orders-table-actions';
+        if (l.rastreio) {
+            var copiar = botaoDeLinha('Copiar rastreio', function() { copiarRastreio(copiar); });
+            copiar.setAttribute('data-copy', l.rastreio);
+            copiar.setAttribute('aria-label', 'Copiar código de rastreio ' + l.rastreio);
+            tdAcoes.appendChild(copiar);
+        }
+        tdAcoes.appendChild(botaoDeLinha('Ver cartão', function() { verCartao(l.card); }));
+        tr.appendChild(tdAcoes);
+    });
+
+    while (envoltorio.firstChild) envoltorio.removeChild(envoltorio.firstChild);
+    envoltorio.appendChild(tabela);
+}
+
 function marcarPressionado(elemento, ativo) {
     elemento.classList.toggle('active', ativo);
     elemento.setAttribute('aria-pressed', ativo ? 'true' : 'false');
@@ -165,6 +330,7 @@ function applyFilters() {
     // Mostra/esconde botão Limpar
     updateClearButton();
     initialRenderDone = true;
+    atualizarTabela();
 }
 
 // Filtro e busca sobrevivem à atualização da página (sessionStorage: só nesta aba)
@@ -384,22 +550,16 @@ document.addEventListener('DOMContentLoaded', function() {
         botaoHistoricos.addEventListener('click', alternarHistoricos);
     }
 
-    // 5a. Visão compacta (uma faixa por pedido), lembrada entre atualizações
-    var botaoVisao = document.getElementById('btnToggleView');
-    var listaPedidos = document.querySelector('.orders-list');
-    function definirVisao(compacta) {
-        if (!listaPedidos || !botaoVisao) return;
-        listaPedidos.classList.toggle('is-compact', compacta);
-        botaoVisao.setAttribute('aria-pressed', compacta ? 'true' : 'false');
-        botaoVisao.textContent = compacta ? 'Visão em cartões' : 'Visão compacta';
-    }
-    if (botaoVisao) {
-        botaoVisao.addEventListener('click', function() {
-            var compacta = !listaPedidos.classList.contains('is-compact');
-            definirVisao(compacta);
-            gravarPreferencia('visao', compacta ? 'compacta' : 'cartoes');
+    // 5a. Visão (cartões, compacta ou tabela ordenável), lembrada entre atualizações
+    var seletorVisao = document.getElementById('viewSelect');
+    listaPedidos = document.querySelector('.orders-list');
+    if (seletorVisao && listaPedidos) {
+        seletorVisao.addEventListener('change', function() {
+            definirVisao(seletorVisao.value);
+            gravarPreferencia('visao', seletorVisao.value);
         });
-        if (lerPreferencia('visao') === 'compacta') definirVisao(true);
+        var visaoSalva = lerPreferencia('visao');
+        if (visaoSalva === 'compacta' || visaoSalva === 'tabela') definirVisao(visaoSalva);
     }
 
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele

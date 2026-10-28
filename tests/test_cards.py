@@ -213,6 +213,14 @@ class TestMontarCardPedido(unittest.TestCase):
         card = self._card(['<div class="event">x</div>'])
         self.assertIn('<h2 class="order-title">Pedido Tiny #1 — AB123BR</h2>', card)
 
+    def test_dados_do_cartao_alimentam_a_tabela(self):
+        card = self._card(['<div class="event">x</div>'], rastreio="AB123BR", cliente='Ana "Lima"')
+        self.assertIn('data-rastreio="AB123BR"', card)
+        self.assertIn('data-cliente="Ana &quot;Lima&quot;"', card)
+        sem_dados = self._card(['<div class="event">x</div>'])
+        self.assertNotIn("data-cliente", sem_dados)
+        self.assertNotIn("data-rastreio", sem_dados)
+
     def test_botao_copiar_so_com_rastreio_e_com_escape(self):
         self.assertNotIn("btn-copy", self._card(['<div class="event">x</div>']))
         card = self._card(['<div class="event">x</div>'], rastreio='AB"1')

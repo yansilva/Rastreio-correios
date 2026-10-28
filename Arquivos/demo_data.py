@@ -351,6 +351,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             idade_dias=o.get("idade_dias", orders.index(o)),
             divergencia=divergencia_tiny(categoria, o["situacao"]),
             rastreio=o["rastreio"],
+            cliente=o["cliente"],
         )
         ordem = prioridade(categoria, retirada=retirada, atrasado=atrasado)
         orders_cards.append((ordem, -o.get("dias_atraso", 0), card))
@@ -437,7 +438,12 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <option value="pedido">Número do pedido</option>
                 </select>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
-                <button type="button" id="btnToggleView" class="btn-link" aria-pressed="false">Visão compacta</button>
+                <label class="sort-label" for="viewSelect">Visão</label>
+                <select id="viewSelect" class="sort-select">
+                    <option value="cartoes">Cartões</option>
+                    <option value="compacta">Compacta</option>
+                    <option value="tabela">Tabela</option>
+                </select>
             </div>
                 </div></details>
             </div>

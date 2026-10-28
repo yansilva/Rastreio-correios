@@ -153,6 +153,7 @@ def montar_card_pedido(
     idade_dias: int | None = None,
     divergencia: str = "",
     rastreio: str = "",
+    cliente: str = "",
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido."""
     classe = "order-card"
@@ -173,6 +174,10 @@ def montar_card_pedido(
         else ""
     )
     atributos = f'data-status="{tokens}"'
+    if rastreio:
+        atributos += f' data-rastreio="{escape(rastreio, quote=True)}"'
+    if cliente:
+        atributos += f' data-cliente="{escape(cliente, quote=True)}"'
     if numero:
         atributos += f' data-pedido="{escape(numero, quote=True)}"'
     if idade_dias is not None:
