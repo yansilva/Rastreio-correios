@@ -8,11 +8,11 @@ var initialRenderDone = false;
 
 // Rótulos amigáveis para exibição de filtros
 var STATUS_LABELS = {
-    'nao_enviado': 'Não Enviados',
-    'em_transito': 'Em Trânsito',
+    'nao_enviado': 'Não enviados',
+    'em_transito': 'Em trânsito',
     'entregue': 'Entregues',
     'atrasado': 'Atrasados',
-    'aguardando_retirada': 'Aguardando Retirada',
+    'aguardando_retirada': 'Aguardando retirada',
     'devolvido': 'Devolvidos ao Remetente',
 };
 
@@ -122,6 +122,7 @@ function linhasDaTabela() {
             cliente: card.getAttribute('data-cliente') || '',
             rastreio: card.getAttribute('data-rastreio') || '',
             status: textoDe(selo),
+            urgencia: urgenciaDe(card),
             classeSelo: selo ? selo.className : 'badge',
             idade: isNaN(dias) ? null : dias,
             idadeTexto: textoDe(card.querySelector('.order-age')) || '—',
@@ -131,8 +132,21 @@ function linhasDaTabela() {
     return linhas;
 }
 
+// Prioridade do status na ordenação (a mesma ordem de urgência do servidor): quem pede ação vem primeiro
+var URGENCIA_STATUS = { aguardando_retirada: 0, atrasado: 1, sem_postagem: 2, em_transito: 3, nao_enviado: 4, devolvido: 5, entregue: 6 };
+
+function urgenciaDe(card) {
+    if (/sem postagem/i.test(textoDe(card.querySelector('.badge')))) return URGENCIA_STATUS.sem_postagem;
+    var melhor = 99;
+    (card.getAttribute('data-status') || '').split(/\s+/).forEach(function(token) {
+        if (URGENCIA_STATUS[token] !== undefined && URGENCIA_STATUS[token] < melhor) melhor = URGENCIA_STATUS[token];
+    });
+    return melhor;
+}
+
 function compararLinhas(a, b) {
-    var chave = ordemTabela.chave, va = a[chave], vb = b[chave];
+    var chave = ordemTabela.chave === 'status' ? 'urgencia' : ordemTabela.chave;
+    var va = a[chave], vb = b[chave];
     var vazioA = va === null || va === undefined || va === '' || (typeof va === 'number' && isNaN(va));
     var vazioB = vb === null || vb === undefined || vb === '' || (typeof vb === 'number' && isNaN(vb));
     if (vazioA || vazioB) return vazioA === vazioB ? a.ordem - b.ordem : (vazioA ? 1 : -1);
@@ -147,6 +161,11 @@ function ordenarTabelaPor(chave) {
         ordemTabela = { chave: chave, dir: 1 };
     }
     atualizarTabela();
+    // A tabela é reconstruída: o foco volta ao cabeçalho que o teclado acabou de usar
+    var cabecalhos = document.querySelectorAll('#ordersTableWrap .th-sort');
+    COLUNAS_TABELA.forEach(function(coluna, i) {
+        if (coluna.chave === chave && cabecalhos[i]) cabecalhos[i].focus();
+    });
 }
 
 function verCartao(card) {
@@ -189,7 +208,14 @@ function atualizarTabela() {
         var botao = document.createElement('button');
         botao.type = 'button';
         botao.className = 'th-sort';
-        botao.textContent = coluna.rotulo + (ativa ? (ordemTabela.dir === 1 ? ' ▲' : ' ▼') : '');
+        botao.textContent = coluna.rotulo;
+        if (ativa) {
+            // O glifo é só visual: o estado já chega a leitores de tela por aria-sort
+            var seta = document.createElement('span');
+            seta.setAttribute('aria-hidden', 'true');
+            seta.textContent = ordemTabela.dir === 1 ? ' ▲' : ' ▼';
+            botao.appendChild(seta);
+        }
         botao.addEventListener('click', function() { ordenarTabelaPor(coluna.chave); });
         th.appendChild(botao);
         cabeca.appendChild(th);
@@ -229,7 +255,9 @@ function atualizarTabela() {
             copiar.setAttribute('aria-label', 'Copiar código de rastreio ' + l.rastreio);
             tdAcoes.appendChild(copiar);
         }
-        tdAcoes.appendChild(botaoDeLinha('Ver cartão', function() { verCartao(l.card); }));
+        var ver = botaoDeLinha('Ver cartão', function() { verCartao(l.card); });
+        if (!isNaN(l.pedido)) ver.setAttribute('aria-label', 'Ver cartão do pedido #' + l.pedido);
+        tdAcoes.appendChild(ver);
         tr.appendChild(tdAcoes);
     });
 
@@ -490,12 +518,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 3. Clique nos Cards de Resumo
     document.querySelectorAll('.dash-card[data-filter]').forEach(function(card) {
         card.addEventListener('click', function() {
+            if (card.getAttribute('aria-disabled') === 'true') return;
             var filter = card.getAttribute('data-filter');
             filterOrders(filter);
         });
         // Cartões são divs: ativá-los com Enter ou Espaço, como um botão
         card.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if ((e.key === 'Enter' || e.key === ' ') && card.getAttribute('aria-disabled') !== 'true') {
                 e.preventDefault();
                 filterOrders(card.getAttribute('data-filter'));
             }
@@ -554,13 +583,40 @@ document.addEventListener('DOMContentLoaded', function() {
     var seletorVisao = document.getElementById('viewSelect');
     listaPedidos = document.querySelector('.orders-list');
     if (seletorVisao && listaPedidos) {
+        // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: não é oferecida
+        var celular = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+        if (celular) {
+            Array.prototype.forEach.call(seletorVisao.options, function(o) {
+                if (o.value === 'tabela') { o.disabled = true; o.hidden = true; }
+            });
+        }
         seletorVisao.addEventListener('change', function() {
             definirVisao(seletorVisao.value);
             gravarPreferencia('visao', seletorVisao.value);
         });
         var visaoSalva = lerPreferencia('visao');
+        if (visaoSalva === 'tabela' && celular) visaoSalva = 'compacta';
         if (visaoSalva === 'compacta' || visaoSalva === 'tabela') definirVisao(visaoSalva);
     }
+
+    // 5c. Contagem nas pílulas e cartões de resumo zerados desativados (um clique ali só esvaziaria a lista)
+    var totais = {};
+    // Conta todos os cartões: o filtro "Todos" mostra todos, e order-hidden é o estado de filtro, não de dados
+    document.querySelectorAll('.order-card').forEach(function(card) {
+        (card.getAttribute('data-status') || '').split(/\s+/).forEach(function(t) { if (t) totais[t] = (totais[t] || 0) + 1; });
+    });
+    document.querySelectorAll('.filter-pill[data-filter]').forEach(function(pill) {
+        var filtro = pill.getAttribute('data-filter');
+        var n = filtro === 'all' ? document.querySelectorAll('.order-card').length : (totais[filtro] || 0);
+        var marca = document.createElement('span');
+        marca.className = 'pill-count';
+        marca.textContent = String(n);
+        pill.appendChild(marca);
+    });
+    document.querySelectorAll('.dash-card.is-zero').forEach(function(card) {
+        card.setAttribute('aria-disabled', 'true');
+        card.setAttribute('tabindex', '-1');
+    });
 
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele
     var menuOpcoes = document.querySelector('.options-menu');

@@ -6,6 +6,7 @@ NÃO consulta APIs, NÃO decide qual frete recomendar.
 O visual segue o DESIGN.md (tokens, rampa de fontes, ícones SVG do sprite) e
 mantém compatibilidade com o painel e alert_frete.js.
 """
+import html
 import logging
 import os
 import time
@@ -16,6 +17,49 @@ from correios.icons import ICON_SPRITE, icone
 from .config import FreteConfig
 
 logger = logging.getLogger("frete.report")
+
+_MOTIVO_PADRAO = "Indisponível para este destino"
+
+
+def _fmt_prazo(prazo: Any) -> str:
+    """Prazo em dias úteis, com plural correto ('1 dia útil', 'N dias úteis')."""
+    if not prazo:
+        return "—"
+    return f"{prazo} dia útil" if prazo == 1 else f"{prazo} dias úteis"
+
+
+def _motivo_indisponivel(info: dict[str, Any]) -> str:
+    """Motivo curto de indisponibilidade; ignora textos vazios, genéricos ou longos (erros técnicos)."""
+    for chave in ("motivo", "erro"):
+        texto = str(info.get(chave) or "").strip()
+        if texto and texto.lower() != "indisponível" and len(texto) <= 60:
+            return html.escape(texto)
+    return _MOTIVO_PADRAO
+
+
+def _destaques(servicos: dict[str, Any], codigos: Any) -> tuple[set[str], set[str]]:
+    """Códigos do serviço mais barato e do mais rápido (empates incluídos).
+
+    Só destaca quando há pelo menos duas opções comparáveis; com uma só, o selo seria ruído.
+    """
+    precos: dict[str, float] = {}
+    prazos: dict[str, float] = {}
+    for cod in codigos:
+        info = servicos.get(cod) or {}
+        if not info.get("disponivel"):
+            continue
+        if isinstance(info.get("preco"), (int, float)):
+            precos[cod] = info["preco"]
+        if isinstance(info.get("prazo"), (int, float)) and info["prazo"] > 0:
+            prazos[cod] = info["prazo"]
+
+    def minimos(valores: dict[str, float]) -> set[str]:
+        if len(valores) < 2:
+            return set()
+        menor = min(valores.values())
+        return {c for c, v in valores.items() if v == menor}
+
+    return minimos(precos), minimos(prazos)
 
 
 class FreteReportGenerator:
@@ -65,33 +109,46 @@ class FreteReportGenerator:
                 valor_float = 0.0
                 valor_fmt = "R$ 0,00"
 
+            servicos_pedido = pedido.get("servicos", {})
+            codigos_barato, codigos_rapido = _destaques(servicos_pedido, config.servicos.keys())
+
             servicos_html = ""
             for cod in config.servicos.keys():
                 nome = config.servicos[cod]
-                info = pedido.get("servicos", {}).get(cod, {"disponivel": False})
+                info = servicos_pedido.get(cod, {"disponivel": False})
 
                 if info["disponivel"]:
-                    preco_display = info.get("preco_fmt", "—")
-                    prazo_display = f'{info["prazo"]} dias úteis' if info.get("prazo") else "—"
+                    preco_display = info.get("preco_fmt") or "—"
+                    prazo_display = _fmt_prazo(info.get("prazo"))
                     if info.get("prazo") and info["prazo"] > 3:
                         if str(pedido['numero']) not in pedidos_com_prazo_longo:
                             pedidos_com_prazo_longo.append(str(pedido['numero']))
 
                     msg_prazo_html = ""
                     if info.get("msg_prazo"):
-                        msg_prazo_html = f'\n                    <div class="servico-msg-prazo" title="{info["msg_prazo"]}">{icone("alert-triangle")} {info["msg_prazo"]}</div>'
+                        msg = html.escape(str(info["msg_prazo"]))
+                        msg_prazo_html = f'\n                    <div class="servico-msg-prazo" title="{msg}">{icone("alert-triangle")} {msg}</div>'
+
+                    selos = ""
+                    if cod in codigos_barato:
+                        selos += '<span class="servico-selo">Mais barato</span>'
+                    if cod in codigos_rapido:
+                        selos += '<span class="servico-selo">Mais rápido</span>'
+                    selos_html = f'\n                    <div class="servico-selos">{selos}</div>' if selos else ""
 
                     servicos_html += f"""
                 <div class="servico-card disponivel">
                     <div class="servico-nome">{nome}</div>
                     <div class="servico-preco">{preco_display}</div>
-                    <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}
+                    <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}{selos_html}
                 </div>"""
                 else:
+                    motivo = _motivo_indisponivel(info)
                     servicos_html += f"""
                 <div class="servico-card indisponivel">
                     <div class="servico-nome">{nome}</div>
                     <div class="servico-status">Indisponível</div>
+                    <div class="servico-motivo">{motivo}</div>
                 </div>"""
 
             cards_html += f"""
@@ -197,7 +254,7 @@ class FreteReportGenerator:
         header {{ position: relative; text-align: center; margin-bottom: 30px; }}
         h1 {{
             margin: 0;
-            font-size: 2.25rem;
+            font-size: 1.75rem;
             font-weight: 800;
             letter-spacing: -0.025em;
             color: var(--color-primary);
@@ -229,27 +286,41 @@ class FreteReportGenerator:
         }}
         h1 .icon {{ width: 0.95em; height: 0.95em; margin-right: 4px; }}
 
-        .back-link {{
+        /* Navegação por abas: mesmo markup e estilo do painel (.nav-tabs/.nav-tab) */
+        .nav-tabs {{
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 18px 0 0 0;
+            flex-wrap: wrap;
+        }}
+        .nav-tab {{
+            padding: 9px 18px;
+            min-height: 44px;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            transition: var(--transition);
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 22px;
+        }}
+        .nav-tab:hover {{ color: var(--color-link); border-color: var(--color-primary); }}
+        .nav-tab.active {{
             background: var(--color-primary);
             color: #ffffff;
-            text-decoration: none;
-            border-radius: var(--radius-full);
-            font-weight: 700;
-            font-size: 0.875rem;
-            margin-top: 16px;
-            min-height: 44px;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }}
-        .back-link:hover {{ background: var(--color-primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }}
+        .nav-tab.active:hover {{ color: #ffffff; }}
 
         /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
         .header-tools {{ position: absolute; top: 0; right: 0; }}
-        .btn-theme {{
+        .btn-theme, .btn-limpar {{
             background: var(--color-surface);
             color: var(--color-text-main);
             border: 1px solid var(--color-border-strong);
@@ -266,23 +337,24 @@ class FreteReportGenerator:
             gap: 8px;
             transition: var(--transition);
         }}
-        .btn-theme:hover {{
+        .btn-theme:hover, .btn-limpar:hover {{
             background: var(--color-surface-hover);
             border-color: var(--color-primary);
             color: var(--color-primary);
         }}
-        [data-theme="dark"] .btn-theme:hover {{ color: var(--color-link); }}
-        .btn-theme:active {{ transform: scale(0.97); }}
+        [data-theme="dark"] .btn-theme:hover, [data-theme="dark"] .btn-limpar:hover {{ color: var(--color-link); }}
+        .btn-theme:active, .btn-limpar:active {{ transform: scale(0.97); }}
         /* Mostra o tema de destino: lua/"Escuro" no claro, sol/"Claro" no escuro */
         .btn-theme .icon-sun, .btn-theme .tema-claro {{ display: none; }}
         [data-theme="dark"] .btn-theme .icon-sun, [data-theme="dark"] .btn-theme .tema-claro {{ display: inline-block; }}
         [data-theme="dark"] .btn-theme .icon-moon, [data-theme="dark"] .btn-theme .tema-escuro {{ display: none; }}
 
-        .back-link:focus-visible, .btn-theme:focus-visible {{
+        .nav-tab:focus-visible, .btn-theme:focus-visible, .btn-limpar:focus-visible {{
             outline: 2px solid var(--color-primary);
             outline-offset: 3px;
         }}
-        [data-theme="dark"] .back-link:focus-visible, [data-theme="dark"] .btn-theme:focus-visible {{ outline-color: var(--color-link); }}
+        [data-theme="dark"] .nav-tab:focus-visible, [data-theme="dark"] .btn-theme:focus-visible,
+        [data-theme="dark"] .btn-limpar:focus-visible {{ outline-color: var(--color-link); }}
 
         /* Filter Bar */
         .filter-bar {{
@@ -331,6 +403,18 @@ class FreteReportGenerator:
             color: var(--color-text-muted);
             font-weight: 600;
         }}
+        .filter-aviso {{
+            flex-basis: 100%;
+            margin: 0;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-warning-text);
+            background: var(--color-warning-bg);
+            border: 1px solid var(--color-warning-border);
+            border-radius: var(--radius-sm);
+        }}
+        .filter-aviso:empty {{ display: none; }}
 
         /* Summary Cards */
         .summary {{
@@ -353,7 +437,7 @@ class FreteReportGenerator:
         .summary-label {{ font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }}
         .num-blue {{ color: var(--color-primary); }}
         [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
-        .num-green {{ color: var(--color-success); }}
+        .num-neutral {{ color: var(--color-text-main); }}
 
         /* Pedido Cards */
         .pedido-card {{
@@ -377,7 +461,7 @@ class FreteReportGenerator:
         }}
         .pedido-left {{ display: flex; flex-direction: column; gap: 4px; }}
         .pedido-numero {{ font-weight: 700; font-size: 1.25rem; }}
-        .pedido-valor {{ font-size: 0.875rem; font-weight: 600; color: var(--color-success-text); margin-left: 8px; }}
+        .pedido-valor {{ font-size: 0.875rem; font-weight: 600; color: var(--color-text-muted); margin-left: 8px; }}
         .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.875rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
@@ -411,12 +495,8 @@ class FreteReportGenerator:
             transition: var(--transition);
         }}
         .servico-card.disponivel {{
-            background: var(--color-success-bg);
-            border-color: var(--color-success-border);
-        }}
-        .servico-card.disponivel:hover {{
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            background: var(--color-surface);
+            border-color: var(--color-border);
         }}
         .servico-card.indisponivel {{
             background: var(--color-header-bg);
@@ -430,8 +510,26 @@ class FreteReportGenerator:
         .servico-preco {{
             font-size: 1.25rem;
             font-weight: 800;
-            color: var(--color-success-text);
+            color: var(--color-text-main);
             margin-bottom: 4px;
+        }}
+        .servico-selos {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }}
+        .servico-selo {{
+            background: var(--color-badge-bg);
+            color: var(--color-badge-fg);
+            border: 1px solid var(--color-badge-border);
+            padding: 2px 10px;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }}
         .servico-prazo {{
             font-size: 0.875rem;
@@ -441,6 +539,12 @@ class FreteReportGenerator:
         .servico-status {{
             color: var(--color-text-muted);
             font-size: 0.875rem;
+            font-weight: 600;
+        }}
+        .servico-motivo {{
+            color: var(--color-text-muted);
+            font-size: 0.8125rem;
+            margin-top: 2px;
         }}
         .servico-msg-prazo {{
             font-size: 0.8125rem;
@@ -463,7 +567,11 @@ class FreteReportGenerator:
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
         }}
-        .empty-state .empty-icon {{ font-size: 3rem; margin-bottom: 10px; line-height: 1; }}
+        .empty-state .empty-icon {{ font-size: 2.25rem; margin-bottom: 10px; line-height: 1; }}
+        .empty-state h2 {{ margin: 0 0 6px; font-size: 1.25rem; color: var(--color-text-main); }}
+        .empty-state p {{ margin: 0 0 16px; }}
+        .empty-state.filtro-vazio {{ padding: 32px 20px; }}
+        .empty-state.filtro-vazio p {{ margin: 0 0 16px; font-size: 1rem; color: var(--color-text-main); }}
         .empty-state .empty-icon .icon {{ width: 1em; height: 1em; color: var(--color-text-subtle); }}
 
         @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
@@ -473,20 +581,39 @@ class FreteReportGenerator:
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }}
-            .back-link:hover, .btn-theme:active, .servico-card.disponivel:hover {{ transform: none; }}
+            .btn-theme:active, .btn-limpar:active {{ transform: none; }}
         }}
 
         @media (max-width: 640px) {{
-            body {{ padding: 16px 12px 40px; }}
-            .header-tools {{ position: static; display: flex; justify-content: flex-end; margin-bottom: 8px; }}
-            h1 {{ font-size: 1.75rem; }}
-            .filter-bar {{ flex-direction: column; align-items: stretch; padding: 16px; }}
-            .filter-group {{ justify-content: space-between; }}
-            .filter-group input {{ flex: 1; max-width: 160px; }}
-            .filter-count {{ margin-left: 0; text-align: center; }}
-            .pedido-header {{ flex-direction: column; align-items: flex-start; padding: 16px; }}
+            body {{ padding: 12px 12px 32px; }}
+            header {{ margin-bottom: 14px; }}
+            .header-tools {{ position: static; display: flex; justify-content: flex-end; margin-bottom: 4px; }}
+            .meta {{ margin-top: 4px; }}
+            .config-info {{ margin-top: 6px; padding: 4px 12px; }}
+            .nav-tabs {{ margin-top: 10px; gap: 8px; }}
+            .nav-tab {{ padding: 9px 14px; }}
+            .summary {{ grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }}
+            .summary-card {{ padding: 10px 12px; }}
+            .summary-number {{ font-size: 1.25rem; }}
+            .summary-label {{ margin-top: 2px; }}
+            .filter-bar {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px 10px;
+                padding: 12px;
+                margin-bottom: 14px;
+            }}
+            .filter-group {{ flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }}
+            .filter-group label {{ font-size: 0.8125rem; line-height: 1.3; }}
+            .filter-group input {{ width: 100%; min-width: 0; }}
+            .filter-count, .filter-aviso {{ grid-column: 1 / -1; margin-left: 0; text-align: center; }}
+            .filter-count:empty {{ display: none; }}
+            .pedido-card {{ margin-bottom: 14px; }}
+            .pedido-header {{ flex-direction: column; align-items: flex-start; padding: 12px 16px; gap: 6px; }}
             .pedido-right {{ align-items: flex-start; }}
-            .servicos-grid {{ grid-template-columns: 1fr; padding: 16px; }}
+            .servicos-grid {{ grid-template-columns: 1fr; padding: 12px 16px; gap: 8px; }}
+            .servico-card {{ padding: 12px; }}
+            .servico-nome {{ margin-bottom: 4px; }}
         }}
     </style>
 </head>
@@ -503,8 +630,10 @@ class FreteReportGenerator:
             <h1>{icone("package")} Opções de Frete Correios</h1>
             <div class="meta">Consulta de serviços disponíveis para pedidos em aberto — Gerado em: {data_geracao}</div>
             <div class="config-info">{icone("package")} Pacote padrão: {config.peso_gramas/1000:.1f}kg — {config.comprimento}x{config.largura}x{config.altura} cm — Origem CEP: {config.cep_origem}</div>
-            <br>
-            <a href="relatorio_rastreio.html" class="back-link">← Voltar ao Painel Principal</a>
+            <nav class="nav-tabs" aria-label="Navegação do painel">
+                <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel Geral</a>
+                <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
+            </nav>
         </header>
 
         <div class="summary">
@@ -513,24 +642,26 @@ class FreteReportGenerator:
                 <div class="summary-label">Pedidos em Aberto</div>
             </div>
             <div class="summary-card">
-                <div class="summary-number num-green">{com_opcoes}</div>
+                <div class="summary-number num-neutral">{com_opcoes}</div>
                 <div class="summary-label">Com Opções Disponíveis</div>
             </div>
         </div>
 
         <div class="filter-bar">
             <div class="filter-group">
-                <label for="valMin">Valor Mínimo (R$):</label>
-                <input type="number" id="valMin" placeholder="0" oninput="filtrarPorValor()">
+                <label for="valMin">Valor mínimo do pedido (R$)</label>
+                <input type="number" id="valMin" min="0" step="any" inputmode="decimal" placeholder="Sem mínimo" oninput="filtrarPorValor()">
             </div>
             <div class="filter-group">
-                <label for="valMax">Valor Máximo (R$):</label>
-                <input type="number" id="valMax" placeholder="Sem limite" oninput="filtrarPorValor()">
+                <label for="valMax">Valor máximo do pedido (R$)</label>
+                <input type="number" id="valMax" min="0" step="any" inputmode="decimal" placeholder="Sem limite" oninput="filtrarPorValor()">
             </div>
             <span class="filter-count" id="filterCount" aria-live="polite"></span>
+            <p class="filter-aviso" id="filterAviso" aria-live="polite"></p>
         </div>
 
         {cards_html}
+        <div id="filtroVazio" role="status"></div>
     </div>
 
     <script>
@@ -552,26 +683,47 @@ class FreteReportGenerator:
             const minVal = parseFloat(document.getElementById('valMin').value) || 0;
             const maxInput = document.getElementById('valMax').value;
             const maxVal = maxInput ? parseFloat(maxInput) : Infinity;
-            
+            const aviso = document.getElementById('filterAviso');
+            const vazio = document.getElementById('filtroVazio');
+            const countSpan = document.getElementById('filterCount');
+
             const cards = document.querySelectorAll('.pedido-card');
+            const invertido = minVal > maxVal;
             let visiveis = 0;
-            
+
             cards.forEach(card => {{
                 const val = parseFloat(card.getAttribute('data-valor')) || 0;
-                if (val >= minVal && val <= maxVal) {{
+                // Intervalo invertido: não filtra, só avisa
+                if (invertido || (val >= minVal && val <= maxVal)) {{
                     card.style.display = '';
                     visiveis++;
                 }} else {{
                     card.style.display = 'none';
                 }}
             }});
-            
-            const countSpan = document.getElementById('filterCount');
-            if (minVal > 0 || maxInput) {{
+
+            aviso.textContent = invertido ? 'O mínimo é maior que o máximo.' : '';
+
+            if ((minVal > 0 || maxInput) && !invertido) {{
                 countSpan.textContent = `Mostrando ${{visiveis}} de ${{cards.length}}`;
             }} else {{
                 countSpan.textContent = '';
             }}
+
+            if (cards.length > 0 && visiveis === 0) {{
+                vazio.innerHTML = '<div class="empty-state filtro-vazio">' +
+                    '<p>Nenhum pedido neste intervalo de valor.</p>' +
+                    '<button type="button" class="btn-limpar" onclick="limparFiltro()">Limpar filtro</button>' +
+                    '</div>';
+            }} else {{
+                vazio.innerHTML = '';
+            }}
+        }}
+        function limparFiltro() {{
+            document.getElementById('valMin').value = '';
+            document.getElementById('valMax').value = '';
+            filtrarPorValor();
+            document.getElementById('valMin').focus();
         }}
     </script>
     <script src="alert_frete.js?v={int(time.time())}"></script>

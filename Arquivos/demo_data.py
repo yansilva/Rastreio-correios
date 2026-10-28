@@ -52,14 +52,14 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-slate">2</span>
-                    <span class="dash-label">Não Enviados</span>
+                    <span class="dash-label">Não enviados</span>
                 </div>
             </div>
             <div class="dash-card dash-clickable{zero(4)}" role="button" tabindex="0" data-filter="em_transito">
                 <div class="dash-icon dash-icon-blue"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">4</span>
-                    <span class="dash-label">Em Trânsito</span>
+                    <span class="dash-label">Em trânsito</span>
                 </div>
             </div>
             <div class="dash-card dash-clickable{zero(2)}" role="button" tabindex="0" data-filter="entregue">
@@ -416,13 +416,13 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             <div class="filters-row">
                 <div class="filter-pills">
                     <button type="button" class="filter-pill active" data-filter="all">Todos</button>
-                    <button type="button" class="filter-pill" data-filter="em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em Trânsito</button>
+                    <button type="button" class="filter-pill" data-filter="em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
                     <button type="button" class="filter-pill" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
                     <button type="button" class="filter-pill" data-filter="aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
                     <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
-                    <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não Enviados</button>
+                    <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
                     <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
-                    <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">✕ Limpar filtros</button>
+                    <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
@@ -557,7 +557,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                         <td data-label="Urgência"><span class="urgencia-tag urgencia-alta">ALTA</span></td>
                         <td data-label="Último Evento">Objeto em transferência - trânsito lento</td>
                         <td data-label="Local">RECIFE/PE</td>
-                        <td data-label="Status">Em Trânsito</td>
+                        <td data-label="Status">Em trânsito</td>
                     </tr>
                 </tbody>
             </table>

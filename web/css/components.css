@@ -1607,3 +1607,44 @@ h1 .icon {
 .orders-table td[data-label="Rastreio"] {
     white-space: nowrap;
 }
+
+/* Contagem dentro da pílula de filtro */
+.pill-count {
+    margin-left: 2px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    background: var(--color-header-bg);
+    color: var(--color-text-muted);
+}
+
+.filter-pill.active .pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+/* Cartão de resumo zerado: não filtra (a lista ficaria vazia) */
+.dash-card[aria-disabled="true"] {
+    cursor: default;
+}
+
+.dash-card[aria-disabled="true"]:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-border);
+}
+
+/* Alvos de pelo menos 40px também no desktop */
+.filter-pill,
+.sort-select,
+.th-sort,
+.options-menu > summary,
+.status-legend-details > summary,
+.orders-table-actions .btn-copy {
+    min-height: 40px;
+}
+
+.header-main .meta {
+    text-wrap: balance;
+}

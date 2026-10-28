@@ -53,7 +53,7 @@ typography:
     letterSpacing: "0.05em"
   display:
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "2.25rem"
+    fontSize: "1.75rem"
     fontWeight: 800
     lineHeight: 1.6
     letterSpacing: "-0.025em"
@@ -181,11 +181,11 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 
 **Character:** Uma família única, funcional, sem display separado. A hierarquia vem de peso e tamanho, não de troca de fonte.
 
-Observação: `web/css/main.css` declara Inter sem carregá-la; o navegador usa o fallback do sistema quando Inter não está instalada.
+Inter variável vem embutida (`web/fonts/InterVariable.woff2`, licença SIL OFL ao lado, `font-display: swap`); a pilha do sistema segue como fallback. A página de frete ainda não carrega o arquivo e usa o fallback.
 
 ### Hierarchy
 Rampa de sete tamanhos; todo `font-size` do CSS cai num deles.
-- **Display** (800, 2.25rem / 1.6, -0.025em): título do painel, apenas uma vez por página.
+- **Display** (800, 1.75rem / 1.6, -0.025em; 1.25rem no celular): título do painel e da página de frete, apenas uma vez por página.
 - **Number** (800, 1.75rem / 1.1): números dos cartões de resumo.
 - **Title** (700, 1.25rem / 1.6): nome do pedido no cabeçalho de cada cartão.
 - **Body** (400, 1rem / 1.6): descrições de evento. Manter linhas curtas nos cartões.
@@ -193,6 +193,10 @@ Rampa de sete tamanhos; todo `font-size` do CSS cai num deles.
 - **Label** (600–700, 0.8125rem): rótulos de cartões, datas, legenda, contadores e cabeçalhos de tabela.
 - **Badge** (700, 0.75rem, 0.05em, caixa-alta): selos e tags de urgência; é o menor tamanho permitido.
 ### Named Rules
+**The Zero Is Calm Rule.** Contador zerado não chama atenção: sem atrasos nem retiradas a faixa vira uma linha verde calma, chips e cartões zerados ficam neutros e não filtram.
+
+**The One Meaning Per Color Rule.** Verde é "entregue" e vermelho/âmbar são pendências; o frete não usa verde para "disponível" (usa cartões neutros e selos de texto "Mais barato" e "Mais rápido").
+
 **The Number First Rule.** Em cada cartão de resumo, o número vem antes do rótulo. O rótulo é uma legenda, não o foco.
 
 **The Ramp Rule.** Nenhum texto fica abaixo de 12px, e todo tamanho novo precisa cair num dos sete degraus acima. Valores soltos (como 0.84rem ao lado de 0.85rem) foram eliminados.

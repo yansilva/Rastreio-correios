@@ -234,6 +234,10 @@ h1 {
     border-color: var(--color-primary);
 }
 
+.nav-tab.active:hover {
+    color: #ffffff;
+}
+
 .nav-tab.active {
     background: var(--color-primary);
     color: #ffffff;

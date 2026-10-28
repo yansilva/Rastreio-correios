@@ -546,6 +546,99 @@ class TestFreteReportGenerator(unittest.TestCase):
             for ident in ("filtrarPorValor", "valMin", "valMax", "filterCount", "data-valor"):
                 self.assertIn(ident, conteudo_escrito)
 
+    def _renderizar(self, servicos):
+        """Gera o HTML em memória (sem tocar nos arquivos da raiz) e o devolve."""
+        generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))
+        pedido = {
+            "numero": "1001", "situacao": "Aberto", "nome_cliente": "Teste", "valor": 150.0,
+            "cep_destino": "01001000", "destino_label": "São Paulo/SP", "servicos": servicos,
+        }
+        with patch("builtins.open", unittest.mock.mock_open()) as mock_file:
+            generator.gerar_html([pedido])
+            handle = mock_file()
+            return "".join(c.args[0] for c in handle.write.call_args_list if c.args)
+
+    @staticmethod
+    def _servico(preco, prazo, **extra):
+        return {"disponivel": True, "preco": preco, "preco_fmt": f"R$ {preco:.2f}".replace(".", ","),
+                "prazo": prazo, "msg_prazo": None, "erro": None, **extra}
+
+    def test_prazo_plural_correto(self):
+        html = self._renderizar({
+            "03220": self._servico(30.0, 1),
+            "03158": self._servico(40.0, 2),
+            "03140": {"disponivel": False},
+        })
+        self.assertIn("1 dia útil<", html)
+        self.assertNotIn("1 dias úteis", html)
+        self.assertIn("2 dias úteis", html)
+
+    def test_selos_mais_barato_e_mais_rapido(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 4),
+            "03158": self._servico(50.0, 1),
+            "03140": self._servico(35.0, 2),
+        })
+        self.assertEqual(html.count('<span class="servico-selo">Mais barato</span>'), 1)
+        self.assertEqual(html.count('<span class="servico-selo">Mais rápido</span>'), 1)
+        # Cartão disponível é neutro: sem verde de "entregue"
+        self.assertNotIn("var(--color-success-bg)", html)
+        self.assertNotIn("var(--color-success-text)", html)
+
+    def test_sem_selo_com_uma_unica_opcao(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 2),
+            "03158": {"disponivel": False},
+            "03140": {"disponivel": False},
+        })
+        self.assertNotIn('<span class="servico-selo">', html)
+
+    def test_indisponivel_mostra_motivo(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 2),
+            "03158": {"disponivel": False, "motivo": "Sem cobertura na região"},
+            "03140": {"disponivel": False, "erro": "x" * 200},
+        })
+        self.assertIn("Sem cobertura na região", html)
+        # erro longo (técnico) cai no texto padrão
+        self.assertIn("Indisponível para este destino", html)
+        self.assertNotIn("x" * 200, html)
+
+    def test_filtro_valor_estado_vazio_e_aviso(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('id="filtroVazio" role="status"', html)
+        self.assertIn("Nenhum pedido neste intervalo de valor.", html)
+        self.assertIn("Limpar filtro", html)
+        self.assertIn("limparFiltro", html)
+        self.assertIn('id="filterAviso" aria-live="polite"', html)
+        self.assertIn("O mínimo é maior que o máximo.", html)
+
+    def test_rotulos_e_placeholders_do_filtro(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn("Valor mínimo do pedido (R$)", html)
+        self.assertIn("Valor máximo do pedido (R$)", html)
+        self.assertIn('placeholder="Sem mínimo"', html)
+        self.assertIn('placeholder="Sem limite"', html)
+
+    def test_abas_de_navegacao_como_o_painel(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('<nav class="nav-tabs"', html)
+        self.assertIn('href="relatorio_rastreio.html" class="nav-tab"', html)
+        self.assertIn("Painel Geral", html)
+        self.assertIn('class="nav-tab active" aria-current="page"', html)
+        self.assertIn("Opções de Frete</a>", html)
+        self.assertNotIn("Voltar ao Painel Principal", html)
+        self.assertIn('class="btn-theme"', html)
+
+    def test_h1_na_rampa_do_painel(self):
+        import re
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        regra = re.search(r"\n\s*h1 \{([^}]*)\}", html)
+        self.assertIsNotNone(regra)
+        self.assertIn("font-size: 1.75rem", regra.group(1))
+        self.assertNotIn("2.25rem", regra.group(1))
+        self.assertNotIn("3rem", html)
+
 
 # ============== TESTES DE COMPATIBILIDADE ==============
 
