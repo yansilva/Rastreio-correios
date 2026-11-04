@@ -1,5 +1,6 @@
 """Testes dos cartões de pedido do painel: selo de status, filtros, idade e histórico recolhido."""
 import os
+import re
 import sys
 import unittest
 from datetime import datetime
@@ -209,9 +210,42 @@ class TestMontarCardPedido(unittest.TestCase):
         self.assertIn("&lt;b&gt;Cliente &amp; Cia&lt;/b&gt;", card)
         self.assertIn("Situação no Tiny: —", card)
 
-    def test_titulo_e_um_cabecalho_de_segundo_nivel(self):
+    def test_titulo_legado_continua_aceito(self):
         card = self._card(['<div class="event">x</div>'])
         self.assertIn('<h2 class="order-title">Pedido Tiny #1 — AB123BR</h2>', card)
+
+    def test_titulo_em_partes_com_cliente_e_codigo(self):
+        card = montar_card_pedido(
+            numero_txt="7001",
+            cliente="Maria <b>Souza</b>",
+            rastreio="AE000000001BR",
+            tokens="em_transito",
+            selo="Em trânsito",
+            classe_selo="badge-blue",
+            situacao_tiny="Enviado",
+            eventos_html=['<div class="event">x</div>'],
+        )
+        titulo = re.search(r'<h2 class="order-title">(.*?)</h2>', card, re.S).group(1)
+        self.assertIn('<span class="order-num">Pedido Tiny #7001</span>', titulo)
+        self.assertIn('<span class="order-client">Maria &lt;b&gt;Souza&lt;/b&gt;</span>', titulo)
+        self.assertIn('<span class="order-code">AE000000001BR</span>', titulo)
+        # Ordem de leitura: número, cliente, código
+        self.assertLess(titulo.index("Pedido Tiny #7001"), titulo.index("Maria"))
+        self.assertLess(titulo.index("Maria"), titulo.index("AE000000001BR"))
+
+    def test_titulo_em_partes_sem_cliente_so_numero_e_codigo(self):
+        card = montar_card_pedido(
+            numero_txt="7002",
+            rastreio="AE000000002BR",
+            tokens="em_transito",
+            selo="Em trânsito",
+            classe_selo="badge-blue",
+            situacao_tiny="Enviado",
+            eventos_html=['<div class="event">x</div>'],
+        )
+        self.assertIn('<span class="order-num">Pedido Tiny #7002</span>', card)
+        self.assertIn('<span class="order-code">AE000000002BR</span>', card)
+        self.assertNotIn("order-client", card)
 
     def test_dados_do_cartao_alimentam_a_tabela(self):
         card = self._card(['<div class="event">x</div>'], rastreio="AB123BR", cliente='Ana "Lima"')

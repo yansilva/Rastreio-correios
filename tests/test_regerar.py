@@ -190,9 +190,13 @@ class TestRegerarSemRede(unittest.TestCase):
             html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
 
         # Sem pedido atrasado neste cenário, a tabela de atrasados não tem a coluna Cliente
-        # Com cliente: "#7001 — Maria ... (rastreio)", com o HTML do nome escapado; sem cliente: só o rastreio
-        self.assertIn("Pedido Tiny #7001 — Maria &lt;b&gt;Souza&lt;/b&gt; (AE000000001BR)", html)
-        self.assertIn("Pedido Tiny #7002 — AE000000002BR", html)
+        # Título em partes: número, cliente (com o HTML escapado) e código; sem cliente, só número e código
+        self.assertIn('<span class="order-num">Pedido Tiny #7001</span>', html)
+        self.assertIn('<span class="order-client">Maria &lt;b&gt;Souza&lt;/b&gt;</span>', html)
+        self.assertIn('<span class="order-code">AE000000001BR</span>', html)
+        self.assertIn('<span class="order-num">Pedido Tiny #7002</span>', html)
+        self.assertIn('<span class="order-code">AE000000002BR</span>', html)
+        self.assertEqual(html.count('<span class="order-client">'), 1)  # só o pedido 7001 tem cliente
 
     def test_tabela_de_atrasados_mostra_cliente_so_quando_o_csv_traz(self):
         agora = datetime.now()
@@ -212,20 +216,26 @@ class TestRegerarSemRede(unittest.TestCase):
                 return Path(pasta, "pedidos_atrasados.html").read_text(encoding="utf-8")
 
         com = gerar("Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente\n9001,Enviado,AE000000009BR,Ana <i>Lima</i>\n")
-        self.assertIn("<th>Cliente</th>", com)
+        self.assertIn('<th scope="col">Cliente</th>', com)
         self.assertIn('data-label="Cliente">Ana &lt;i&gt;Lima&lt;/i&gt;</td>', com)
 
         sem = gerar("Número do Pedido no Tiny,Situação,Código de Rastreio\n9001,Enviado,AE000000009BR\n")
-        self.assertNotIn("<th>Cliente</th>", sem)
+        self.assertNotIn('<th scope="col">Cliente</th>', sem)
         self.assertIn('data-label="Pedido"', sem)
 
         # Cada linha tem "Copiar rastreio"; a navegação é a mesma do painel e há skip link e main
         self.assertIn('data-copy="AE000000009BR"', sem)
-        self.assertIn("<th>Ações</th>", sem)
+        self.assertIn('<th scope="col">Ações</th>', sem)
         self.assertIn('class="skip-link"', sem)
         self.assertIn('<main id="conteudo"', sem)
         self.assertIn('aria-current="page"', sem)
         self.assertNotIn("Voltar ao Painel", sem)
+
+        # Sem a coluna Urgência (o selo de dias já traz o rótulo), legenda da tabela e status único escondido
+        self.assertNotIn("Urgência</th>", sem)
+        self.assertIn("6 dias · Alto", sem)
+        self.assertIn("<caption class=\"sr-only\">Pedidos com mais de 3 dias em trânsito</caption>", sem)
+        self.assertNotIn('data-label="Status"', sem)
 
     def test_atrasados_vazio_e_calmo_sem_quatro_zeros(self):
         with tempfile.TemporaryDirectory() as pasta:
@@ -246,6 +256,11 @@ class TestRegerarSemRede(unittest.TestCase):
         self.assertNotIn('class="dash-card dash-clickable', painel)
         self.assertNotRegex(painel, r'class="dash-card[^"]*"[^>]*role="button"')
         self.assertEqual(painel.count('id="filterCount"'), 1)
+        # Visão é um controle segmentado na linha da lista, fora do popover Opções
+        self.assertIn('class="view-switch"', painel)
+        self.assertNotIn('id="viewSelect"', painel)
+        self.assertIn('data-view="tabela" aria-pressed="false"', painel)
+        self.assertLess(painel.index('class="view-switch"'), painel.index('class="options-menu"'))
 
     def test_sem_cache_devolve_false(self):
         with tempfile.TemporaryDirectory() as pasta:

@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verifica retorno pós-atualização via query param
     if (window.location.search.indexOf('updated=true') !== -1) {
-        showToast('✅ Painel atualizado com sucesso!', '#16a34a');
+        showToast('Painel atualizado com sucesso!', '#15803d');
         if (window.history.replaceState) {
             var cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             window.history.replaceState({ path: cleanUrl }, '', cleanUrl);

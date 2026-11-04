@@ -285,13 +285,15 @@
     padding: 7px 14px;
     border-radius: var(--radius-full);
     transition: var(--transition);
-    display: none;
+    /* Espaço reservado: quando some, a faixa de pílulas não pula */
+    display: inline-flex;
+    visibility: hidden;
     align-items: center;
     gap: 4px;
 }
 
 .btn-clear-filter.visible {
-    display: inline-flex;
+    visibility: visible;
 }
 
 .btn-clear-filter:hover {
@@ -312,24 +314,6 @@
     font-weight: 500;
     margin-left: auto;
     white-space: nowrap;
-}
-
-/* Banner de Filtro Ativo */
-.filter-banner {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 10px 16px;
-    margin-bottom: 20px;
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-.filter-banner.visible {
-    display: flex;
 }
 
 /* ==========================================================================
@@ -370,6 +354,25 @@
     line-height: 1.4;
     color: var(--color-text-main);
     letter-spacing: normal;
+    /* Título em partes (número, cliente e código): quebram de linha juntas, com espaço entre si */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+}
+
+.order-num {
+    font-weight: 700;
+}
+
+.order-client {
+    font-weight: 600;
+}
+
+.order-code {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
 }
 
 /* Copiar o código de rastreio: ação do cartão, com alvo de toque de 44px */
@@ -786,7 +789,7 @@
     color: var(--color-text-muted);
 }
 
-.num-total { color: var(--color-primary); }
+.num-total { color: var(--color-link); }
 .num-critico { color: var(--color-danger); }
 .num-alto { color: var(--color-high); }
 .num-atencao { color: var(--color-warning); }
@@ -832,7 +835,7 @@ tbody tr:hover {
     background: var(--color-surface-hover);
 }
 
-/* Urgência é indicada pela tag e pelo badge de dias; a linha recebe só um tom sutil */
+/* Urgência é indicada pelo badge de dias (cor e rótulo); a linha recebe só um tom sutil */
 .urgencia-alta { background: rgba(220, 38, 38, 0.05); }
 .urgencia-media { background: rgba(234, 88, 12, 0.05); }
 .urgencia-baixa { background: rgba(217, 119, 6, 0.05); }
@@ -848,19 +851,6 @@ tbody tr:hover {
 .dias-badge.urgencia-alta { background: var(--color-danger-bg); color: var(--color-danger); }
 .dias-badge.urgencia-media { background: var(--color-high-bg); color: var(--color-high-text); }
 .dias-badge.urgencia-baixa { background: var(--color-warning-bg); color: var(--color-warning-text); }
-
-.urgencia-tag {
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.urgencia-tag.urgencia-alta { background: var(--urgency-tag-high); color: #ffffff; }
-.urgencia-tag.urgencia-media { background: var(--urgency-tag-medium); color: #ffffff; }
-.urgencia-tag.urgencia-baixa { background: var(--urgency-tag-low); color: #ffffff; }
 
 .empty-state {
     text-align: center;
@@ -1150,7 +1140,7 @@ h1 .icon {
     }
 
     .table-wrapper tbody tr {
-        padding: 10px 0;
+        padding: 8px 0;
         border-bottom: 1px solid var(--color-border);
     }
 
@@ -1160,7 +1150,7 @@ h1 .icon {
 
     .table-wrapper tbody td {
         border-bottom: none;
-        padding: 6px 16px;
+        padding: 4px 16px;
         overflow-wrap: anywhere;
     }
 
@@ -1316,11 +1306,6 @@ h1 .icon {
 .order-card.is-entering,
 #noResults:not([hidden]) {
     animation: cardEnter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.dash-clickable:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1784,5 +1769,138 @@ h1 .icon {
     .filter-pills {
         -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
         mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    }
+}
+
+/* Texto só para leitor de tela: some visualmente, mas continua no acessível */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Tabela de atrasados: colunas que não quebram, último evento em até 2 linhas */
+.dias-badge,
+.table-wrapper td[data-label="Rastreio"],
+.table-wrapper td[data-label="Ações"] {
+    white-space: nowrap;
+}
+
+.table-wrapper .evento-texto {
+    display: -webkit-box;
+    max-width: 260px;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Visão: controle segmentado na linha da lista, ao lado do contador (sem abrir Opções) */
+.view-switch {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+}
+
+.view-option {
+    min-height: 40px;
+    padding: 6px 14px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.view-option:hover:not([aria-pressed="true"]):not(:disabled) {
+    color: var(--color-link);
+    background: var(--color-primary-light);
+}
+
+.view-option[aria-pressed="true"] {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.view-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.view-option:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Opções: rótulo à esquerda e controle à direita, alinhados em grade */
+.options-panel .list-tools {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 14px;
+}
+
+.options-panel .list-tools .btn-link {
+    justify-self: start;
+    margin-left: 0;
+}
+
+/* Espaço para o botão flutuante não cobrir a última ação ao rolar até o fim */
+main.orders-list {
+    padding-bottom: 96px;
+}
+
+.orders-table-wrap {
+    padding-bottom: 96px;
+}
+
+@media (max-width: 640px) {
+    main.orders-list,
+    .orders-table-wrap {
+        padding-bottom: 80px;
+    }
+
+    /* Visão ocupa a largura toda no celular; as Opções seguem na linha de baixo */
+    .view-switch {
+        display: flex;
+        flex: 1 1 100%;
+        order: 3;
+    }
+
+    .view-option {
+        flex: 1 1 0;
+        min-height: 44px;
+        padding: 6px 8px;
+    }
+
+    .options-menu {
+        order: 4;
+    }
+
+    /* Limpar filtros segue o contador no celular, na mesma linha */
+    .list-meta .btn-clear-filter {
+        order: 2;
+    }
+
+    /* Resumo de atrasados em duas colunas, sem uma coluna vazia no fim */
+    .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* Cartão do pedido no celular: só Pedido, Cliente, Rastreio, Dias e Ações */
+    .table-wrapper .col-secundaria {
+        display: none;
     }
 }

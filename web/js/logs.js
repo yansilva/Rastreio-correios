@@ -76,7 +76,7 @@ async function atualizarDados() {
 
                 if (event.data.includes('✅ PROCESSO FINALIZADO')) {
                     eventSource.close();
-                    showToast('✅ Atualização concluída com sucesso!', '#16a34a');
+                    showToast('Atualização concluída com sucesso!', '#15803d');
                     setTimeout(() => {
                         const targetUrl = window.location.pathname + '?updated=true';
                         window.location.href = targetUrl;
@@ -175,7 +175,7 @@ async function regerarPagina() {
         }
 
         if (response.ok) {
-            showToast('✅ Página regerada com os últimos dados consultados.', '#16a34a');
+            showToast('Página regerada com os últimos dados consultados.', '#15803d');
             setTimeout(() => {
                 window.location.href = window.location.pathname + '?updated=true';
             }, 700);

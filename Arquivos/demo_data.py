@@ -337,7 +337,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         )
 
         card = montar_card_pedido(
-            titulo=f"Pedido Tiny #{o['pedido']} — {o['cliente']} ({o['rastreio']})",
+            numero_txt=str(o["pedido"]),
             tokens=status_tokens(categoria, retirada=retirada, atrasado=atrasado),
             selo=selo,
             classe_selo=classe_selo,
@@ -419,12 +419,17 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
                     <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
                     <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
-                    <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 </div>
             </div>
             <div class="list-meta">
                 <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
+                <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
+                <div class="view-switch" role="group" aria-label="Visão">
+                    <button type="button" class="view-option" data-view="cartoes" aria-pressed="true">Cartões</button>
+                    <button type="button" class="view-option" data-view="compacta" aria-pressed="false">Compacta</button>
+                    <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
+                </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
@@ -434,13 +439,8 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <option value="antigo">Último evento mais antigo</option>
                     <option value="pedido">Número do pedido</option>
                 </select>
+                <span class="sort-label">Históricos</span>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
-                <label class="sort-label" for="viewSelect">Visão</label>
-                <select id="viewSelect" class="sort-select">
-                    <option value="cartoes">Cartões</option>
-                    <option value="compacta">Compacta</option>
-                    <option value="tabela">Tabela</option>
-                </select>
             </div>
                 </div></details>
             </div>
@@ -533,28 +533,27 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 
         <div class="table-wrapper">
             <table>
+                <caption class="sr-only">Pedidos com mais de 3 dias em trânsito</caption>
                 <thead>
                     <tr>
-                        <th>Pedido</th>
-                        <th>Rastreio</th>
-                        <th>Postagem</th>
-                        <th>Dias</th>
-                        <th>Urgência</th>
-                        <th>Último Evento</th>
-                        <th>Local</th>
-                        <th>Status</th>
+                        <th scope="col">Pedido</th>
+                        <th scope="col">Rastreio</th>
+                        <th scope="col" class="col-secundaria">Postagem</th>
+                        <th scope="col">Dias</th>
+                        <th scope="col" class="col-secundaria">Último Evento</th>
+                        <th scope="col" class="col-secundaria">Local</th>
+                        <th scope="col">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr class="urgencia-alta">
                         <td data-label="Pedido"><strong>#41732</strong></td>
                         <td data-label="Rastreio"><code>BR112233445BR</code></td>
-                        <td data-label="Postagem">02/09/2026</td>
-                        <td data-label="Dias"><span class="dias-badge urgencia-alta">6 dias</span></td>
-                        <td data-label="Urgência"><span class="urgencia-tag urgencia-alta">ALTA</span></td>
-                        <td data-label="Último Evento">Objeto em transferência - trânsito lento</td>
-                        <td data-label="Local">RECIFE/PE</td>
-                        <td data-label="Status">Em trânsito</td>
+                        <td data-label="Postagem" class="col-secundaria">02/09/2026</td>
+                        <td data-label="Dias"><span class="dias-badge urgencia-alta">6 dias · Alto</span></td>
+                        <td data-label="Último Evento" class="col-secundaria" title="Objeto em transferência - trânsito lento"><span class="evento-texto">Objeto em transferência - trânsito lento</span></td>
+                        <td data-label="Local" class="col-secundaria">RECIFE/PE</td>
+                        <td data-label="Ações"><button type="button" class="btn-copy" data-copy="BR112233445BR" aria-label="Copiar código de rastreio BR112233445BR">Copiar rastreio</button></td>
                     </tr>
                 </tbody>
             </table>

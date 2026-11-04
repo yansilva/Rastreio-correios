@@ -84,10 +84,19 @@ var COLUNAS_TABELA = [
     { chave: 'tiny', rotulo: 'Tiny' },
 ];
 
+// Visão ativa: o controle segmentado da linha da lista mostra qual está em uso (aria-pressed)
+var visaoAtiva = 'cartoes';
+
+function marcarVisao(modo) {
+    document.querySelectorAll('.view-switch [data-view]').forEach(function(botao) {
+        marcarPressionado(botao, botao.getAttribute('data-view') === modo);
+    });
+}
+
 function definirVisao(modo) {
     if (!listaPedidos) return;
-    var seletor = document.getElementById('viewSelect');
-    if (seletor) seletor.value = modo;
+    visaoAtiva = modo;
+    marcarVisao(modo);
     listaPedidos.classList.toggle('is-compact', modo === 'compacta');
     listaPedidos.hidden = modo === 'tabela';
     // Na tabela a ordem vem dos cabeçalhos: o select "Ordenar por" some para não haver dois controles de ordem
@@ -171,8 +180,8 @@ function ordenarTabelaPor(chave) {
 }
 
 function verCartao(card) {
+    // Não grava a preferência: a visão escolhida pelo operador continua salva
     definirVisao('cartoes');
-    gravarPreferencia('visao', 'cartoes');
     card.scrollIntoView({ block: 'start' });
     card.setAttribute('tabindex', '-1');
     card.focus();
@@ -331,22 +340,6 @@ function applyFilters() {
         noResults.hidden = false;
     } else if (noResults) {
         noResults.hidden = true;
-    }
-
-    // Atualiza banner de filtro
-    var banner = document.getElementById('filterBanner');
-    var bannerText = document.getElementById('filterBannerText');
-    if (banner && bannerText) {
-        if (activeStatusFilter || term) {
-            var label = activeStatusFilter ? (STATUS_LABELS[activeStatusFilter] || activeStatusFilter) : '';
-            if (term) {
-                label = label ? label + ' + busca: "' + term + '"' : 'Busca: "' + term + '"';
-            }
-            bannerText.textContent = 'Filtro ativo: ' + label;
-            banner.classList.add('visible');
-        } else {
-            banner.classList.remove('visible');
-        }
     }
 
     // Atualiza classes ativas nos cards de resumo e botões de filtro
@@ -539,30 +532,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 5a. Visão (cartões, compacta ou tabela ordenável), lembrada entre atualizações
-    var seletorVisao = document.getElementById('viewSelect');
+    var controleVisao = document.querySelector('.view-switch');
     listaPedidos = document.querySelector('.orders-list');
-    if (seletorVisao && listaPedidos) {
-        // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: não é oferecida
+    if (controleVisao && listaPedidos) {
+        var botaoTabela = controleVisao.querySelector('[data-view="tabela"]');
+        // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: fica desativada
         var consultaCelular = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
         var celular = !!(consultaCelular && consultaCelular.matches);
         function ajustarTabelaAoTamanho(pequeno) {
-            Array.prototype.forEach.call(seletorVisao.options, function(o) {
-                if (o.value === 'tabela') { o.disabled = pequeno; o.hidden = pequeno; }
-            });
+            if (botaoTabela) {
+                botaoTabela.disabled = pequeno;
+                botaoTabela.title = pequeno ? 'A tabela não cabe na tela do celular' : '';
+            }
             // A tela encolheu (ou o aparelho girou) com a tabela aberta: volta à visão compacta
-            if (pequeno && seletorVisao.value === 'tabela') definirVisao('compacta');
+            if (pequeno && visaoAtiva === 'tabela') definirVisao('compacta');
         }
         ajustarTabelaAoTamanho(celular);
         if (consultaCelular && consultaCelular.addEventListener) {
             consultaCelular.addEventListener('change', function(e) { ajustarTabelaAoTamanho(e.matches); });
         }
-        seletorVisao.addEventListener('change', function() {
-            definirVisao(seletorVisao.value);
-            gravarPreferencia('visao', seletorVisao.value);
+        controleVisao.querySelectorAll('[data-view]').forEach(function(botao) {
+            botao.addEventListener('click', function() {
+                if (botao.disabled) return;
+                var modo = botao.getAttribute('data-view');
+                definirVisao(modo);
+                gravarPreferencia('visao', modo);
+            });
         });
         var visaoSalva = lerPreferencia('visao');
         if (visaoSalva === 'tabela' && celular) visaoSalva = 'compacta';
-        if (visaoSalva === 'compacta' || visaoSalva === 'tabela') definirVisao(visaoSalva);
+        definirVisao(visaoSalva === 'compacta' || visaoSalva === 'tabela' ? visaoSalva : 'cartoes');
     }
 
     // 5c. Contagem nas pílulas e cartões de resumo zerados desativados (um clique ali só esvaziaria a lista)
@@ -590,10 +589,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Pílulas ativas primeiro: as zeradas vão para o fim da faixa, onde não escondem o filtro útil
     var faixaPilulas = document.querySelector('.filter-pills');
-    var botaoLimpar = document.getElementById('btnClearFilter');
     if (faixaPilulas) {
         Array.prototype.slice.call(faixaPilulas.querySelectorAll('.filter-pill[aria-disabled="true"]')).forEach(function(pill) {
-            faixaPilulas.insertBefore(pill, botaoLimpar);
+            faixaPilulas.appendChild(pill);
         });
     }
 

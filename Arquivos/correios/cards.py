@@ -140,7 +140,7 @@ def faixa_acao(atrasados: int, retiradas: int) -> str:
 
 def montar_card_pedido(
     *,
-    titulo: str,
+    titulo: str = "",
     tokens: str,
     selo: str,
     classe_selo: str,
@@ -154,8 +154,13 @@ def montar_card_pedido(
     divergencia: str = "",
     rastreio: str = "",
     cliente: str = "",
+    numero_txt: str = "",
 ) -> str:
-    """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido."""
+    """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido.
+
+    Com numero_txt, o título sai em partes (número, cliente e código), cada uma num span; sem ele,
+    o parâmetro titulo é usado como veio, para quem ainda o passa pronto.
+    """
     classe = "order-card"
     if encerrado:
         classe += " order-closed"
@@ -173,6 +178,15 @@ def montar_card_pedido(
         if rastreio
         else ""
     )
+    if numero_txt:
+        partes_titulo = [f'<span class="order-num">Pedido Tiny #{escape(numero_txt)}</span>']
+        if cliente:
+            partes_titulo.append(f'<span class="order-client">{escape(cliente)}</span>')
+        if rastreio:
+            partes_titulo.append(f'<span class="order-code">{escape(rastreio)}</span>')
+        titulo_html = "".join(partes_titulo)
+    else:
+        titulo_html = escape(titulo)
     atributos = f'data-status="{tokens}"'
     if rastreio:
         atributos += f' data-rastreio="{escape(rastreio, quote=True)}"'
@@ -194,7 +208,7 @@ def montar_card_pedido(
     return f"""
             <div class="{classe}" {atributos}>
                 <div class="order-header">
-                    <h2 class="order-title">{escape(titulo)}</h2>
+                    <h2 class="order-title">{titulo_html}</h2>
                     <div class="order-meta">
                         <span class="badge {classe_selo}">{escape(selo)}</span>
                         {divergencia_html}

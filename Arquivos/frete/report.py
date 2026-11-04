@@ -10,6 +10,7 @@ import html
 import logging
 import os
 import time
+from collections import Counter
 from typing import Any
 
 from correios.icons import ICON_SPRITE, icone
@@ -117,6 +118,10 @@ class FreteReportGenerator:
 
         data_geracao = time.strftime('%d/%m/%Y %H:%M:%S')
         total_pedidos = len(pedidos_com_frete)
+        # Situação repetida em todo o lote não precisa de selo em cada cartão
+        situacao_comum = (
+            Counter(p.get("situacao") for p in pedidos_com_frete).most_common(1)[0][0] if pedidos_com_frete else None
+        )
 
         total_menores: list[float] = []
         total_longos = 0
@@ -186,16 +191,26 @@ class FreteReportGenerator:
                 {servicos_html}
             </div>""" if servicos_html else ""
 
+            # Texto da busca: cliente, cidade e CEP (com e sem hífen); o número do pedido já está em "pedido"
+            cep_fmt = _fmt_cep(pedido.get('cep_destino', '—'))
+            cep_digitos = "".join(ch for ch in cep_fmt if ch.isdigit())
+            texto_busca = html.escape(
+                f"{pedido.get('nome_cliente', '')} {pedido.get('destino_label', '')} {cep_fmt} {cep_digitos}",
+                quote=True,
+            )
+            situacao = pedido.get('situacao', '')
+            badge_html = f'<span class="pedido-badge">{situacao}</span>' if situacao != situacao_comum else ""
+
             cards_html += f"""
-        <div class="pedido-card" data-valor="{valor_float}" data-menor="{menor_attr}" data-longo="{1 if prazo_longo else 0}">
+        <div class="pedido-card" data-pedido="{pedido['numero']}" data-busca="{texto_busca}" data-valor="{valor_float}" data-menor="{menor_attr}" data-longo="{1 if prazo_longo else 0}">
             <div class="pedido-header">
                 <div class="pedido-left">
                     <span class="pedido-linha"><span class="pedido-numero">Pedido #{pedido['numero']}</span> <span class="pedido-valor">{valor_fmt}</span></span>
                     <span class="pedido-cliente">{pedido.get('nome_cliente', '—')}</span>
                 </div>
                 <div class="pedido-right">
-                    <span class="pedido-badge">{pedido['situacao']}</span>
-                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP {_fmt_cep(pedido.get('cep_destino', '—'))}</span>
+                    {badge_html}
+                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP {cep_fmt}</span>
                 </div>
             </div>
             {grid_html}{nota_html}
@@ -471,6 +486,40 @@ class FreteReportGenerator:
         }}
         .filter-aviso:empty {{ display: none; }}
 
+        /* Busca: mesmo campo do painel (.search-input), na primeira linha da barra de filtros */
+        .filter-bar .search-wrapper {{ position: relative; flex-basis: 100%; }}
+        .search-icon {{
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-subtle);
+            font-size: 1rem;
+            pointer-events: none;
+        }}
+        .search-input {{
+            width: 100%;
+            padding: 14px 18px 14px 46px;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 1px solid var(--color-border-strong);
+            border-radius: var(--radius-lg);
+            background: var(--color-surface);
+            color: var(--color-text-main);
+            outline: none;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }}
+        .search-input::placeholder {{ color: var(--color-text-subtle); }}
+        .search-input:focus {{
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }}
+        .search-input:focus-visible {{
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }}
+
         /* Summary Cards */
         .summary {{
             display: grid;
@@ -537,9 +586,11 @@ class FreteReportGenerator:
         }}
 
         /* Serviços Grid */
+        /* Cartões com largura máxima de 280px, alinhados à esquerda: um serviço sozinho não estica */
         .servicos-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 280px));
+            justify-content: start;
             gap: 12px;
             padding: 18px 24px;
         }}
@@ -643,7 +694,7 @@ class FreteReportGenerator:
             .config-info {{ margin-top: 6px; padding: 4px 12px; }}
             .nav-tabs {{ margin-top: 10px; gap: 8px; }}
             .nav-tab {{ padding: 9px 14px; }}
-            .summary {{ grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }}
+            .summary {{ grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }}
             .summary-card {{ min-width: 0; padding: 10px 6px; }}
             .summary-number {{ white-space: nowrap; }}
             .summary-label {{ font-size: 0.75rem; }}
@@ -661,6 +712,7 @@ class FreteReportGenerator:
             .filter-group {{ flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }}
             .filter-group label {{ font-size: 0.8125rem; line-height: 1.3; }}
             .filter-group input {{ width: 100%; min-width: 0; }}
+            .filter-bar .search-wrapper {{ grid-column: 1 / -1; }}
             .filter-count, .filter-aviso {{ grid-column: 1 / -1; margin-left: 0; text-align: center; }}
             .filter-count:empty {{ display: none; }}
             .pedido-card {{ margin-bottom: 14px; }}
@@ -708,13 +760,17 @@ class FreteReportGenerator:
         </div>
 
         <div class="filter-bar">
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">{icone("search")}</span>
+                <input type="search" id="busca" class="search-input" placeholder="Buscar pedido, cliente, cidade ou CEP" aria-label="Buscar pedido, cliente, cidade ou CEP" autocomplete="off" oninput="aplicarFiltros()">
+            </div>
             <div class="filter-group">
                 <label for="valMin">Valor mínimo do pedido (R$)</label>
-                <input type="number" id="valMin" min="0" step="any" inputmode="decimal" placeholder="Sem mínimo" oninput="filtrarPorValor()">
+                <input type="number" id="valMin" min="0" step="any" inputmode="decimal" placeholder="Sem mínimo" oninput="aplicarFiltros()">
             </div>
             <div class="filter-group">
                 <label for="valMax">Valor máximo do pedido (R$)</label>
-                <input type="number" id="valMax" min="0" step="any" inputmode="decimal" placeholder="Sem limite" oninput="filtrarPorValor()">
+                <input type="number" id="valMax" min="0" step="any" inputmode="decimal" placeholder="Sem limite" oninput="aplicarFiltros()">
             </div>
             <span class="filter-count" id="filterCount" aria-live="polite"></span>
             <p class="filter-aviso" id="filterAviso" aria-live="polite"></p>
@@ -740,8 +796,12 @@ class FreteReportGenerator:
         }}
         setTheme(lerTema());
 
-        // Lógica de Filtro
-        function filtrarPorValor() {{
+        // Lógica de Filtro: busca de texto e intervalo de valor, combinados
+        function normalizarTexto(texto) {{
+            return texto.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+        }}
+        function aplicarFiltros() {{
+            const termo = normalizarTexto(document.getElementById('busca').value.trim().replace(/^#/, ''));
             const minVal = parseFloat(document.getElementById('valMin').value) || 0;
             const maxInput = document.getElementById('valMax').value;
             const maxVal = maxInput ? parseFloat(maxInput) : Infinity;
@@ -757,8 +817,9 @@ class FreteReportGenerator:
 
             cards.forEach(card => {{
                 const val = parseFloat(card.getAttribute('data-valor')) || 0;
-                // Intervalo invertido: não filtra, só avisa
-                if (invertido || (val >= minVal && val <= maxVal)) {{
+                const casaBusca = !termo || normalizarTexto(card.getAttribute('data-pedido') + ' ' + card.getAttribute('data-busca')).includes(termo);
+                // Intervalo invertido: não filtra valor, só avisa
+                if (casaBusca && (invertido || (val >= minVal && val <= maxVal))) {{
                     card.style.display = '';
                     visiveis++;
                     const m = parseFloat(card.getAttribute('data-menor'));
@@ -779,15 +840,16 @@ class FreteReportGenerator:
 
             aviso.textContent = invertido ? 'O mínimo é maior que o máximo.' : '';
 
-            if ((minVal > 0 || maxInput) && !invertido) {{
+            if (termo || ((minVal > 0 || maxInput) && !invertido)) {{
                 countSpan.textContent = `Mostrando ${{visiveis}} de ${{cards.length}}`;
             }} else {{
                 countSpan.textContent = '';
             }}
 
             if (cards.length > 0 && visiveis === 0) {{
+                const mensagem = termo ? 'Nenhum pedido encontrado para esta busca.' : 'Nenhum pedido neste intervalo de valor.';
                 vazio.innerHTML = '<div class="empty-state filtro-vazio">' +
-                    '<p>Nenhum pedido neste intervalo de valor.</p>' +
+                    '<p>' + mensagem + '</p>' +
                     '<button type="button" class="btn-limpar" onclick="limparFiltro()">Limpar filtro</button>' +
                     '</div>';
             }} else {{
@@ -795,11 +857,25 @@ class FreteReportGenerator:
             }}
         }}
         function limparFiltro() {{
+            document.getElementById('busca').value = '';
             document.getElementById('valMin').value = '';
             document.getElementById('valMax').value = '';
-            filtrarPorValor();
+            aplicarFiltros();
             document.getElementById('valMin').focus();
         }}
+
+        // Atalhos: "/" foca a busca (fora de campos de texto) e Esc limpa a busca
+        document.addEventListener('keydown', function (e) {{
+            const busca = document.getElementById('busca');
+            const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+            if (e.key === '/' && !digitando && !e.ctrlKey && !e.metaKey && !e.altKey) {{
+                e.preventDefault();
+                busca.focus();
+            }} else if (e.key === 'Escape' && document.activeElement === busca && busca.value) {{
+                busca.value = '';
+                aplicarFiltros();
+            }}
+        }});
     </script>
     <script src="alert_frete.js?v={int(time.time())}"></script>
 </body>

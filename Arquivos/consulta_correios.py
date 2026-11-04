@@ -215,12 +215,17 @@ def processar(usar_cache=False):
                     <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
                     <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
                     <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
-                    <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 </div>
             </div>
             <div class="list-meta">
                 <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
+                <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
+                <div class="view-switch" role="group" aria-label="Visão">
+                    <button type="button" class="view-option" data-view="cartoes" aria-pressed="true">Cartões</button>
+                    <button type="button" class="view-option" data-view="compacta" aria-pressed="false">Compacta</button>
+                    <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
+                </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
@@ -230,14 +235,10 @@ def processar(usar_cache=False):
                     <option value="antigo">Último evento mais antigo</option>
                     <option value="pedido">Número do pedido</option>
                 </select>
+                <span class="sort-label">Dados</span>
                 <button type="button" id="btnRegenerate" class="btn-link" title="Reconstrói esta página com os dados já consultados às {hora_dados}, sem chamar o Tiny nem os Correios">Recarregar dados salvos de {hora_dados}</button>
+                <span class="sort-label">Históricos</span>
                 <button type="button" id="btnToggleHistory" class="btn-link">Expandir históricos</button>
-                <label class="sort-label" for="viewSelect">Visão</label>
-                <select id="viewSelect" class="sort-select">
-                    <option value="cartoes">Cartões</option>
-                    <option value="compacta">Compacta</option>
-                    <option value="tabela">Tabela</option>
-                </select>
             </div>
                 </div></details>
             </div>
@@ -377,12 +378,8 @@ def processar(usar_cache=False):
             )
 
             card = montar_card_pedido(
-                # Com o nome do cliente (campo novo do CSV), o título fica como na demonstração; sem ele, só o rastreio
-                titulo=(
-                    f"Pedido Tiny #{pedido} — {cliente} ({rastreio})"
-                    if cliente
-                    else f"Pedido Tiny #{pedido} — {rastreio}"
-                ),
+                # Título em partes: número, cliente (campo novo do CSV, quando houver) e código de rastreio
+                numero_txt=str(pedido),
                 tokens=status_tokens(
                     status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
                 ),
@@ -499,34 +496,39 @@ def processar(usar_cache=False):
 
         # A coluna Cliente só aparece quando o CSV do Tiny trouxe o nome (campo novo, vazio em CSVs antigos)
         tem_cliente = any(x.get("cliente") for x in atrasados_data)
-        th_cliente = "<th>Cliente</th>" if tem_cliente else ""
+        th_cliente = '<th scope="col">Cliente</th>' if tem_cliente else ""
+        # A coluna Status só aparece quando há mistura de status (hoje todos são "Em trânsito")
+        tem_status = len({x["status"] for x in atrasados_data}) > 1
+        th_status = '<th scope="col" class="col-secundaria">Status</th>' if tem_status else ""
         rows_html = ""
         for item in atrasados_data:
             dias = item["dias_transito"]
+            # A cor de urgência vai no badge de dias; o rótulo (Crítico, Alto, Atenção) fica no próprio texto
             if dias >= 7:
                 urgencia_class = "urgencia-alta"
-                urgencia_label = "CRÍTICO"
+                urgencia_rotulo = "Crítico"
             elif dias >= 5:
                 urgencia_class = "urgencia-media"
-                urgencia_label = "ALTO"
+                urgencia_rotulo = "Alto"
             else:
                 urgencia_class = "urgencia-baixa"
-                urgencia_label = "ATENÇÃO"
+                urgencia_rotulo = "Atenção"
 
             status_label = {"em_transito": "Em trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
             td_cliente = f'<td data-label="Cliente">{escape(item.get("cliente", ""))}</td>' if tem_cliente else ""
+            td_status = f'<td data-label="Status" class="col-secundaria">{status_label}</td>' if tem_status else ""
+            evento_completo = escape(str(item["ultimo_evento"]), quote=True)
 
             rows_html += f"""
             <tr class="{urgencia_class}">
                 <td data-label="Pedido"><strong>#{item["pedido"]}</strong></td>
                 {td_cliente}
                 <td data-label="Rastreio"><code>{item["rastreio"]}</code></td>
-                <td data-label="Postagem">{item["data_postagem"]}</td>
-                <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias</span></td>
-                <td data-label="Urgência"><span class="urgencia-tag {urgencia_class}">{urgencia_label}</span></td>
-                <td data-label="Último Evento">{item["ultimo_evento"]}</td>
-                <td data-label="Local">{item["ultimo_local"]}</td>
-                <td data-label="Status">{status_label}</td>
+                <td data-label="Postagem" class="col-secundaria">{item["data_postagem"]}</td>
+                <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias · {urgencia_rotulo}</span></td>
+                <td data-label="Último Evento" class="col-secundaria" title="{evento_completo}"><span class="evento-texto">{item["ultimo_evento"]}</span></td>
+                <td data-label="Local" class="col-secundaria">{item["ultimo_local"]}</td>
+                {td_status}
                 <td data-label="Ações"><button type="button" class="btn-copy" data-copy="{escape(str(item["rastreio"]), quote=True)}" aria-label="Copiar código de rastreio {escape(str(item["rastreio"]), quote=True)}">Copiar rastreio</button></td>
             </tr>
             """
@@ -535,18 +537,18 @@ def processar(usar_cache=False):
             tabela_conteudo = f"""
         <div class="table-wrapper">
             <table>
+                <caption class="sr-only">Pedidos com mais de 3 dias em trânsito</caption>
                 <thead>
                     <tr>
-                        <th>Pedido</th>
+                        <th scope="col">Pedido</th>
                         {th_cliente}
-                        <th>Rastreio</th>
-                        <th>Postagem</th>
-                        <th>Dias</th>
-                        <th>Urgência</th>
-                        <th>Último Evento</th>
-                        <th>Local</th>
-                        <th>Status</th>
-                        <th>Ações</th>
+                        <th scope="col">Rastreio</th>
+                        <th scope="col" class="col-secundaria">Postagem</th>
+                        <th scope="col">Dias</th>
+                        <th scope="col" class="col-secundaria">Último Evento</th>
+                        <th scope="col" class="col-secundaria">Local</th>
+                        {th_status}
+                        <th scope="col">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -561,6 +563,7 @@ def processar(usar_cache=False):
                 <div class="emoji"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <h2>Nada atrasado</h2>
                 <p>Todos os pedidos estão dentro do prazo de 3 dias.</p>
+                <a href="relatorio_rastreio.html" class="btn-link">Ver o painel</a>
             </div>
         </div>"""
 

@@ -543,7 +543,7 @@ class TestFreteReportGenerator(unittest.TestCase):
             self.assertNotIn("position: fixed", conteudo_escrito)
             for emoji in ("📦", "📅", "📍", "⚠️", "🌓", "📭"):
                 self.assertNotIn(emoji, conteudo_escrito)
-            for ident in ("filtrarPorValor", "valMin", "valMax", "filterCount", "data-valor"):
+            for ident in ("aplicarFiltros", "valMin", "valMax", "filterCount", "data-valor", "busca", "data-busca"):
                 self.assertIn(ident, conteudo_escrito)
 
     def _renderizar(self, servicos):
@@ -638,6 +638,45 @@ class TestFreteReportGenerator(unittest.TestCase):
     def test_resumo_sem_prazo_longo_oculta_cartao(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
         self.assertIn('id="sumLongoCard" hidden', html)
+
+    def test_busca_por_pedido_cliente_cidade_e_cep(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('id="busca"', html)
+        self.assertIn('class="search-input"', html)
+        # Texto da busca: cliente, cidade, CEP com e sem hífen (o número do pedido vai no data-pedido)
+        self.assertIn('data-pedido="1001"', html)
+        self.assertIn('data-busca="Teste São Paulo/SP 01001-000 01001000"', html)
+        # Atalhos: "/" foca a busca e Esc limpa
+        self.assertIn("e.key === '/'", html)
+        self.assertIn("e.key === 'Escape'", html)
+
+    def test_servico_unico_com_no_maximo_280px(self):
+        import re
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        regra = re.search(r"\n\s*\.servicos-grid \{([^}]*)\}", html)
+        self.assertIsNotNone(regra)
+        self.assertIn("repeat(auto-fill, minmax(200px, 280px))", regra.group(1))
+        self.assertIn("justify-content: start", regra.group(1))
+
+    def test_selo_de_situacao_so_quando_difere_do_lote(self):
+        generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))
+        servico = self._servico(20.0, 2)
+
+        def pedido(numero, situacao):
+            return {"numero": numero, "situacao": situacao, "nome_cliente": "Teste", "valor": 150.0,
+                    "cep_destino": "01001000", "destino_label": "São Paulo/SP",
+                    "servicos": {"03220": servico, "03158": {"disponivel": False}, "03140": {"disponivel": False}}}
+
+        with patch("builtins.open", unittest.mock.mock_open()) as mock_file:
+            generator.gerar_html([pedido("1", "Em aberto"), pedido("2", "Em aberto"), pedido("3", "Pago")])
+            html = "".join(c.args[0] for c in mock_file().write.call_args_list if c.args)
+        # Dois pedidos "Em aberto" (situação comum) não repetem o selo; só o "Pago" tem selo
+        self.assertEqual(html.count('<span class="pedido-badge">'), 1)
+        self.assertIn('<span class="pedido-badge">Pago</span>', html)
+
+    def test_resumo_mobile_sem_coluna_vazia(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(0, 1fr))", html)
 
     def test_skip_link_main_e_fonte_inter(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})

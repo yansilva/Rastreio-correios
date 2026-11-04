@@ -181,7 +181,7 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 
 **Character:** Uma família única, funcional, sem display separado. A hierarquia vem de peso e tamanho, não de troca de fonte.
 
-Inter variável vem embutida (`web/fonts/InterVariable.woff2`, licença SIL OFL ao lado, `font-display: swap`); a pilha do sistema segue como fallback. A página de frete ainda não carrega o arquivo e usa o fallback.
+Inter variável vem embutida (`web/fonts/InterVariable.woff2`, licença SIL OFL ao lado, `font-display: swap`); a pilha do sistema segue como fallback. A página de frete carrega o mesmo arquivo, pelo `@font-face` do próprio relatório.
 
 ### Hierarchy
 Rampa de seis tamanhos (0.75, 0.8125, 0.875, 1, 1.25 e 1.75rem); todo `font-size` do CSS cai num deles.
@@ -253,6 +253,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Inputs / Fields
 - **Search (`.search-input`):** cantos de 16px, borda fina, fundo branco, padding vertical de 14px, ícone de lupa à esquerda em Tinta Sutil.
 - **Focus:** borda azul e anel de 3px a 12% de azul.
+- **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. Os cartões de serviço têm no máximo 280px, alinhados à esquerda.
 - **Placeholder:** Tinta Sutil. Contraste de placeholder abaixo do recomendado; aceitável apenas por ser texto de apoio.
 
 ### Badges
@@ -270,7 +271,8 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Ferramentas do cabeçalho e da lista
 - **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
-- **Ordenar e expandir:** um seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido) e o botão de texto "Expandir históricos" ficam sob a legenda. A tecla `/` foca a busca e Esc limpa o texto. "Recarregar dados salvos de HH:MM" reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
+- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, ao lado do contador; o botão ativo usa `aria-pressed`. No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
+- **Atalhos:** a tecla `/` foca a busca e Esc limpa o texto. "Recarregar dados salvos de HH:MM" (em Opções) reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
 - **Consultar Tiny e Correios:** único botão flutuante (consulta as APIs); no celular vira um círculo de 52px só com o ícone, com `aria-label`.
 
 ### Navigation (`.nav-tabs`)
