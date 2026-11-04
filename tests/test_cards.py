@@ -11,7 +11,10 @@ if _arquivos not in sys.path:
     sys.path.insert(0, _arquivos)
 
 from correios.cards import (  # noqa: E402
+    DESCRICAO_STATUS,
     PRIORIDADE_STATUS,
+    bloco_descricoes_status,
+    chave_selo,
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
@@ -22,6 +25,7 @@ from correios.cards import (  # noqa: E402
     sem_postagem,
     status_tokens,
     texto_idade,
+    textos_descricao,
     zero,
 )
 
@@ -279,6 +283,76 @@ class TestFaixaAcao(unittest.TestCase):
     def test_zero_so_marca_contador_zerado(self):
         self.assertEqual(zero(0), " is-zero")
         self.assertEqual(zero(2), "")
+
+
+class TestDescricoesStatus(unittest.TestCase):
+    """Explicações curtas dos status: pílulas (title + aria-describedby), selos (texto para leitor de tela)."""
+
+    def test_cada_status_tem_texto_curto_em_portugues(self):
+        for chave, texto in DESCRICAO_STATUS.items():
+            with self.subTest(chave=chave):
+                self.assertTrue(texto.strip())
+                self.assertLessEqual(len(texto), 70)
+                self.assertTrue(texto.endswith("."))
+
+    def test_legenda_e_faixa_usam_o_mesmo_texto(self):
+        self.assertIn(DESCRICAO_STATUS["atrasado"], faixa_acao(1, 1))
+        self.assertIn(DESCRICAO_STATUS["aguardando_retirada"], faixa_acao(1, 1))
+
+    def test_chave_do_selo_segue_a_mesma_precedencia(self):
+        self.assertEqual(chave_selo("devolvido", retirada=True, atrasado=True), "devolvido")
+        self.assertEqual(chave_selo("entregue"), "entregue")
+        self.assertEqual(chave_selo("em_transito", retirada=True, atrasado=True), "aguardando_retirada")
+        self.assertEqual(chave_selo("em_transito", atrasado=True), "atrasado")
+        self.assertEqual(chave_selo("em_transito"), "em_transito")
+        self.assertEqual(chave_selo("nao_enviado"), "nao_enviado")
+
+    def test_chave_do_selo_existe_em_todas_as_combinacoes(self):
+        for categoria in ("em_transito", "nao_enviado", "entregue", "devolvido"):
+            for retirada in (False, True):
+                for atrasado in (False, True):
+                    with self.subTest(categoria=categoria, retirada=retirada, atrasado=atrasado):
+                        chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+                        self.assertIn(chave, DESCRICAO_STATUS)
+
+    def test_bloco_escondido_tem_um_id_por_status(self):
+        bloco = bloco_descricoes_status()
+        self.assertIn('class="sr-only"', bloco)
+        for chave, texto in DESCRICAO_STATUS.items():
+            self.assertIn(f'<span id="desc-status-{chave}">{texto}</span>', bloco)
+
+    def test_textos_para_template_vem_escapados(self):
+        textos = textos_descricao()
+        self.assertEqual(textos["texto_atrasado"], DESCRICAO_STATUS["atrasado"])
+        self.assertEqual(set(textos), {f"texto_{c}" for c in DESCRICAO_STATUS})
+        self.assertNotIn("<", "".join(textos.values()))
+
+    def test_selo_do_cartao_liga_a_explicacao_sem_mudar_o_texto(self):
+        card = montar_card_pedido(
+            tokens="em_transito atrasado",
+            selo="Atrasado · 4 dias",
+            classe_selo="badge-red",
+            situacao_tiny="Enviado",
+            eventos_html=["<p>x</p>"],
+            chave_descricao="atrasado",
+        )
+        self.assertIn(
+            'class="badge badge-red" title="Mais de 3 dias em trânsito desde a postagem." '
+            'aria-describedby="desc-status-atrasado">Atrasado · 4 dias</span>',
+            card,
+        )
+        self.assertNotIn("sr-only", card)
+
+    def test_selo_sem_chave_nao_ganha_atributo_extra(self):
+        card = montar_card_pedido(
+            tokens="entregue",
+            selo="Entregue",
+            classe_selo="badge-green",
+            situacao_tiny="Entregue",
+            eventos_html=["<p>x</p>"],
+        )
+        self.assertIn('class="badge badge-green">Entregue</span>', card)
+        self.assertNotIn("aria-describedby", card)
 
 
 if __name__ == "__main__":

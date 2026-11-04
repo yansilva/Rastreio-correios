@@ -26,6 +26,9 @@ colors:
   info: "#0284c7"
   info-bg: "#e0f2fe"
   info-border: "#bae6fd"
+  info-text: "#0369a1"
+  success-text: "#166534"
+  warning-text: "#92400e"
   purple: "#9333ea"
   purple-bg: "#f3e8ff"
   purple-border: "#e9d5ff"
@@ -164,7 +167,10 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 - **Âmbar Atenção** (#b45309) com fundo (#fef3c7): aguardando retirada e alerta moderado.
 - **Verde Entregue** (#15803d) com fundo (#dcfce7): entregue.
 - **Roxo Devolvido** (#9333ea) com fundo (#f3e8ff): devolvido.
-- **Azul Informação** (#0284c7) com fundo (#e0f2fe): informação neutra. Para texto sobre esse fundo (selo "Em trânsito") use o token `--color-info-text` (#0369a1 no claro, ≈5,9:1; no escuro continua #0284c7).
+- **Azul Informação** (#0284c7) com fundo (#e0f2fe): informação neutra. Para texto sobre esse fundo (selo "Em trânsito") use o token `--color-info-text` (#0369a1 no claro, ≈5,9:1; no escuro #38bdf8).
+- **Verde Texto** (`--color-success-text`, #166534 no claro; #4ade80 no escuro): texto do selo "Nada atrasado nem aguardando retirada" sobre o fundo verde-claro.
+- **Âmbar Texto** (`--color-warning-text`, #92400e no claro; #fbbf24 no escuro): texto do selo "Não enviado" sobre o fundo âmbar.
+- **Borda do selo "Mais barato"** (#bfdbfe, `--color-badge-border`): borda do selo de frete em `Arquivos/frete/report.py`, que define a variável no CSS embutido do relatório. Não está na tabela de tokens acima; no escuro vira `rgba(147, 197, 253, 0.35)`; fica registrada aqui como exceção de página, e poderia virar token do sistema se o selo for reutilizado.
 
 ### Named Rules
 **The One Signal Rule.** O azul de ação aparece em no máximo um elemento de decisão por área visível. Cor de status é reservada para estado do pedido; nunca usar vermelho ou verde como decoração.
@@ -203,11 +209,11 @@ Rampa de seis tamanhos (0.75, 0.8125, 0.875, 1, 1.25 e 1.75rem); todo `font-size
 
 ## Layout
 
-Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile, duas colunas fixas. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
+Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. No celular (até 640px) o título ocupa a linha de cima, com 44px de altura para deixar o botão de tema acima da meta, e a meta fica numa linha só, a 12px: "Dados de 04/11 15:24 (há 13 min) · próxima em 35 min". A idade dos dados ("há N min") fica sempre visível. Abaixo de 640px a contagem mostra só os minutos e o horário "(às HH:MM)" fica na versão completa, que o desktop mostra. A meta usa duas versões do mesmo texto, `.meta-longo`/`.meta-curto` e `.contagem-completa`/`.contagem-curta`, escolhidas por CSS. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile, duas colunas fixas. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
 
 A faixa de pílulas nunca quebra linha: rola horizontalmente quando não cabe, em qualquer largura. Em telas estreitas a barra de filtros vira coluna.
 
-Espaçamento observado: 8, 10, 14, 16, 18, 20 e 28–32px entre blocos. Não há escala formal de espaçamento no código.
+Espaçamento observado: 8, 10, 14, 16, 18, 20 e 28–32px entre blocos. No celular, o bloco do cabeçalho (navegação de abas), os cartões de resumo e a busca usam 14px, 16px e 20px, para que o primeiro pedido apareça logo. Não há escala formal de espaçamento no código.
 
 Botão de sincronização é flutuante no canto inferior direito, com 24px de margem (16px no mobile).
 
@@ -221,7 +227,7 @@ Profundidade em camadas leves. Em repouso, cartões usam `--shadow-sm` (sombra m
 - **Cartão de pedido** (`box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1)`): cabeçalho de pedido, com hover de `0 10px 15px -3px rgba(0,0,0,0.1)`.
 - **Ação flutuante** (`box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04)`): botão de sincronização.
 - **Foco de busca** (`box-shadow: 0 0 0 3px rgba(37,99,235,0.12)`): anel de foco do campo de busca.
-- **Brilho da aba ativa** (`box-shadow: 0 4px 12px rgba(37,99,235,0.25)`): exceção deliberada. Só a aba "Painel" ativa usa sombra azul; ela sinaliza a página atual e não é um brilho decorativo. O detector registra essa exceção por página em `.impeccable/config.json` (`dark-glow`, `relatorio_rastreio.html`); não remova o brilho para silenciar o alerta.
+- **Brilho da aba ativa**: removido. A aba atual não tem sombra; navegação não é decisão, então não ganha brilho azul. A exceção `dark-glow` foi retirada de `.impeccable/config.json`.
 
 ### Named Rules
 **The Quiet Lift Rule.** Sombras são resposta a estado. Elementos em repouso não ganham sombra além da mínima; o hover eleva.
@@ -272,13 +278,13 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Ferramentas do cabeçalho e da lista
 - **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
-- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, ao lado do contador; o botão ativo usa `aria-pressed` e fica em estado "pressionado" neutro: fundo Cinza Cabeçalho (`--color-surface-hover`), texto Tinta Principal e contorno interno de 1px em `--color-border-strong`, sem azul (o azul de decisão fica no filtro ativo e no botão flutuante). No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
+- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, à direita, junto de "Opções". Essa linha é uma só em 1280, 1040 e 375px: à esquerda fica o "Limpar filtros" (aparece só com filtro ativo, mas reserva o espaço) e não há título de lista; o contador segue ao lado da busca. No celular os rótulos da Visão ficam um degrau menores e o "Limpar filtros" pode quebrar em duas linhas. O botão ativo usa `aria-pressed` e fica em estado "pressionado" neutro: fundo Cinza Cabeçalho (`--color-surface-hover`), texto Tinta Principal e contorno interno de 1px em `--color-border-strong`, sem azul (o azul de decisão fica no filtro ativo e no botão flutuante). No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
 - **Atalhos:** a tecla `/` foca a busca e Esc limpa o texto. A legenda "O que significam os status?" também fica em Opções, no topo do menu, para deixar a lista logo abaixo da busca. "Recarregar dados salvos de HH:MM" (em Opções) reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
 - **Consultar Tiny e Correios:** único botão flutuante (consulta as APIs); no celular vira um círculo de 52px só com o ícone, com `aria-label`.
 
 ### Navigation (`.nav-tabs`)
-- **Style:** pílulas com borda fina. Ativa em azul sólido com texto branco e sombra azul suave (exceção documentada em Shadow Vocabulary, "Brilho da aba ativa").
-- **Hover:** texto e borda em azul.
+- **Style:** pílulas com borda fina. Aba atual com estado neutro de "selecionado": superfície mais forte (`--color-surface-hover`), texto principal e sublinhado azul de 2px (`--color-link`) na base. Sem sombra nem brilho; o azul sólido fica reservado ao filtro ativo e ao botão flutuante.
+- **Hover:** texto e borda em azul. Na aba atual, o hover mantém o texto principal.
 
 ## Do's and Don'ts
 

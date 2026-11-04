@@ -201,9 +201,16 @@ function atualizarElementoContador() {
     if (remainingSeconds <= 0) {
         timerEl.textContent = 'iniciando verificação...';
     } else {
+        // Duas versões do mesmo texto: o CSS mostra a curta (só minutos) abaixo de 640px e a completa acima
         const minutes = Math.floor(remainingSeconds / 60);
         const seconds = remainingSeconds % 60;
-        timerEl.textContent = `${minutes}m ${seconds.toString().padStart(2, '0')}s (às ${nextTimeStr})`;
+        const curta = document.createElement('span');
+        curta.className = 'contagem-curta';
+        curta.textContent = (minutes < 1 ? 'menos de 1 min' : `${minutes} min`) + ` (às ${nextTimeStr})`;
+        const completa = document.createElement('span');
+        completa.className = 'contagem-completa';
+        completa.textContent = `${minutes}m ${seconds.toString().padStart(2, '0')}s (às ${nextTimeStr})`;
+        timerEl.replaceChildren(curta, completa);
     }
 }
 

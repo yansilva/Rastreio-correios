@@ -20,6 +20,8 @@ from correios import (
 from correios.cache import carregar_cache, salvar_cache
 from correios.cards import (
     PRIORIDADE_STATUS,
+    bloco_descricoes_status,
+    chave_selo,
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
@@ -30,6 +32,7 @@ from correios.cards import (
     sem_postagem,
     status_tokens,
     texto_idade,
+    textos_descricao,
     zero,
 )
 from correios.icons import ICON_SPRITE
@@ -188,11 +191,11 @@ def processar(usar_cache=False):
                 <div class="meta">
                     <span class="meta-dados" title="Relatório gerado em {data_geracao}">Dados de <time id="dadosEm" datetime="{iso_dados}">{data_dados_curta}</time> <span id="dadosIdade" class="meta-idade"></span></span>
                     <span class="meta-sep" aria-hidden="true">·</span>
-                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima consulta automática em <strong id="countdown-timer">—</strong></span>
+                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> <span class="meta-longo">Próxima consulta automática em </span><span class="meta-curto">próxima em </span><strong id="countdown-timer">—</strong></span>
                 </div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+                <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
                 {atrasados_link}
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
@@ -210,14 +213,15 @@ def processar(usar_cache=False):
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <div class="filters-row">
+                {descricoes_status}
                 <div class="filter-pills">
                     <button type="button" class="filter-pill active" data-filter="all">Todos</button>
-                    <button type="button" class="filter-pill" data-filter="em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
-                    <button type="button" class="filter-pill" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
-                    <button type="button" class="filter-pill" data-filter="aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
-                    <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
-                    <button type="button" class="filter-pill" data-filter="nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
-                    <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
+                    <button type="button" class="filter-pill" data-filter="em_transito" title="{texto_em_transito}" aria-describedby="desc-status-em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
+                    <button type="button" class="filter-pill" data-filter="atrasado" title="{texto_atrasado}" aria-describedby="desc-status-atrasado"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
+                    <button type="button" class="filter-pill" data-filter="aguardando_retirada" title="{texto_aguardando_retirada}" aria-describedby="desc-status-aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
+                    <button type="button" class="filter-pill" data-filter="entregue" title="{texto_entregue}" aria-describedby="desc-status-entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
+                    <button type="button" class="filter-pill" data-filter="nao_enviado" title="{texto_nao_enviado}" aria-describedby="desc-status-nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
+                    <button type="button" class="filter-pill" data-filter="devolvido" title="{texto_devolvido}" aria-describedby="desc-status-devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
                 </div>
             </div>
             <div class="list-meta">
@@ -228,7 +232,7 @@ def processar(usar_cache=False):
                     <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
                 </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
-                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> {texto_atrasado} <strong>Aguardando retirada:</strong> {texto_aguardando_retirada}</p></details>
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -379,9 +383,13 @@ def processar(usar_cache=False):
                 else divergencia_tiny(status_category, situacao_tiny)
             )
 
+            chave_descricao = "sem_postagem" if semp else chave_selo(
+                status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
+            )
             card = montar_card_pedido(
                 # Título em partes: número, cliente (campo novo do CSV, quando houver) e código de rastreio
                 numero_txt=str(pedido),
+                chave_descricao=chave_descricao,
                 tokens=status_tokens(
                     status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
                 ),
@@ -474,6 +482,8 @@ def processar(usar_cache=False):
             content="".join(orders_html),
             atrasados_link=atrasados_link_html,
             versao_cache=int(time.time()),
+            descricoes_status=bloco_descricoes_status(),
+            **textos_descricao(),
         )
 
         # Salva o relatório na raiz do projeto (um nível acima de Arquivos/)

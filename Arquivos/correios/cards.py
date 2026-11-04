@@ -17,6 +17,18 @@ PRIORIDADE_STATUS = {
     "entregue": 6,
 }
 
+# Explicação curta de cada status em pt-BR: usada no title e na descrição acessível das pílulas e dos selos,
+# e na legenda de Opções. Um só lugar, para o texto não divergir.
+DESCRICAO_STATUS = {
+    "em_transito": "Objeto postado, a caminho do destinatário.",
+    "atrasado": "Mais de 3 dias em trânsito desde a postagem.",
+    "aguardando_retirada": "Objeto na agência, esperando o destinatário.",
+    "sem_postagem": "O Tiny diz enviado, mas os Correios só têm a etiqueta.",
+    "nao_enviado": "Pedido ainda não foi postado.",
+    "entregue": "Objeto entregue ao destinatário.",
+    "devolvido": "Objeto voltou ao remetente.",
+}
+
 
 def _normalizar(texto: str) -> str:
     """Minúsculas e sem acentos, para comparar a situação do Tiny."""
@@ -87,6 +99,33 @@ def selo_status(
     return "Não enviado", "badge-yellow"
 
 
+def chave_selo(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> str:
+    """Chave de DESCRICAO_STATUS para o selo que selo_status devolve (mesma ordem de precedência)."""
+    if categoria in ("devolvido", "entregue"):
+        return categoria
+    if retirada:
+        return "aguardando_retirada"
+    if atrasado:
+        return "atrasado"
+    if categoria == "em_transito":
+        return "em_transito"
+    return "nao_enviado"
+
+
+def textos_descricao() -> dict[str, str]:
+    """Textos escapados para o template, com chaves `texto_<status>` (ex.: texto_atrasado)."""
+    return {f"texto_{chave}": escape(texto, quote=True) for chave, texto in DESCRICAO_STATUS.items()}
+
+
+def bloco_descricoes_status() -> str:
+    """Textos de DESCRICAO_STATUS escondidos visualmente, com id para aria-describedby das pílulas."""
+    itens = "".join(
+        f'<span id="desc-status-{chave}">{escape(texto)}</span>' for chave, texto in DESCRICAO_STATUS.items()
+    )
+    # aria-hidden tira o texto do fluxo de leitura; aria-describedby ainda o lê ao focar a pílula
+    return f'<div class="sr-only" aria-hidden="true">{itens}</div>'
+
+
 def dias_desde(dt_iso: str, agora: datetime | None = None) -> int | None:
     """Dias corridos desde uma data ISO (None quando a data não é válida)."""
     try:
@@ -132,8 +171,8 @@ def faixa_acao(atrasados: int, retiradas: int) -> str:
     return (
         '<section class="action-strip" aria-label="Pedidos que precisam de ação">'
         '<span class="action-strip-title">Precisam de ação</span>'
-        + chip("atrasado", "clock", "Mais de 3 dias em trânsito desde a postagem", atrasados, "Atrasados")
-        + chip("aguardando_retirada", "building", "Objeto na agência, esperando o destinatário", retiradas, "Aguardando retirada")
+        + chip("atrasado", "clock", DESCRICAO_STATUS["atrasado"], atrasados, "Atrasados")
+        + chip("aguardando_retirada", "building", DESCRICAO_STATUS["aguardando_retirada"], retiradas, "Aguardando retirada")
         + "</section>"
     )
 
@@ -155,6 +194,7 @@ def montar_card_pedido(
     rastreio: str = "",
     cliente: str = "",
     numero_txt: str = "",
+    chave_descricao: str = "",
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido.
 
@@ -167,6 +207,13 @@ def montar_card_pedido(
     if oculto:
         classe += " order-hidden"
     idade_html = f'<span class="order-age">{escape(idade)}</span>' if idade else ""
+    # Explicação do selo: title para o mouse e aria-describedby (texto escondido do bloco da página).
+    # Fica fora do texto do selo, porque o painel copia o texto do selo para a tabela e para a busca.
+    descricao_selo_attr = (
+        f' title="{escape(DESCRICAO_STATUS[chave_descricao], quote=True)}" aria-describedby="desc-status-{chave_descricao}"'
+        if chave_descricao
+        else ""
+    )
     divergencia_html = (
         f'<span class="badge badge-yellow" title="{escape(divergencia, quote=True)}">Tiny desatualizado</span>'
         if divergencia
@@ -210,7 +257,7 @@ def montar_card_pedido(
                 <div class="order-header">
                     <h2 class="order-title">{titulo_html}</h2>
                     <div class="order-meta">
-                        <span class="badge {classe_selo}">{escape(selo)}</span>
+                        <span class="badge {classe_selo}"{descricao_selo_attr}>{escape(selo)}</span>
                         {divergencia_html}
                         {idade_html}
                         <span class="order-tiny-status">Situação no Tiny: {escape(situacao_tiny or "—")}</span>

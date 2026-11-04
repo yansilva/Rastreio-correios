@@ -379,13 +379,23 @@ class FreteReportGenerator:
             gap: 8px;
         }}
         .nav-tab:hover {{ color: var(--color-link); border-color: var(--color-primary); }}
+        /* Aba atual: estado neutro de "selecionado" com sublinhado azul de 2px; sem brilho */
         .nav-tab.active {{
-            background: var(--color-primary);
-            color: #ffffff;
-            border-color: var(--color-primary);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            position: relative;
+            background: var(--color-surface-hover);
+            color: var(--color-text-main);
+            border-color: var(--color-border);
         }}
-        .nav-tab.active:hover {{ color: #ffffff; }}
+        .nav-tab.active::after {{
+            content: "";
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: -1px;
+            height: 2px;
+            background: var(--color-link);
+        }}
+        .nav-tab.active:hover {{ color: var(--color-text-main); border-color: var(--color-border); }}
 
         /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
         .header-tools {{ position: absolute; top: 0; right: 0; }}

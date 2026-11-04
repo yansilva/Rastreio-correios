@@ -1094,14 +1094,17 @@ h1 .icon {
     color: var(--color-text-main);
 }
 
-/* Linha da legenda e do menu «Opções»: ficam lado a lado e recolhidos, para encurtar o topo */
+/* Linha da lista: Limpar à esquerda (reserva o espaço), Visão e Opções à direita, sempre numa linha só */
 .list-meta {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 4px 16px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
     margin-top: 6px;
+}
+
+.list-meta .btn-clear-filter {
+    margin-right: auto;
 }
 
 .options-menu > summary {
@@ -1236,6 +1239,12 @@ h1 .icon {
     color: var(--color-text-subtle);
 }
 
+/* Versões curtas do cabeçalho: ficam ocultas no desktop e entram abaixo de 640px */
+.meta-curto,
+.contagem-curta {
+    display: none;
+}
+
 .meta-idade {
     font-weight: 600;
 }
@@ -1287,11 +1296,6 @@ h1 .icon {
 
 /* Ajustes do celular para as regras acima (ficam depois delas para prevalecer na cascata) */
 @media (max-width: 640px) {
-    .list-meta {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
     .options-menu > summary,
     .status-legend-details > summary {
         min-height: 44px;
@@ -1467,23 +1471,46 @@ h1 .icon {
 }
 
 @media (max-width: 640px) {
-    /* Título numa linha só e dados em duas linhas limpas, sem o separador solto */
+    /* Título numa linha (44px, o mesmo alvo do botão de tema) e dados numa linha só, com rótulos e contagem abreviados */
     .header-main h1 {
         font-size: 1.25rem;
         flex-wrap: nowrap;
         justify-content: center;
+        min-height: 44px;
+    }
+
+    /* Sem a folga lateral do título: o botão de tema fica acima da linha de dados (44px), então a meta usa a largura toda */
+    .header-main {
+        padding: 0;
     }
 
     .header-main .meta {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        font-size: 0.8125rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: baseline;
+        gap: 0 4px;
+        margin-top: 0;
+        font-size: 0.75rem;
+    }
+
+    /* Espaço entre cabeçalho, cartões e busca: da rampa de 14, 16 e 20px */
+    .nav-tabs {
+        margin: 14px 0 20px 0;
     }
 
     .header-main .meta-sep {
+        margin: 0;
+    }
+
+    .meta-longo,
+    .contagem-completa {
         display: none;
+    }
+
+    .meta-curto,
+    .contagem-curta {
+        display: inline;
     }
 }
 
@@ -1729,15 +1756,6 @@ h1 .icon {
     border-color: var(--color-border);
 }
 
-/* Limpar, Visão e Opções na mesma linha; a Visão vai para a direita, junto das Opções */
-.list-meta {
-    align-items: center;
-}
-
-.list-meta .view-switch {
-    margin-left: auto;
-}
-
 /* Pílulas zeradas ocupam menos: sem o ícone, para as sete caberem numa linha em 1280px */
 .filter-pill[aria-disabled="true"] .icon {
     display: none;
@@ -1749,18 +1767,6 @@ h1 .icon {
 }
 
 @media (max-width: 640px) {
-    /* Mais da lista na primeira tela: Limpar, Visão e Opções numa linha só */
-    .list-meta {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0 8px;
-    }
-
-    .options-menu {
-        order: 3;
-    }
-
     .filters-row {
         flex-direction: column;
         align-items: stretch;
@@ -1869,31 +1875,21 @@ main.orders-list {
         padding-bottom: 80px;
     }
 
-    /* Visão ocupa a largura toda no celular; as Opções seguem na linha de baixo */
-    .view-switch {
-        display: flex;
-        flex: 1 1 100%;
-        order: 3;
-    }
-
+    /* Celular: Visão e Opções na mesma linha do Limpar; alvos de toque de 44px e rótulos um degrau menores */
     .view-option {
-        flex: 1 1 0;
         min-height: 44px;
         padding: 6px 8px;
+        font-size: 0.8125rem;
     }
 
-    .options-menu {
-        order: 4;
-    }
-
-    /* Limpar filtros segue o contador no celular, na mesma linha */
     .list-meta .btn-clear-filter {
-        order: 2;
+        padding: 7px 8px;
     }
 
-    /* Resumo de atrasados em duas colunas, sem uma coluna vazia no fim */
+    /* Resumo em duas colunas, sem uma coluna vazia no fim, e 16px até a faixa de ação e a busca (rampa de espaçamento) */
     .summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 16px;
     }
 
     /* Cartão do pedido no celular: só Pedido, Cliente, Rastreio, Dias e Ações */

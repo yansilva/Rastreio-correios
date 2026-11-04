@@ -396,7 +396,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+                <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
                 {atrasados_link_html}
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>

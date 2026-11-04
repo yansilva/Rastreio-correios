@@ -5,7 +5,10 @@
   "extensions": {
     "colorMeta": {
       "primary": { "role": "primary", "displayName": "Correio Azul", "canonical": "#2563eb", "tonalRamp": ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] },
-      "text-main": { "role": "neutral", "displayName": "Tinta Principal", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] }
+      "text-main": { "role": "neutral", "displayName": "Tinta Principal", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"] },
+      "info-text": { "role": "status-text", "displayName": "Azul Informação Texto", "canonical": "#0369a1", "tonalRamp": ["#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"] },
+      "success-text": { "role": "status-text", "displayName": "Verde Texto", "canonical": "#166534", "tonalRamp": ["#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#bbf7d0"] },
+      "warning-text": { "role": "status-text", "displayName": "Âmbar Texto", "canonical": "#92400e", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fde68a"] }
     },
     "typographyMeta": {
       "body": { "displayName": "Body", "purpose": "Texto corrido e descrições de evento." },

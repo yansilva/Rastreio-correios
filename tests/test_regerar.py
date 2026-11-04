@@ -109,6 +109,15 @@ class TestRegerarSemRede(unittest.TestCase):
             self.assertIn("Tiny desatualizado", html)
             self.assertTrue(Path(pasta, "pedidos_atrasados.html").exists())
 
+            # Acessibilidade do HTML gerado: aba atual marcada e toda descrição aponta para um id que existe
+            self.assertRegex(html, r'class="nav-tab active" aria-current="page"')
+            ids = set(re.findall(r'\bid="([^"]+)"', html))
+            referencias = set(re.findall(r'aria-describedby="([^"]+)"', html))
+            self.assertTrue(referencias)
+            for ref in referencias:
+                for alvo in ref.split():
+                    self.assertIn(alvo, ids, f"aria-describedby aponta para id inexistente: {alvo}")
+
     def test_resumo_soma_o_total_e_faixa_de_acao_conta_o_que_pede_acao(self):
         agora = datetime.now()
 
@@ -159,6 +168,12 @@ class TestRegerarSemRede(unittest.TestCase):
 
         self.assertRegex(html, r'data-filter="atrasado"[^>]*>.*?<strong>1</strong> Atrasados')
         self.assertRegex(html, r'data-filter="aguardando_retirada"[^>]*>.*?<strong>1</strong> Aguardando retirada')
+        # Pílulas com explicação (title + aria-describedby apontando para o bloco escondido) e a legenda de Opções
+        self.assertRegex(html, r'data-filter="atrasado"[^>]*aria-describedby="desc-status-atrasado"')
+        self.assertIn('<span id="desc-status-aguardando_retirada">Objeto na agência', html)
+        self.assertIn("<strong>Atrasado:</strong> Mais de 3 dias em trânsito", html)
+        self.assertNotIn("{texto_", html)
+        self.assertNotIn("{descricoes_status}", html)
         self.assertNotIn("dash-card-urgent", html)
         self.assertIn("Recarregar dados salvos de", html)
         self.assertIn("Consultar Tiny e Correios", html)
