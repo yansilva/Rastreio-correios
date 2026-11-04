@@ -136,12 +136,17 @@ class TrackingService:
     def deve_ocultar_card(objeto: ObjetoRastreio, data_referencia: datetime | None = None) -> bool:
         """
         Aplica as regras de visibilidade no dashboard:
-        - Devolvidos: ocultar se decorridas mais de 24 horas desde o evento de devolução.
+        - Devolvidos: ocultar assim que o objeto é entregue de volta ao remetente (a loja); enquanto ainda
+          está voltando, ocultar se decorridas mais de 24 horas desde o evento de devolução.
         - Entregues: ocultar se entregue em semana anterior, ou na semana atual após sexta-feira 18:00.
         """
         now = data_referencia or datetime.now()
 
         if objeto.status_categoria == "devolvido":
+            for evento in objeto.eventos:
+                desc = evento.descricao.upper()
+                if "ENTREGUE" in desc and "REMETENTE" in desc:
+                    return True
             if objeto.data_devolucao_dt:
                 return (now - objeto.data_devolucao_dt).total_seconds() > 24 * 3600
             return False

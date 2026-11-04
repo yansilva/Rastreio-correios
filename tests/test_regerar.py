@@ -16,6 +16,7 @@ for _caminho in (_raiz, _arquivos):
         sys.path.insert(0, _caminho)
 
 import consulta_correios  # noqa: E402
+from correios import TrackingService  # noqa: E402
 from correios.cache import carregar_cache, salvar_cache  # noqa: E402
 from server.config import ServerConfig  # noqa: E402
 from server.handler import RastreioRequestHandler  # noqa: E402
@@ -94,6 +95,8 @@ class TestRegerarSemRede(unittest.TestCase):
                 patch.object(consulta_correios, "__file__", falso_modulo),
                 patch.object(consulta_correios, "obter_token", side_effect=AssertionError("chamou a rede")),
                 patch.object(consulta_correios, "consultar_objeto", side_effect=AssertionError("chamou a rede")),
+                # O pedido do cache é uma entrega antiga: a regra de visibilidade o esconderia, e aqui o foco é o cache
+                patch.object(TrackingService, "deve_ocultar_card", return_value=False),
                 patch("sys.stdout", new_callable=io.StringIO),
             ):
                 resultado = consulta_correios.processar(usar_cache=True)
@@ -143,7 +146,15 @@ class TestRegerarSemRede(unittest.TestCase):
 
         total_cartoes = html.count('class="order-card')
         numeros_resumo = [int(n) for n in re.findall(r'class="dash-number[^"]*">(\d+)</span>', html)]
-        self.assertEqual(total_cartoes, len(pedidos))
+        # Pedidos que a regra de visibilidade esconde (devolvido há mais de 24h, entregue em semana passada)
+        # não são desenhados nem contados; o resto aparece e soma o resumo
+        ocultos = sum(
+            1
+            for _, eventos in pedidos.values()
+            if TrackingService.deve_ocultar_card(TrackingService.processar_objeto("X", {"eventos": eventos}))
+        )
+        self.assertGreaterEqual(ocultos, 1)
+        self.assertEqual(total_cartoes, len(pedidos) - ocultos)
         self.assertEqual(sum(numeros_resumo), total_cartoes)
 
         self.assertRegex(html, r'data-filter="atrasado"[^>]*>.*?<strong>1</strong> Atrasados')

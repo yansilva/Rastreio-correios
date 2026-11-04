@@ -305,6 +305,13 @@ def processar(usar_cache=False):
             obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
             status_category = obj_classificado.status_categoria
 
+            # Pedido que já não precisa aparecer (devolvido à loja, entregue há tempo) some do painel e dos totais
+            if TrackingService.deve_ocultar_card(obj_classificado):
+                print(f">> Pedido #{pedido} ({rastreio}) — fora do painel ({status_category})")
+                if not usar_cache:
+                    time.sleep(0.2)
+                continue
+
             events_html = []
             if obj_data and "eventos" in obj_data:
                 for evento in obj_data["eventos"]:
@@ -343,8 +350,7 @@ def processar(usar_cache=False):
                     }
                 )
 
-            # Visibilidade do card conforme regras de negócio
-            oculto = TrackingService.deve_ocultar_card(obj_classificado)
+            oculto = False  # cartões que deveriam ficar ocultos nem chegam aqui
 
             esta_atrasado = atraso is not None
             if obj_classificado.is_retirada and status_category not in ("entregue", "devolvido"):

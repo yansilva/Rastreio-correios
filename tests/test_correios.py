@@ -393,6 +393,23 @@ class TestTrackingService(unittest.TestCase):
         )
         self.assertFalse(TrackingService.deve_ocultar_card(obj_devolvido_recente, data_referencia=ref_now))
 
+    def test_devolvido_entregue_de_volta_a_loja_some_na_hora(self):
+        """Entregue ao remetente = voltou para a loja: o cartão sai do painel sem esperar 24h."""
+        ref_now = datetime(2026, 9, 10, 12, 0, 0)
+        uma_hora_atras = (ref_now - timedelta(hours=1)).isoformat()
+
+        def objeto(descricao):
+            evento = {"dtHrCriado": uma_hora_atras, "descricao": descricao, "unidade": {"endereco": {}}}
+            return TrackingService.processar_objeto("AA125BR", {"eventos": [evento]})
+
+        de_volta = objeto("Objeto entregue ao remetente")
+        self.assertEqual(de_volta.status_categoria, "devolvido")
+        self.assertTrue(TrackingService.deve_ocultar_card(de_volta, data_referencia=ref_now))
+
+        voltando = objeto("Objeto em devolução ao remetente")
+        self.assertEqual(voltando.status_categoria, "devolvido")
+        self.assertFalse(TrackingService.deve_ocultar_card(voltando, data_referencia=ref_now))
+
 
 class TestConsultaCorreiosRetrocompatibilidade(unittest.TestCase):
     """Testes de compatibilidade do script consulta_correios.py."""
