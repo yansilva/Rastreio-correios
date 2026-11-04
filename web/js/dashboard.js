@@ -190,7 +190,7 @@ function botaoDeLinha(rotulo, aoClicar) {
     botao.type = 'button';
     botao.className = 'btn-copy';
     botao.textContent = rotulo;
-    botao.addEventListener('click', aoClicar);
+    if (aoClicar) botao.addEventListener('click', aoClicar);  // "Copiar rastreio" é tratado em app.js
     return botao;
 }
 
@@ -254,7 +254,7 @@ function atualizarTabela() {
         tdAcoes.setAttribute('data-label', 'Ações');
         tdAcoes.className = 'orders-table-actions';
         if (l.rastreio) {
-            var copiar = botaoDeLinha('Copiar rastreio', function() { copiarRastreio(copiar); });
+            var copiar = botaoDeLinha('Copiar rastreio', null);
             copiar.setAttribute('data-copy', l.rastreio);
             copiar.setAttribute('aria-label', 'Copiar código de rastreio ' + l.rastreio);
             tdAcoes.appendChild(copiar);
@@ -351,7 +351,7 @@ function applyFilters() {
 
     // Atualiza classes ativas nos cards de resumo e botões de filtro
     // aria-pressed acompanha a classe: o estado do filtro também chega a leitores de tela
-    document.querySelectorAll('.dash-card, .action-chip').forEach(function(el) {
+    document.querySelectorAll('.action-chip').forEach(function(el) {
         marcarPressionado(el, !!activeStatusFilter && el.getAttribute('data-filter') === activeStatusFilter);
     });
 
@@ -465,31 +465,6 @@ function alternarHistoricos() {
     gravarPreferencia('historicos', abrir ? 'abertos' : 'recolhidos');
 }
 
-function copiarRastreio(botao) {
-    var codigo = botao.getAttribute('data-copy');
-    var avisar = function(ok) {
-        if (typeof showToast === 'function') {
-            showToast(ok ? 'Rastreio ' + codigo + ' copiado' : 'Não foi possível copiar o rastreio', ok ? '#15803d' : '#b91c1c', 2000);
-        }
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(codigo).then(function() { avisar(true); }, function() { avisar(false); });
-        return;
-    }
-    // Contexto sem Clipboard API: seleciona um campo temporário e usa o comando antigo
-    var campo = document.createElement('textarea');
-    campo.value = codigo;
-    campo.setAttribute('readonly', '');
-    campo.style.position = 'fixed';
-    campo.style.opacity = '0';
-    document.body.appendChild(campo);
-    campo.select();
-    var copiou = false;
-    try { copiou = document.execCommand('copy'); } catch (e) { copiou = false; }
-    document.body.removeChild(campo);
-    avisar(copiou);
-}
-
 function clearAllFilters() {
     activeStatusFilter = null;
     currentSearchTerm = '';
@@ -519,22 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearBtn.addEventListener('click', clearAllFilters);
     }
 
-    // 3. Clique nos Cards de Resumo
-    document.querySelectorAll('.dash-card[data-filter]').forEach(function(card) {
-        card.addEventListener('click', function() {
-            if (card.getAttribute('aria-disabled') === 'true') return;
-            var filter = card.getAttribute('data-filter');
-            filterOrders(filter);
-        });
-        // Cartões são divs: ativá-los com Enter ou Espaço, como um botão
-        card.addEventListener('keydown', function(e) {
-            if ((e.key === 'Enter' || e.key === ' ') && card.getAttribute('aria-disabled') !== 'true') {
-                e.preventDefault();
-                filterOrders(card.getAttribute('data-filter'));
-            }
-        });
-    });
-
+    // 3. Os cartões de resumo só informam; quem filtra são a faixa "Precisam de ação" e as pílulas.
     // 3b. Botões da faixa "Precisam de ação" (são <button>: Enter e Espaço já funcionam)
     document.querySelectorAll('.action-chip[data-filter]').forEach(function(chip) {
         chip.addEventListener('click', function() {
@@ -549,13 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pill.getAttribute('aria-disabled') === 'true') return;
             var filter = pill.getAttribute('data-filter');
             filterOrders(filter);
-        });
-    });
-
-    // 4b. Copiar o código de rastreio do cartão
-    document.querySelectorAll('.btn-copy[data-copy]').forEach(function(botao) {
-        botao.addEventListener('click', function() {
-            copiarRastreio(botao);
         });
     });
 
@@ -590,11 +543,18 @@ document.addEventListener('DOMContentLoaded', function() {
     listaPedidos = document.querySelector('.orders-list');
     if (seletorVisao && listaPedidos) {
         // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: não é oferecida
-        var celular = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
-        if (celular) {
+        var consultaCelular = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
+        var celular = !!(consultaCelular && consultaCelular.matches);
+        function ajustarTabelaAoTamanho(pequeno) {
             Array.prototype.forEach.call(seletorVisao.options, function(o) {
-                if (o.value === 'tabela') { o.disabled = true; o.hidden = true; }
+                if (o.value === 'tabela') { o.disabled = pequeno; o.hidden = pequeno; }
             });
+            // A tela encolheu (ou o aparelho girou) com a tabela aberta: volta à visão compacta
+            if (pequeno && seletorVisao.value === 'tabela') definirVisao('compacta');
+        }
+        ajustarTabelaAoTamanho(celular);
+        if (consultaCelular && consultaCelular.addEventListener) {
+            consultaCelular.addEventListener('change', function(e) { ajustarTabelaAoTamanho(e.matches); });
         }
         seletorVisao.addEventListener('change', function() {
             definirVisao(seletorVisao.value);
@@ -619,18 +579,23 @@ document.addEventListener('DOMContentLoaded', function() {
         marca.textContent = String(n);
         pill.appendChild(marca);
     });
-    document.querySelectorAll('.dash-card.is-zero').forEach(function(card) {
-        card.setAttribute('aria-disabled', 'true');
-        card.setAttribute('tabindex', '-1');
-    });
-    // Pílulas e chips sem pedidos também não filtram (a lista só ficaria vazia); "Todos" fica sempre ativa
+    // Pílulas e chips sem pedidos não filtram (a lista só ficaria vazia) nem entram na ordem do Tab; "Todos" fica sempre ativa
     document.querySelectorAll('.filter-pill[data-filter], .action-chip[data-filter]').forEach(function(el) {
         var filtro = el.getAttribute('data-filter');
         if (filtro !== 'all' && !totais[filtro]) {
             el.setAttribute('aria-disabled', 'true');
+            el.setAttribute('tabindex', '-1');
             el.title = 'Nenhum pedido neste status';
         }
     });
+    // Pílulas ativas primeiro: as zeradas vão para o fim da faixa, onde não escondem o filtro útil
+    var faixaPilulas = document.querySelector('.filter-pills');
+    var botaoLimpar = document.getElementById('btnClearFilter');
+    if (faixaPilulas) {
+        Array.prototype.slice.call(faixaPilulas.querySelectorAll('.filter-pill[aria-disabled="true"]')).forEach(function(pill) {
+            faixaPilulas.insertBefore(pill, botaoLimpar);
+        });
+    }
 
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele
     var menuOpcoes = document.querySelector('.options-menu');

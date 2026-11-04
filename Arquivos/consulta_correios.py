@@ -217,10 +217,10 @@ def processar(usar_cache=False):
                     <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
                     <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 </div>
-                <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <div class="list-meta">
                 <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
+                <span id="filterCount" class="filter-count" aria-live="polite"></span>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
@@ -426,21 +426,21 @@ def processar(usar_cache=False):
         dashboard_html = f"""
         {faixa_acao(len(atrasados_data), retiradas_count)}
         <div class="dashboard">
-            <div class="dash-card dash-clickable{zero(nao_enviados_count)}" role="button" tabindex="0" data-filter="nao_enviado">
+            <div class="dash-card{zero(nao_enviados_count)}">
                 <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-slate">{nao_enviados_count}</span>
                     <span class="dash-label">Não enviados</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable{zero(em_transito_count)}" role="button" tabindex="0" data-filter="em_transito">
+            <div class="dash-card{zero(em_transito_count)}">
                 <div class="dash-icon dash-icon-blue"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">{em_transito_count}</span>
                     <span class="dash-label">Em trânsito</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable{zero(entregues_count)}" role="button" tabindex="0" data-filter="entregue">
+            <div class="dash-card{zero(entregues_count)}">
                 <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">{entregues_count}</span>
@@ -448,7 +448,7 @@ def processar(usar_cache=False):
                 </div>
             </div>
 
-            <div class="dash-card dash-clickable{zero(devolvidos_count)}" role="button" tabindex="0" data-filter="devolvido">
+            <div class="dash-card{zero(devolvidos_count)}">
                 <div class="dash-icon dash-icon-purple"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-purple">{devolvidos_count}</span>
@@ -527,6 +527,7 @@ def processar(usar_cache=False):
                 <td data-label="Último Evento">{item["ultimo_evento"]}</td>
                 <td data-label="Local">{item["ultimo_local"]}</td>
                 <td data-label="Status">{status_label}</td>
+                <td data-label="Ações"><button type="button" class="btn-copy" data-copy="{escape(str(item["rastreio"]), quote=True)}" aria-label="Copiar código de rastreio {escape(str(item["rastreio"]), quote=True)}">Copiar rastreio</button></td>
             </tr>
             """
 
@@ -545,6 +546,7 @@ def processar(usar_cache=False):
                         <th>Último Evento</th>
                         <th>Local</th>
                         <th>Status</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -557,8 +559,30 @@ def processar(usar_cache=False):
         <div class="table-wrapper">
             <div class="empty-state">
                 <div class="emoji"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
-                <h2>Nenhum pedido atrasado!</h2>
+                <h2>Nada atrasado</h2>
                 <p>Todos os pedidos estão dentro do prazo de 3 dias.</p>
+            </div>
+        </div>"""
+
+        # Sem atrasos não há o que somar: só a mensagem calma, sem quatro zeros
+        resumo_html = ""
+        if total_atrasados > 0:
+            resumo_html = f"""<div class="summary">
+            <div class="summary-card{zero(total_atrasados)}">
+                <div class="summary-number num-total">{total_atrasados}</div>
+                <div class="summary-label">Total atrasados</div>
+            </div>
+            <div class="summary-card{zero(criticos)}">
+                <div class="summary-number num-critico">{criticos}</div>
+                <div class="summary-label">Crítico (7+ dias)</div>
+            </div>
+            <div class="summary-card{zero(altos)}">
+                <div class="summary-number num-alto">{altos}</div>
+                <div class="summary-label">Alto (5-6 dias)</div>
+            </div>
+            <div class="summary-card{zero(atencao)}">
+                <div class="summary-number num-atencao">{atencao}</div>
+                <div class="summary-label">Atenção (4 dias)</div>
             </div>
         </div>"""
 
@@ -573,6 +597,7 @@ def processar(usar_cache=False):
 </head>
 <body>
     {ICON_SPRITE}
+    <a class="skip-link" href="#conteudo">Pular para os pedidos</a>
     <div class="container">
         <header>
             <div class="header-tools">
@@ -585,32 +610,16 @@ def processar(usar_cache=False):
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação de atrasados">
-                <a href="relatorio_rastreio.html" class="nav-tab">← Voltar ao Painel</a>
-                <span class="nav-tab active"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
+                <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+                <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
         </header>
 
-        <div class="summary">
-            <div class="summary-card{zero(total_atrasados)}">
-                <div class="summary-number num-total">{total_atrasados}</div>
-                <div class="summary-label">Total Atrasados</div>
-            </div>
-            <div class="summary-card{zero(criticos)}">
-                <div class="summary-number num-critico">{criticos}</div>
-                <div class="summary-label">Crítico (7+ dias)</div>
-            </div>
-            <div class="summary-card{zero(altos)}">
-                <div class="summary-number num-alto">{altos}</div>
-                <div class="summary-label">Alto (5-6 dias)</div>
-            </div>
-            <div class="summary-card{zero(atencao)}">
-                <div class="summary-number num-atencao">{atencao}</div>
-                <div class="summary-label">Atenção (4 dias)</div>
-            </div>
-        </div>
-
+        <main id="conteudo" tabindex="-1">
+        {resumo_html}
         {tabela_conteudo}
+        </main>
     </div>
 
     <script src="web/js/app.js?v={int(time.time())}"></script>

@@ -48,28 +48,28 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     dashboard_html = f"""
         {faixa_acao(1, 1)}
         <div class="dashboard">
-            <div class="dash-card dash-clickable{zero(2)}" role="button" tabindex="0" data-filter="nao_enviado">
+            <div class="dash-card{zero(2)}">
                 <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-slate">2</span>
                     <span class="dash-label">Não enviados</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable{zero(4)}" role="button" tabindex="0" data-filter="em_transito">
+            <div class="dash-card{zero(4)}">
                 <div class="dash-icon dash-icon-blue"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-blue">4</span>
                     <span class="dash-label">Em trânsito</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable{zero(2)}" role="button" tabindex="0" data-filter="entregue">
+            <div class="dash-card{zero(2)}">
                 <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">2</span>
                     <span class="dash-label">Entregues</span>
                 </div>
             </div>
-            <div class="dash-card dash-clickable{zero(1)}" role="button" tabindex="0" data-filter="devolvido">
+            <div class="dash-card{zero(1)}">
                 <div class="dash-icon dash-icon-purple"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-purple">1</span>
@@ -421,10 +421,10 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <button type="button" class="filter-pill" data-filter="devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
                     <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 </div>
-                <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <div class="list-meta">
                 <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
+                <span id="filterCount" class="filter-count" aria-live="polite"></span>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
@@ -506,8 +506,8 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao}</div>
             </div>
             <nav class="nav-tabs" aria-label="Navegação de atrasados">
-                <a href="relatorio_rastreio.html" class="nav-tab">← Voltar ao Painel</a>
-                <span class="nav-tab active"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
+                <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+                <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
                 <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
             </nav>
         </header>

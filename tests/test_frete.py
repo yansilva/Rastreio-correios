@@ -600,9 +600,61 @@ class TestFreteReportGenerator(unittest.TestCase):
             "03140": {"disponivel": False, "erro": "x" * 200},
         })
         self.assertIn("Sem cobertura na região", html)
-        # erro longo (técnico) cai no texto padrão
-        self.assertIn("Indisponível para este destino", html)
+        # erro longo (técnico) cai no texto padrão (sem o texto cru)
         self.assertNotIn("x" * 200, html)
+
+    def test_indisponiveis_agrupados_em_uma_linha(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 2),
+            "03158": {"disponivel": False},
+            "03140": {"disponivel": False},
+        })
+        self.assertEqual(html.count('class="servico-card'), 1)
+        self.assertEqual(html.count('<p class="servicos-indisponiveis">'), 1)
+        self.assertIn("SEDEX 10 e SEDEX 12 indisponíveis para este destino", html)
+        self.assertNotIn("servico-card indisponivel", html)
+
+    def test_todos_indisponiveis_frase_unica(self):
+        html = self._renderizar({c: {"disponivel": False} for c in ("03220", "03158", "03140")})
+        self.assertEqual(html.count('class="servico-card'), 0)
+        self.assertIn("Nenhum serviço disponível para este destino.", html)
+
+    def test_resumo_com_menor_frete_e_prazo_longo(self):
+        html = self._renderizar({
+            "03220": self._servico(34.5, 5),
+            "03158": self._servico(48.0, 2),
+            "03140": {"disponivel": False},
+        })
+        self.assertIn("Pedidos mostrados", html)
+        self.assertIn("Menor frete do lote", html)
+        self.assertIn('id="sumMenor">R$ 34,50<', html)
+        self.assertIn("Com prazo acima de 3 dias", html)
+        self.assertIn('data-menor="34.5" data-longo="1"', html)
+        self.assertIn('id="resumo" aria-live="polite"', html)
+        self.assertNotIn("Pedidos em Aberto", html)
+        self.assertNotIn("Com Opções Disponíveis", html)
+        self.assertIn("sumMostrados", html)  # atualizado pelo JS do filtro
+
+    def test_resumo_sem_prazo_longo_oculta_cartao(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('id="sumLongoCard" hidden', html)
+
+    def test_skip_link_main_e_fonte_inter(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('<a class="skip-link" href="#conteudo">Pular para os pedidos</a>', html)
+        self.assertIn('<main id="conteudo" tabindex="-1">', html)
+        self.assertIn("src: url('web/fonts/InterVariable.woff2') format('woff2')", html)
+        self.assertIn("font-weight: 100 900", html)
+
+    def test_valor_do_pedido_em_destaque(self):
+        import re
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn('<span class="pedido-valor">R$ 150,00</span>', html)
+        regra = re.search(r"\n\s*\.pedido-valor \{([^}]*)\}", html)
+        self.assertIsNotNone(regra)
+        self.assertIn("font-weight: 700", regra.group(1))
+        self.assertIn("font-size: 1rem", regra.group(1))
+        self.assertIn("var(--color-text-main)", regra.group(1))
 
     def test_filtro_valor_estado_vazio_e_aviso(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})

@@ -43,6 +43,31 @@ def _motivo_indisponivel(info: dict[str, Any]) -> str:
     return _MOTIVO_PADRAO
 
 
+def _fmt_brl(valor: float) -> str:
+    """Valor em reais no padrão pt-BR (R$ 1.234,56)."""
+    return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
+def _linha_indisponiveis(indisponiveis: list[tuple[str, str]], todos: bool) -> str:
+    """Frase única (já escapada) sobre os serviços indisponíveis de um pedido.
+
+    indisponiveis: pares (nome, motivo). Sem motivo próprio, agrupa tudo em 'para este destino'.
+    """
+    if not indisponiveis:
+        return ""
+    if todos:
+        return "Nenhum serviço disponível para este destino."
+    nomes = [n for n, _ in indisponiveis]
+    motivos = {m for _, m in indisponiveis}
+    plural = "indisponíveis" if len(nomes) > 1 else "indisponível"
+    if motivos == {_MOTIVO_PADRAO}:
+        lista = nomes[0] if len(nomes) == 1 else ", ".join(nomes[:-1]) + " e " + nomes[-1]
+        return f"{lista} {plural} para este destino"
+    partes = [n if m == _MOTIVO_PADRAO else f"{n} ({m})" for n, m in indisponiveis]
+    lista = partes[0] if len(partes) == 1 else ", ".join(partes[:-1]) + " e " + partes[-1]
+    return f"{lista} {plural}"
+
+
 def _destaques(servicos: dict[str, Any], codigos: Any) -> tuple[set[str], set[str]]:
     """Códigos do serviço mais barato e do mais rápido (empates incluídos).
 
@@ -93,12 +118,8 @@ class FreteReportGenerator:
         data_geracao = time.strftime('%d/%m/%Y %H:%M:%S')
         total_pedidos = len(pedidos_com_frete)
 
-        # Conta pedidos com pelo menos 1 serviço disponível
-        com_opcoes = sum(
-            1 for p in pedidos_com_frete
-            if any(s["disponivel"] for s in p.get("servicos", {}).values())
-        )
-
+        total_menores: list[float] = []
+        total_longos = 0
         pedidos_com_prazo_longo = []
 
         # Inclui alertas de pedidos Motoboy/Retirada com prazo longo (não exibidos nos cards)
@@ -119,6 +140,9 @@ class FreteReportGenerator:
             codigos_barato, codigos_rapido = _destaques(servicos_pedido, config.servicos.keys())
 
             servicos_html = ""
+            indisponiveis: list[tuple[str, str]] = []
+            precos_pedido: list[float] = []
+            prazo_longo = False
             for cod in config.servicos.keys():
                 nome = config.servicos[cod]
                 info = servicos_pedido.get(cod, {"disponivel": False})
@@ -126,7 +150,10 @@ class FreteReportGenerator:
                 if info["disponivel"]:
                     preco_display = info.get("preco_fmt") or "—"
                     prazo_display = _fmt_prazo(info.get("prazo"))
+                    if isinstance(info.get("preco"), (int, float)):
+                        precos_pedido.append(float(info["preco"]))
                     if info.get("prazo") and info["prazo"] > 3:
+                        prazo_longo = True
                         if str(pedido['numero']) not in pedidos_com_prazo_longo:
                             pedidos_com_prazo_longo.append(str(pedido['numero']))
 
@@ -149,19 +176,21 @@ class FreteReportGenerator:
                     <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}{selos_html}
                 </div>"""
                 else:
-                    motivo = _motivo_indisponivel(info)
-                    servicos_html += f"""
-                <div class="servico-card indisponivel">
-                    <div class="servico-nome">{nome}</div>
-                    <div class="servico-status">Indisponível</div>
-                    <div class="servico-motivo">{motivo}</div>
-                </div>"""
+                    indisponiveis.append((nome, _motivo_indisponivel(info)))
+
+            nota_indisp = _linha_indisponiveis(indisponiveis, todos=not servicos_html)
+            nota_html = f'\n            <p class="servicos-indisponiveis">{nota_indisp}</p>' if nota_indisp else ""
+            menor_attr = f"{min(precos_pedido)}" if precos_pedido else ""
+            grid_html = f"""
+            <div class="servicos-grid">
+                {servicos_html}
+            </div>""" if servicos_html else ""
 
             cards_html += f"""
-        <div class="pedido-card" data-valor="{valor_float}">
+        <div class="pedido-card" data-valor="{valor_float}" data-menor="{menor_attr}" data-longo="{1 if prazo_longo else 0}">
             <div class="pedido-header">
                 <div class="pedido-left">
-                    <span class="pedido-numero">Pedido #{pedido['numero']} <span class="pedido-valor">{valor_fmt}</span></span>
+                    <span class="pedido-linha"><span class="pedido-numero">Pedido #{pedido['numero']}</span> <span class="pedido-valor">{valor_fmt}</span></span>
                     <span class="pedido-cliente">{pedido.get('nome_cliente', '—')}</span>
                 </div>
                 <div class="pedido-right">
@@ -169,10 +198,10 @@ class FreteReportGenerator:
                     <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP {_fmt_cep(pedido.get('cep_destino', '—'))}</span>
                 </div>
             </div>
-            <div class="servicos-grid">
-                {servicos_html}
-            </div>
+            {grid_html}{nota_html}
         </div>"""
+            total_menores.extend(precos_pedido)
+            total_longos += 1 if prazo_longo else 0
 
         # Estado vazio
         if not pedidos_com_frete:
@@ -190,6 +219,7 @@ class FreteReportGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Opções de Frete — Correios</title>
     <style>
+        @font-face {{ font-family: 'Inter'; src: url('web/fonts/InterVariable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }}
         :root {{
             --color-primary: #2563eb;
             --color-primary-hover: #1d4ed8;
@@ -257,6 +287,24 @@ class FreteReportGenerator:
             transition: background-color 0.3s ease, color 0.3s ease;
         }}
         .container {{ max-width: 1040px; margin: 0 auto; }}
+        .skip-link {{
+            position: absolute;
+            left: 12px;
+            top: -60px;
+            z-index: 2000;
+            padding: 10px 16px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+            color: #ffffff;
+            background: var(--color-primary);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+        }}
+        .skip-link:focus {{ top: 12px; }}
+        .skip-link:focus-visible {{ outline: 2px solid #ffffff; outline-offset: 2px; }}
+        #conteudo:focus {{ outline: none; }}
         header {{ position: relative; text-align: center; margin-bottom: 30px; }}
         h1 {{
             margin: 0;
@@ -394,7 +442,8 @@ class FreteReportGenerator:
             font: inherit;
             font-size: 1rem;
             min-height: 44px;
-            width: 120px;
+            width: 150px;
+            min-width: 140px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }}
         .filter-group input::placeholder {{ color: var(--color-text-subtle); }}
@@ -440,7 +489,7 @@ class FreteReportGenerator:
         }}
         .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
         .summary-number {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; }}
-        .summary-label {{ font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }}
+        .summary-label {{ font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; margin-top: 6px; }}
         .num-blue {{ color: var(--color-primary); }}
         [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
         .num-neutral {{ color: var(--color-text-main); }}
@@ -466,8 +515,9 @@ class FreteReportGenerator:
             gap: 12px;
         }}
         .pedido-left {{ display: flex; flex-direction: column; gap: 4px; }}
+        .pedido-linha {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }}
         .pedido-numero {{ font-weight: 700; font-size: 1.25rem; }}
-        .pedido-valor {{ font-size: 0.875rem; font-weight: 600; color: var(--color-text-muted); margin-left: 8px; }}
+        .pedido-valor {{ font-size: 1rem; font-weight: 700; color: var(--color-text-main); }}
         .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.875rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
@@ -504,9 +554,14 @@ class FreteReportGenerator:
             background: var(--color-surface);
             border-color: var(--color-border);
         }}
-        .servico-card.indisponivel {{
-            background: var(--color-header-bg);
+        .servicos-indisponiveis {{
+            margin: 0;
+            padding: 0 24px 16px;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
         }}
+        .servicos-grid + .servicos-indisponiveis {{ padding-top: 0; }}
+        .pedido-header + .servicos-indisponiveis {{ padding-top: 16px; }}
         .servico-nome {{
             font-weight: 800;
             font-size: 1rem;
@@ -541,16 +596,6 @@ class FreteReportGenerator:
             font-size: 0.875rem;
             color: var(--color-text-muted);
             font-weight: 500;
-        }}
-        .servico-status {{
-            color: var(--color-text-muted);
-            font-size: 0.875rem;
-            font-weight: 600;
-        }}
-        .servico-motivo {{
-            color: var(--color-text-muted);
-            font-size: 0.8125rem;
-            margin-top: 2px;
         }}
         .servico-msg-prazo {{
             font-size: 0.8125rem;
@@ -598,7 +643,11 @@ class FreteReportGenerator:
             .config-info {{ margin-top: 6px; padding: 4px 12px; }}
             .nav-tabs {{ margin-top: 10px; gap: 8px; }}
             .nav-tab {{ padding: 9px 14px; }}
-            .summary {{ grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }}
+            .summary {{ grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }}
+            .summary-card {{ min-width: 0; padding: 10px 6px; }}
+            .summary-number {{ white-space: nowrap; }}
+            .summary-label {{ font-size: 0.75rem; }}
+            .servicos-indisponiveis {{ padding: 0 16px 12px; }}
             .summary-card {{ padding: 10px 12px; }}
             .summary-number {{ font-size: 1.25rem; }}
             .summary-label {{ margin-top: 2px; }}
@@ -625,6 +674,7 @@ class FreteReportGenerator:
 </head>
 <body>
     {ICON_SPRITE}
+    <a class="skip-link" href="#conteudo">Pular para os pedidos</a>
     <div class="container">
         <header>
             <div class="header-tools">
@@ -642,14 +692,18 @@ class FreteReportGenerator:
             </nav>
         </header>
 
-        <div class="summary">
+        <div class="summary" id="resumo" aria-live="polite">
             <div class="summary-card">
-                <div class="summary-number num-blue">{total_pedidos}</div>
-                <div class="summary-label">Pedidos em Aberto</div>
+                <div class="summary-number num-blue" id="sumMostrados">{total_pedidos}</div>
+                <div class="summary-label">Pedidos mostrados</div>
             </div>
             <div class="summary-card">
-                <div class="summary-number num-neutral">{com_opcoes}</div>
-                <div class="summary-label">Com Opções Disponíveis</div>
+                <div class="summary-number num-neutral" id="sumMenor">{_fmt_brl(min(total_menores)) if total_menores else "—"}</div>
+                <div class="summary-label">Menor frete do lote</div>
+            </div>
+            <div class="summary-card" id="sumLongoCard"{"" if total_longos else " hidden"}>
+                <div class="summary-number num-neutral" id="sumLongo">{total_longos}</div>
+                <div class="summary-label">Com prazo acima de 3 dias</div>
             </div>
         </div>
 
@@ -666,8 +720,10 @@ class FreteReportGenerator:
             <p class="filter-aviso" id="filterAviso" aria-live="polite"></p>
         </div>
 
+        <main id="conteudo" tabindex="-1">
         {cards_html}
         <div id="filtroVazio" role="status"></div>
+        </main>
     </div>
 
     <script>
@@ -696,6 +752,8 @@ class FreteReportGenerator:
             const cards = document.querySelectorAll('.pedido-card');
             const invertido = minVal > maxVal;
             let visiveis = 0;
+            let menor = null;
+            let longos = 0;
 
             cards.forEach(card => {{
                 const val = parseFloat(card.getAttribute('data-valor')) || 0;
@@ -703,10 +761,21 @@ class FreteReportGenerator:
                 if (invertido || (val >= minVal && val <= maxVal)) {{
                     card.style.display = '';
                     visiveis++;
+                    const m = parseFloat(card.getAttribute('data-menor'));
+                    if (!isNaN(m) && (menor === null || m < menor)) {{ menor = m; }}
+                    if (card.getAttribute('data-longo') === '1') {{ longos++; }}
                 }} else {{
                     card.style.display = 'none';
                 }}
             }});
+
+            // Resumo reage ao filtro
+            document.getElementById('sumMostrados').textContent = visiveis;
+            document.getElementById('sumMenor').textContent = menor === null ? '—'
+                : menor.toLocaleString('pt-BR', {{ style: 'currency', currency: 'BRL' }}).replace(/\\s/g, ' ');
+            document.getElementById('sumLongo').textContent = longos;
+            const cardLongo = document.getElementById('sumLongoCard');
+            if (cardLongo) {{ cardLongo.hidden = longos === 0; }}
 
             aviso.textContent = invertido ? 'O mínimo é maior que o máximo.' : '';
 

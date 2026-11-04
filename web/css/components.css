@@ -1719,3 +1719,70 @@ h1 .icon {
 .order-history > summary {
     min-height: 40px;
 }
+
+/* Cartões de resumo só informam: sem cursor de clique, sem elevação no hover */
+.dash-card {
+    cursor: default;
+}
+
+.dash-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-border);
+}
+
+/* Contagem, legenda e Opções na mesma linha; o contador fica à direita, perto das Opções */
+.list-meta {
+    align-items: center;
+}
+
+.list-meta .filter-count {
+    margin-left: auto;
+    margin-right: 8px;
+}
+
+.status-legend-details[open] {
+    flex-basis: 100%;
+    order: 3;
+}
+
+/* Pílulas zeradas ocupam menos: sem o ícone, para as sete caberem numa linha em 1280px */
+.filter-pill[aria-disabled="true"] .icon {
+    display: none;
+}
+
+/* Alvo mínimo de 44px nas colunas curtas da tabela */
+.th-sort {
+    min-width: 44px;
+}
+
+@media (max-width: 640px) {
+    /* Mais da lista na primeira tela: contagem, legenda e Opções numa linha só */
+    .list-meta {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 8px;
+    }
+
+    .list-meta .filter-count {
+        order: 2;
+        margin-left: auto;
+        text-align: right;
+    }
+
+    .options-menu {
+        order: 3;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Dica visual de que a faixa de pílulas rola de lado */
+    .filter-pills {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    }
+}

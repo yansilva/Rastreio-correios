@@ -219,6 +219,34 @@ class TestRegerarSemRede(unittest.TestCase):
         self.assertNotIn("<th>Cliente</th>", sem)
         self.assertIn('data-label="Pedido"', sem)
 
+        # Cada linha tem "Copiar rastreio"; a navegação é a mesma do painel e há skip link e main
+        self.assertIn('data-copy="AE000000009BR"', sem)
+        self.assertIn("<th>Ações</th>", sem)
+        self.assertIn('class="skip-link"', sem)
+        self.assertIn('<main id="conteudo"', sem)
+        self.assertIn('aria-current="page"', sem)
+        self.assertNotIn("Voltar ao Painel", sem)
+
+    def test_atrasados_vazio_e_calmo_sem_quatro_zeros(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            falso_modulo = self._montar(pasta, com_cache=True)
+            with (
+                patch.object(consulta_correios, "__file__", falso_modulo),
+                patch.object(TrackingService, "deve_ocultar_card", return_value=False),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                consulta_correios.processar(usar_cache=True)
+            vazio = Path(pasta, "pedidos_atrasados.html").read_text(encoding="utf-8")
+            painel = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+
+        self.assertIn("Nada atrasado", vazio)
+        self.assertNotIn("Nenhum pedido atrasado!", vazio)
+        self.assertNotIn("summary-card", vazio)
+        # Cartões de resumo do painel só informam: não são botões nem filtros
+        self.assertNotIn('class="dash-card dash-clickable', painel)
+        self.assertNotRegex(painel, r'class="dash-card[^"]*"[^>]*role="button"')
+        self.assertEqual(painel.count('id="filterCount"'), 1)
+
     def test_sem_cache_devolve_false(self):
         with tempfile.TemporaryDirectory() as pasta:
             falso_modulo = self._montar(pasta, com_cache=False)

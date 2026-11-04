@@ -89,6 +89,35 @@ function showToast(mensagem, cor, duracao) {
     }, duracao);
 }
 
+// 2b. Copiar o código de rastreio: um só ouvinte para os botões do painel, da tabela e da página de atrasados
+function copiarRastreio(botao) {
+    var codigo = botao.getAttribute('data-copy');
+    var avisar = function(ok) {
+        showToast(ok ? 'Rastreio ' + codigo + ' copiado' : 'Não foi possível copiar o rastreio', ok ? '#15803d' : '#b91c1c', 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(codigo).then(function() { avisar(true); }, function() { avisar(false); });
+        return;
+    }
+    // Contexto sem Clipboard API: seleciona um campo temporário e usa o comando antigo
+    var campo = document.createElement('textarea');
+    campo.value = codigo;
+    campo.setAttribute('readonly', '');
+    campo.style.position = 'fixed';
+    campo.style.opacity = '0';
+    document.body.appendChild(campo);
+    campo.select();
+    var copiou = false;
+    try { copiou = document.execCommand('copy'); } catch (e) { copiou = false; }
+    document.body.removeChild(campo);
+    avisar(copiou);
+}
+
+document.addEventListener('click', function(e) {
+    var botao = e.target && e.target.closest ? e.target.closest('.btn-copy[data-copy]') : null;
+    if (botao) copiarRastreio(botao);
+});
+
 // 3. Inicialização e Event Listeners exclusivos do app.js
 document.addEventListener('DOMContentLoaded', function() {
     // Sincroniza o estado visual do botão com o tema ativo
