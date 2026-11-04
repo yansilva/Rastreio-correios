@@ -593,6 +593,12 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.prototype.slice.call(faixaPilulas.querySelectorAll('.filter-pill[aria-disabled="true"]')).forEach(function(pill) {
             faixaPilulas.appendChild(pill);
         });
+        // O foco do Tab não rola uma pílula já parcialmente visível; esta rolagem leva cada uma até ficar inteira
+        faixaPilulas.addEventListener('focusin', function(e) {
+            if (e.target.classList && e.target.classList.contains('filter-pill')) {
+                e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+        });
     }
 
     // 5b. O menu Opções (popover no desktop) fecha com Esc ou com um clique fora dele

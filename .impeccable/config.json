@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "relatorio_rastreio.html"
+        ],
+        "createdAt": "2026-11-04T16:54:01.225Z",
+        "reason": "Painel: aba ativa com brilho azul suave, excecao prevista em DESIGN.md (Sombras)"
+      }
+    ]
+  }
+}

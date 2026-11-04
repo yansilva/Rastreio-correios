@@ -203,9 +203,9 @@ Rampa de seis tamanhos (0.75, 0.8125, 0.875, 1, 1.25 e 1.75rem); todo `font-size
 
 ## Layout
 
-Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile, duas colunas fixas. Controles (busca e filtros) ocupam a largura total, com contador alinhado à direita.
+Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile, duas colunas fixas. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
 
-A barra de filtros quebra linha em telas estreitas; no mobile vira coluna, e a faixa de pílulas rola horizontalmente sem quebrar em linhas.
+A faixa de pílulas nunca quebra linha: rola horizontalmente quando não cabe, em qualquer largura. Em telas estreitas a barra de filtros vira coluna.
 
 Espaçamento observado: 8, 10, 14, 16, 18, 20 e 28–32px entre blocos. Não há escala formal de espaçamento no código.
 
@@ -221,6 +221,7 @@ Profundidade em camadas leves. Em repouso, cartões usam `--shadow-sm` (sombra m
 - **Cartão de pedido** (`box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1)`): cabeçalho de pedido, com hover de `0 10px 15px -3px rgba(0,0,0,0.1)`.
 - **Ação flutuante** (`box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04)`): botão de sincronização.
 - **Foco de busca** (`box-shadow: 0 0 0 3px rgba(37,99,235,0.12)`): anel de foco do campo de busca.
+- **Brilho da aba ativa** (`box-shadow: 0 4px 12px rgba(37,99,235,0.25)`): exceção deliberada. Só a aba "Painel" ativa usa sombra azul; ela sinaliza a página atual e não é um brilho decorativo. O detector registra essa exceção por página em `.impeccable/config.json` (`dark-glow`, `relatorio_rastreio.html`); não remova o brilho para silenciar o alerta.
 
 ### Named Rules
 **The Quiet Lift Rule.** Sombras são resposta a estado. Elementos em repouso não ganham sombra além da mínima; o hover eleva.
@@ -243,7 +244,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Filter Pills
 - **Style:** pílula transparente, borda fina, texto Tinta Discreta, 7px × 14px.
 - **State:** ativo com fundo azul e texto branco. Hover mostra borda e texto em azul com fundo Azul Névoa.
-- **Mobile:** a faixa rola na horizontal sem quebrar linha.
+- **Layout:** a faixa fica numa linha só em todas as larguras (1280px, 1040px e 375px). Quando não cabe, rola na horizontal; a borda direita esmaece como pista de que há mais pílulas. Ativas vêm primeiro e zeradas no fim. Com Tab, cada pílula rola até ficar visível.
 
 ### Cards / Containers
 - **Summary card (`.dash-card`, `.summary-card`):** cantos de 16px, fundo branco, borda fina, 18px × 20px. Hover sobe 2px. Estado ativo usa contorno azul de 2px e fundo Azul Névoa. Os quatro cartões (não enviados, em trânsito, entregues, devolvidos) são exclusivos e somam o total de pedidos. O que pede ação fica fora deles, na faixa "Precisam de ação" (`.action-strip`), com botões `.action-chip` para atrasados e aguardando retirada; esses são subconjuntos de "em trânsito" e por isso não entram na soma.
@@ -251,7 +252,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Event timeline:** linha vertical de 3px em Borda Fina, bolinha de 12px no início de cada evento. Eventos críticos ganham a cor do status na barra e na bolinha, com fundo levemente tingido.
 
 ### Inputs / Fields
-- **Search (`.search-input`):** cantos de 16px, borda fina, fundo branco, padding vertical de 14px, ícone de lupa à esquerda em Tinta Sutil.
+- **Search (`.search-input`):** cantos de 16px, borda fina, fundo branco, padding vertical de 14px, ícone de lupa à esquerda em Tinta Sutil. Fica dentro de `.search-row`, ao lado do contador de pedidos.
 - **Focus:** borda azul e anel de 3px a 12% de azul.
 - **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. Os cartões de serviço têm no máximo 280px, alinhados à esquerda.
 - **Placeholder:** Tinta Sutil. Contraste de placeholder abaixo do recomendado; aceitável apenas por ser texto de apoio.
@@ -271,12 +272,12 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Ferramentas do cabeçalho e da lista
 - **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
-- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, ao lado do contador; o botão ativo usa `aria-pressed`. No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
-- **Atalhos:** a tecla `/` foca a busca e Esc limpa o texto. "Recarregar dados salvos de HH:MM" (em Opções) reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
+- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, ao lado do contador; o botão ativo usa `aria-pressed` e fica em estado "pressionado" neutro: fundo Cinza Cabeçalho (`--color-surface-hover`), texto Tinta Principal e contorno interno de 1px em `--color-border-strong`, sem azul (o azul de decisão fica no filtro ativo e no botão flutuante). No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
+- **Atalhos:** a tecla `/` foca a busca e Esc limpa o texto. A legenda "O que significam os status?" também fica em Opções, no topo do menu, para deixar a lista logo abaixo da busca. "Recarregar dados salvos de HH:MM" (em Opções) reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
 - **Consultar Tiny e Correios:** único botão flutuante (consulta as APIs); no celular vira um círculo de 52px só com o ícone, com `aria-label`.
 
 ### Navigation (`.nav-tabs`)
-- **Style:** pílulas com borda fina. Ativa em azul sólido com texto branco e sombra azul suave.
+- **Style:** pílulas com borda fina. Ativa em azul sólido com texto branco e sombra azul suave (exceção documentada em Shadow Vocabulary, "Brilho da aba ativa").
 - **Hover:** texto e borda em azul.
 
 ## Do's and Don'ts

@@ -182,10 +182,22 @@
     margin-bottom: 28px;
 }
 
-/* 2a. Campo de Busca */
-.search-wrapper {
-    position: relative;
+/* 2a. Campo de Busca, com o contador de pedidos ao lado */
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 14px;
+}
+
+.search-row .search-wrapper {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.search-row .filter-count {
+    margin-left: 0;
 }
 
 .search-icon {
@@ -235,14 +247,32 @@
     flex-wrap: wrap;
 }
 
+/* Faixa de pílulas: uma linha em todas as larguras; rola na horizontal quando não cabe.
+   O esmaecimento da borda direita é a pista de que há mais pílulas. O padding reserva
+   a área do fade (no fim da rolagem a última pílula fica fora dele) e a folga do anel de foco. */
 .filter-pills {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 4px 28px 4px 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+.filter-pills::-webkit-scrollbar {
+    display: none;
 }
 
 .filter-pill {
+    flex-shrink: 0;
+    /* Foco pelo Tab rola a pílula parcialmente escondida até ela ficar inteira, fora do esmaecimento */
+    scroll-margin-inline: 4px 32px;
     padding: 7px 14px;
     border-radius: var(--radius-full);
     font-size: 0.875rem;
@@ -948,26 +978,11 @@ tbody tr:hover {
         right: 16px;
     }
 
-    .filter-pills {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding-bottom: 4px;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .filter-pill {
-        flex-shrink: 0;
-    }
-
     /* nowrap: em coluna com wrap, a linha cresce até o conteúdo mais largo (as pílulas) e estoura a página */
     .filters-row {
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: stretch;
-    }
-
-    .filter-pills {
-        min-width: 0;
     }
 
     .filter-count {
@@ -1117,6 +1132,13 @@ h1 .icon {
 
 .options-panel .list-tools {
     margin-top: 0;
+}
+
+/* Legenda dos status dentro de Opções: separada dos controles por um fio */
+.options-panel .status-legend-details {
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 /* Atrasados no celular: cada linha da tabela vira um cartão empilhado */
@@ -1437,15 +1459,6 @@ h1 .icon {
         flex-wrap: nowrap;
     }
 
-    /* Pílulas rolam de lado sem barra de rolagem aparente */
-    .filter-pills {
-        scrollbar-width: none;
-    }
-
-    .filter-pills::-webkit-scrollbar {
-        display: none;
-    }
-
     .order-history > summary {
         min-height: 44px;
         display: flex;
@@ -1716,19 +1729,13 @@ h1 .icon {
     border-color: var(--color-border);
 }
 
-/* Contagem, legenda e Opções na mesma linha; o contador fica à direita, perto das Opções */
+/* Limpar, Visão e Opções na mesma linha; a Visão vai para a direita, junto das Opções */
 .list-meta {
     align-items: center;
 }
 
-.list-meta .filter-count {
+.list-meta .view-switch {
     margin-left: auto;
-    margin-right: 8px;
-}
-
-.status-legend-details[open] {
-    flex-basis: 100%;
-    order: 3;
 }
 
 /* Pílulas zeradas ocupam menos: sem o ícone, para as sete caberem numa linha em 1280px */
@@ -1742,18 +1749,12 @@ h1 .icon {
 }
 
 @media (max-width: 640px) {
-    /* Mais da lista na primeira tela: contagem, legenda e Opções numa linha só */
+    /* Mais da lista na primeira tela: Limpar, Visão e Opções numa linha só */
     .list-meta {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
         gap: 0 8px;
-    }
-
-    .list-meta .filter-count {
-        order: 2;
-        margin-left: auto;
-        text-align: right;
     }
 
     .options-menu {
@@ -1763,12 +1764,6 @@ h1 .icon {
     .filters-row {
         flex-direction: column;
         align-items: stretch;
-    }
-
-    /* Dica visual de que a faixa de pílulas rola de lado */
-    .filter-pills {
-        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-        mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     }
 }
 
@@ -1829,9 +1824,11 @@ h1 .icon {
     background: var(--color-primary-light);
 }
 
+/* Visão ativa: estado "pressionado" neutro, sem azul de decisão (o azul fica no filtro e no botão flutuante) */
 .view-option[aria-pressed="true"] {
-    background: var(--color-primary);
-    color: #ffffff;
+    background: var(--color-surface-hover);
+    color: var(--color-text-main);
+    box-shadow: inset 0 0 0 1px var(--color-border-strong);
 }
 
 .view-option:disabled {

@@ -202,9 +202,12 @@ def processar(usar_cache=False):
 
         <!-- Painel de Controles -->
         <div class="controls-panel">
-            <div class="search-wrapper">
-                <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+            <div class="search-row">
+                <div class="search-wrapper">
+                    <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+                </div>
+                <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
@@ -218,8 +221,6 @@ def processar(usar_cache=False):
                 </div>
             </div>
             <div class="list-meta">
-                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
-                <span id="filterCount" class="filter-count" aria-live="polite"></span>
                 <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 <div class="view-switch" role="group" aria-label="Visão">
                     <button type="button" class="view-option" data-view="cartoes" aria-pressed="true">Cartões</button>
@@ -227,6 +228,7 @@ def processar(usar_cache=False):
                     <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
                 </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
