@@ -273,7 +273,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Descrição do status:** no cartão, a explicação do selo fica num `<span class="sr-only">` logo depois dele (texto ": descrição"). O selo não tem `title` nem `aria-describedby`. A busca e a cópia do Status para a tabela usam só o texto visível do selo.
 
 ### Toasts
-- **Cores:** pelos tokens do tema: `--color-success` (cópia e atualização), `--color-danger` (erro e "Copie manualmente"), `--color-warning` (cooldown) e `--color-primary` por padrão. O texto usa `--console-bg` ou `--console-text`, o que tiver mais contraste sobre o fundo. Pendência: `web/js/dashboard.js` (aviso de motivo da tabela) ainda usa `#b45309` fixo.
+- **Cores:** pelos tokens do tema: `--color-success` (cópia e atualização), `--color-danger` (erro e "Copie manualmente"), `--color-warning` (cooldown e aviso "Tabela indisponível no celular") e `--color-primary` por padrão. O texto usa `--console-bg` ou `--console-text`, o que tiver mais contraste sobre o fundo.
 - **Sucesso:** `role="status"` e `aria-live="polite"`. A confirmação de cópia some em 2 s; os demais sucessos, em 3,5 s.
 - **Erro:** `role="alert"`. Fica aberto até o botão "Fechar" (focável), sem temporizador. Quando a cópia falha nos dois caminhos (Clipboard API e campo oculto), o toast mostra "Copie manualmente: CÓDIGO" com o texto selecionável.
 - Foco, hover ou toque seguram o toast; um clique o fecha, exceto quando há texto selecionado.

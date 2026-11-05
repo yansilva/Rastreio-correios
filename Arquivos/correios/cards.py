@@ -62,10 +62,17 @@ def esta_encerrado(categoria: str, *, retirada: bool = False, atrasado: bool = F
 
 
 def status_tokens(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> str:
-    """Valor de `data-status`: a categoria principal mais as derivadas usadas pelos filtros."""
-    tokens = [categoria]
-    if retirada and categoria not in ("entregue", "devolvido"):
-        tokens.append("aguardando_retirada")
+    """Valor de `data-status`: a categoria principal mais as derivadas usadas pelos filtros.
+
+    Quem aguarda retirada troca o token em_transito por aguardando_retirada: assim a pílula
+    "Em trânsito" não conta nem mostra o pedido, e ele aparece só em "Aguardando retirada".
+    """
+    if retirada and categoria == "em_transito":
+        tokens = ["aguardando_retirada"]
+    else:
+        tokens = [categoria]
+        if retirada and categoria not in ("entregue", "devolvido"):
+            tokens.append("aguardando_retirada")
     if atrasado:
         tokens.append("atrasado")
     return " ".join(tokens)

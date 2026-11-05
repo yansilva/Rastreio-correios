@@ -635,10 +635,18 @@
     transform: translateY(0);
 }
 
-.btn-action:disabled {
-    /* Slate fixo nos dois temas: o texto "Consultando..." continua legível (branco sobre #475569 ≈ 7,6:1) */
+.btn-action:disabled,
+.btn-action[aria-disabled="true"] {
+    /* Slate fixo nos dois temas: o texto "Consultando..." e "Disponível em 2:13" ficam legíveis (branco sobre #475569 ≈ 7,6:1) */
     background: #475569;
-    cursor: progress;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* aria-disabled não tem a regra :disabled do navegador: o hover não pode levantar o botão parado */
+.btn-action[aria-disabled="true"]:hover {
+    background: #475569;
     transform: none;
     box-shadow: none;
 }
@@ -960,6 +968,23 @@ tbody tr:hover {
         white-space: nowrap;
     }
 
+    /* Espera do cooldown: o círculo mostra só o tempo ("2:13" ou "12m"), no lugar do ícone que some */
+    .btn-update.is-espera #btnUpdateText {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        white-space: nowrap;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .btn-update.is-espera .espera-prefixo {
+        display: none;
+    }
+
     /* Faixa de ação: título em linha própria e botões com alvo de toque de 44px */
     .action-strip-title {
         flex-basis: 100%;
@@ -1036,7 +1061,8 @@ h1 .icon {
 [data-theme="dark"] .btn-theme .icon-moon { display: none; }
 
 /* Durante a atualização o spinner substitui o ícone */
-.btn-action:disabled .icon-refresh { display: none; }
+.btn-action:disabled .icon-refresh,
+.btn-action[aria-disabled="true"] .icon-refresh { display: none; }
 
 /* Legenda dos critérios de status, visível sem precisar de hover */
 .status-legend {

@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
         controleVisao.querySelectorAll('[data-view]').forEach(function(botao) {
             botao.addEventListener('click', function() {
                 if (botao.getAttribute('aria-disabled') === 'true') {
-                    showToast(motivoTabela + '.', '#b45309', 3000);
+                    showToast(motivoTabela + '.', 'var(--color-warning)', 3000);
                     return;
                 }
                 var modo = botao.getAttribute('data-view');

@@ -346,7 +346,9 @@ def processar(usar_cache=False):
                 entregues_count += 1
                 print(f">> Pedido #{pedido} ({rastreio}) — Status: Entregue")
             elif obj_classificado.is_postado:
-                em_transito_count += 1
+                # Quem aguarda retirada também é postado, mas conta só em retiradas_count (faixa e pílula)
+                if not obj_classificado.is_retirada:
+                    em_transito_count += 1
             else:
                 nao_enviados_count += 1
 

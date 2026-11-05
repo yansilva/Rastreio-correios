@@ -35,11 +35,17 @@ class TestStatusTokens(unittest.TestCase):
     def test_categoria_simples(self):
         self.assertEqual(status_tokens("em_transito"), "em_transito")
 
+    def test_retirada_sai_de_em_transito(self):
+        # Quem aguarda retirada não tem o token em_transito: a pílula "Em trânsito" não o conta
+        self.assertEqual(status_tokens("em_transito", retirada=True), "aguardando_retirada")
+        self.assertNotIn("em_transito", status_tokens("em_transito", retirada=True, atrasado=True).split())
+
     def test_atrasado_e_retirada_somam_a_categoria(self):
         self.assertEqual(
             status_tokens("em_transito", retirada=True, atrasado=True),
-            "em_transito aguardando_retirada atrasado",
+            "aguardando_retirada atrasado",
         )
+        self.assertEqual(status_tokens("em_transito", atrasado=True), "em_transito atrasado")
 
     def test_entregue_e_devolvido_nao_viram_retirada(self):
         self.assertEqual(status_tokens("entregue", retirada=True), "entregue")

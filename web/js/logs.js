@@ -26,6 +26,96 @@ function ajustarBotaoConsulta(consultando) {
     }
 }
 
+// Botão de consulta desativado por aria-disabled (e não disabled): com disabled o foco cai no body,
+// e aqui o clique é bloqueado no próprio script. Serve à consulta em andamento e à espera do cooldown.
+function desativarBotaoConsulta(ativo) {
+    const btn = document.getElementById('btnUpdate');
+    if (!btn) return;
+    if (ativo) {
+        btn.setAttribute('aria-disabled', 'true');
+    } else {
+        btn.removeAttribute('aria-disabled');
+    }
+}
+
+let esperaConsultaId = null;
+
+// Tempo curto: "2:13" abaixo de 10 minutos e "12m" a partir daí (cabe no círculo de 52px do celular)
+function tempoEspera(segundos) {
+    if (segundos >= 600) return `${Math.floor(segundos / 60)}m`;
+    const min = Math.floor(segundos / 60);
+    const sec = String(segundos % 60).padStart(2, '0');
+    return `${min}:${sec}`;
+}
+
+function mostrarEsperaConsulta(segundos) {
+    const btn = document.getElementById('btnUpdate');
+    const btnText = document.getElementById('btnUpdateText');
+    const tempo = tempoEspera(segundos);
+    // O prefixo "Disponível em" some no celular (CSS); o nome acessível sempre o traz
+    if (btnText) {
+        const prefixo = document.createElement('span');
+        prefixo.className = 'espera-prefixo';
+        prefixo.textContent = 'Disponível em ';
+        const valor = document.createElement('span');
+        valor.className = 'espera-tempo';
+        valor.textContent = tempo;
+        btnText.replaceChildren(prefixo, valor);
+    }
+    if (btn) {
+        btn.setAttribute('aria-label', `Disponível em ${tempo}`);
+        btn.classList.add('is-espera');
+    }
+}
+
+function pararEsperaConsulta() {
+    if (esperaConsultaId !== null) {
+        clearInterval(esperaConsultaId);
+        esperaConsultaId = null;
+    }
+}
+
+// Fim da espera: o botão volta ao rótulo normal, sem o tempo nem a classe de espera
+function encerrarEsperaConsulta() {
+    pararEsperaConsulta();
+    const btn = document.getElementById('btnUpdate');
+    if (btn) btn.classList.remove('is-espera');
+    desativarBotaoConsulta(false);
+    ajustarBotaoConsulta(false);
+}
+
+// Mostra o tempo que falta do cooldown (o servidor informa os segundos) e libera o botão ao zerar
+function iniciarEsperaConsulta(segundos) {
+    pararEsperaConsulta();
+    let restante = Math.max(0, Math.ceil(Number(segundos) || 0));
+    if (restante === 0) {
+        encerrarEsperaConsulta();
+        return;
+    }
+    desativarBotaoConsulta(true);
+    mostrarEsperaConsulta(restante);
+    esperaConsultaId = setInterval(function () {
+        restante -= 1;
+        if (restante <= 0) {
+            encerrarEsperaConsulta();
+        } else {
+            mostrarEsperaConsulta(restante);
+        }
+    }, 1000);
+}
+
+// Ao abrir a página, o botão já nasce desativado se o cooldown ainda estiver ativo no servidor (leitura só)
+async function verificarCooldownConsulta() {
+    try {
+        const res = await fetch(`${getBaseUrl()}/api/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        iniciarEsperaConsulta(data.cooldown_remaining);
+    } catch {
+        // Servidor offline: o botão segue normal; a consulta mostra o erro ao ser tentada
+    }
+}
+
 function addLog(message) {
     const consoleBody = document.getElementById('consoleBody');
     if (!consoleBody) return;
@@ -48,6 +138,8 @@ function addLog(message) {
 
 async function atualizarDados() {
     const btn = document.getElementById('btnUpdate');
+    // Clique durante a consulta ou a espera do cooldown não faz nada (o botão está com aria-disabled)
+    if (btn && btn.getAttribute('aria-disabled') === 'true') return;
     const spinner = document.getElementById('spinner');
     const consoleDiv = document.getElementById('console');
     const consoleBody = document.getElementById('consoleBody');
@@ -67,7 +159,7 @@ async function atualizarDados() {
     }
 
     try {
-        if (btn) btn.disabled = true;
+        desativarBotaoConsulta(true);
         if (spinner) spinner.style.display = 'block';
         ajustarBotaoConsulta(true);
 
@@ -108,7 +200,7 @@ async function atualizarDados() {
                 }
                 addLog('[ERRO] Conexão com o servidor perdida antes do fim da atualização.');
                 showToast('❌ Conexão de logs interrompida. Tente atualizar novamente.', 'var(--color-danger)', null, 'erro');
-                if (btn) btn.disabled = false;
+                desativarBotaoConsulta(false);
                 if (spinner) spinner.style.display = 'none';
                 ajustarBotaoConsulta(false);
             };
@@ -124,19 +216,20 @@ async function atualizarDados() {
             const sec = remaining % 60;
             showToast(`⏳ Cooldown ativo! Próxima atualização permitida em ${min}m ${sec}s`, 'var(--color-warning)');
             if (consoleDiv) consoleDiv.style.display = 'none';
-            if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';
+            // O botão fica desativado com o tempo que falta, e libera sozinho ao zerar
             ajustarBotaoConsulta(false);
+            iniciarEsperaConsulta(remaining);
         } else {
             showToast('❌ Erro na resposta do servidor.', 'var(--color-danger)', null, 'erro');
-            if (btn) btn.disabled = false;
+            desativarBotaoConsulta(false);
             if (spinner) spinner.style.display = 'none';
             ajustarBotaoConsulta(false);
         }
     } catch (err) {
         console.error('Falha ao conectar com o servidor:', err);
         showToast('❌ Servidor offline ou inacessível.', 'var(--color-danger)', null, 'erro');
-        if (btn) btn.disabled = false;
+        desativarBotaoConsulta(false);
         if (spinner) spinner.style.display = 'none';
         ajustarBotaoConsulta(false);
     }
@@ -259,6 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnUpdate = document.getElementById('btnUpdate');
     if (btnUpdate) {
         btnUpdate.addEventListener('click', atualizarDados);
+        verificarCooldownConsulta();
     }
 
     const btnRegenerate = document.getElementById('btnRegenerate');

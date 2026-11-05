@@ -213,6 +213,15 @@ def test_copiar_rastreio_usa_execcommand_apos_rejeicao_e_toast_sem_hex():
     assert "setAttribute('aria-label'" in logs_js
     for hex_toast in ("'#15803d'", "'#dc2626'", "'#b45309'"):
         assert hex_toast not in logs_js
+    # Cooldown: o botão usa aria-disabled (o foco não cai no body) e não o disabled da consulta em andamento
+    assert "desativarBotaoConsulta(true)" in logs_js and "iniciarEsperaConsulta(remaining)" in logs_js
+    assert "if (btn) btn.disabled" not in logs_js
+    assert "Disponível em" in logs_js and "/api/status" in logs_js
+
+    # dashboard.js: o aviso da tabela usa o token de aviso do tema, sem hex fixo
+    dash_js = (raiz / "web" / "js" / "dashboard.js").read_text(encoding="utf-8")
+    assert "'#b45309'" not in dash_js
+    assert "'var(--color-warning)'" in dash_js
 
     # Toast sem cor hexadecimal fixa: as cores vêm dos tokens do tema
     bloco_toast = app_js[app_js.index("function showToast("):app_js.index("// 2b.")]
