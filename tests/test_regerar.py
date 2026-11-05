@@ -331,7 +331,7 @@ class TestUpdateManagerRegenerate(unittest.TestCase):
 class DummyHandler(RastreioRequestHandler):
     """Handler com I/O em memória, como nos testes do servidor."""
 
-    def __init__(self, command: str, path: str):
+    def __init__(self, command: str, path: str, headers: dict | None = None):
         self.rfile = io.BytesIO(b"")
         self.wfile = io.BytesIO()
         self.client_address = ("127.0.0.1", 12345)
@@ -339,7 +339,8 @@ class DummyHandler(RastreioRequestHandler):
         self.path = path
         self.requestline = f"{command} {path} HTTP/1.1"
         self.request_version = "HTTP/1.1"
-        self.headers = {}
+        # Host do próprio servidor, como um navegador enviaria; None = sem cabeçalho Host
+        self.headers = {"Host": "127.0.0.1:8000"} if headers is None else headers
         self.server_version = "TestServer/1.0"
         self.sys_version = "Python/3.12"
         self.close_connection = True
@@ -392,6 +393,22 @@ class TestRotaRegerar(unittest.TestCase):
         saida = handler.wfile.getvalue().decode("utf-8")
         self.assertIn("HTTP/1.0 409", saida)
         self.assertIn("não há dados em cache", saida)
+
+    def test_post_regerar_sem_host_recusado_com_403(self):
+        chamou = []
+
+        def regenera():
+            chamou.append(True)
+
+        RastreioRequestHandler.update_manager = UpdateManager(
+            self.config, self.log_queue, runner_fn=lambda: None, regenerator_fn=regenera
+        )
+        handler = DummyHandler("POST", "/regerar", headers={})
+        handler.do_POST()
+        saida = handler.wfile.getvalue().decode("utf-8")
+        self.assertIn("HTTP/1.0 403", saida)
+        self.assertIn("Host não permitido", saida)
+        self.assertEqual(chamou, [])
 
 
 if __name__ == "__main__":

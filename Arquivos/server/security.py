@@ -1,7 +1,11 @@
 """Validação de segurança de caminhos e proteção contra Path Traversal."""
 import ipaddress
+import re
 import urllib.parse
 from pathlib import Path
+
+# Formato aceito do cabeçalho Host: nome ou IP (ou [IPv6]) com porta opcional, nada mais.
+_FORMATO_HOST = re.compile(r"(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.\-]+)(?::\d{1,5})?")
 
 # Redes que podem falar com o servidor: esta máquina e a rede privada de casa (Wi-Fi).
 REDES_LOCAIS = (
@@ -60,10 +64,18 @@ def resolve_safe_path(
     if not requested_url_path:
         return None
 
-    # Remove query string e fragmento
+    # Remove query string e fragmento e decodifica uma única vez
     parsed = urllib.parse.urlsplit(requested_url_path)
     clean_path = urllib.parse.unquote(parsed.path).strip()
+    return _resolver_caminho_decodificado(base_dir, clean_path, allowed_extensions)
 
+
+def _resolver_caminho_decodificado(
+    base_dir: Path,
+    clean_path: str,
+    allowed_extensions: set[str] | None,
+) -> Path | None:
+    """Valida um caminho já decodificado (sem nova decodificação) e devolve o Path ou None."""
     # Normaliza barras e remove barras iniciais
     clean_path = clean_path.replace("\\", "/").lstrip("/")
     if not clean_path:
@@ -122,6 +134,7 @@ def resolve_public_path(
     if not requested_url_path:
         return None
 
+    # Decodificação única: a validação abaixo e a resolução usam o mesmo texto.
     clean_path = urllib.parse.unquote(urllib.parse.urlsplit(requested_url_path).path)
     clean_path = clean_path.replace("\\", "/").lstrip("/")
     if not clean_path:
@@ -137,7 +150,7 @@ def resolve_public_path(
         return None
 
     # Validação final: contenção em base_dir, nomes bloqueados, extensões e existência.
-    return resolve_safe_path(base_dir, "/" + clean_path, allowed_extensions)
+    return _resolver_caminho_decodificado(base_dir, "/" + clean_path, allowed_extensions)
 
 
 def ip_na_rede_local(endereco: str) -> bool:
@@ -164,3 +177,36 @@ def origem_confiavel(host: str, origin: str | None, referer: str | None) -> bool
     if referer is not None:
         return urllib.parse.urlsplit(referer).netloc.lower() == host
     return True
+
+
+def host_permitido(host: str | None, porta: int | None, ip_servidor: str | None = None) -> bool:
+    """Confere se o cabeçalho Host aponta para este servidor (anti DNS rebinding).
+
+    Aceita localhost, 127.0.0.1, ::1, qualquer IP privado/loopback (10/8, 172.16/12,
+    192.168/16) e o IP configurado do servidor. Com ou sem porta; se houver porta,
+    ela tem de ser a porta do servidor. Qualquer nome de domínio é recusado, mesmo
+    que o DNS o aponte para 127.0.0.1.
+    """
+    if not host:
+        return False
+    host = host.strip()
+    # Formato estrito antes de qualquer parsing: sem @, /, ?, # nem espaços.
+    if not _FORMATO_HOST.fullmatch(host):
+        return False
+    try:
+        partes = urllib.parse.urlsplit("//" + host)
+        nome = (partes.hostname or "").lower()
+        porta_host = partes.port
+    except ValueError:
+        return False
+    if not nome:
+        return False
+    if porta_host is not None and porta is not None and porta_host != porta:
+        return False
+    if nome in ("localhost", "127.0.0.1", "::1"):
+        return True
+    if ip_na_rede_local(nome):
+        return True
+    if ip_servidor and ip_servidor not in ("0.0.0.0", "::") and nome == ip_servidor.lower():
+        return True
+    return False

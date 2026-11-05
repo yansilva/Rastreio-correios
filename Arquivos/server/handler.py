@@ -8,7 +8,7 @@ from typing import Any
 
 from .config import ServerConfig
 from .logger import ServerLogQueue, logger
-from .security import ip_na_rede_local, origem_confiavel, resolve_public_path
+from .security import host_permitido, ip_na_rede_local, origem_confiavel, resolve_public_path
 from .service import UpdateManager
 
 
@@ -32,16 +32,34 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
         self._send_json_response({"sucesso": False, "erro": "Acesso negado"}, status=403)
         return True
 
+    def _recusar_host_estranho(self) -> bool:
+        """Responde 403 e devolve True se o Host não for este servidor (anti DNS rebinding).
+
+        Exige exatamente um cabeçalho Host, válido: ausente ou duplicado é recusado.
+        """
+        valores = self._valores_host()
+        if len(valores) == 1 and host_permitido(valores[0], self.server_config.port, self.server_config.host):
+            return False
+        self._send_json_response({"sucesso": False, "erro": "Host não permitido"}, status=403)
+        return True
+
+    def _valores_host(self) -> list[str]:
+        """Todos os valores do cabeçalho Host (o http.server devolve um Message com get_all)."""
+        if hasattr(self.headers, "get_all"):
+            return self.headers.get_all("Host", [])
+        valor = self.headers.get("Host")
+        return [] if valor is None else [valor]
+
     def do_OPTIONS(self) -> None:
         """Responde requisições OPTIONS sem liberar CORS."""
-        if self._recusar_ip_externo():
+        if self._recusar_ip_externo() or self._recusar_host_estranho():
             return
         self.send_response(200)
         self.end_headers()
 
     def do_HEAD(self) -> None:
         """HEAD não é usado pelo painel; sem isso o SimpleHTTPRequestHandler serviria arquivos da pasta."""
-        if self._recusar_ip_externo():
+        if self._recusar_ip_externo() or self._recusar_host_estranho():
             return
         self.send_response(405)
         self.send_header("Content-Length", "0")
@@ -49,7 +67,7 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Roteia requisições GET."""
-        if self._recusar_ip_externo():
+        if self._recusar_ip_externo() or self._recusar_host_estranho():
             return
         clean_path = self.path.split("?")[0].strip()
 
@@ -79,7 +97,7 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Roteia requisições POST, só da rede local e só de origem própria (anti-CSRF)."""
-        if self._recusar_ip_externo():
+        if self._recusar_ip_externo() or self._recusar_host_estranho():
             return
         if not origem_confiavel(
             host=self.headers.get("Host", ""),

@@ -4,6 +4,7 @@ Todos os testes utilizam mocks (unittest.mock) sem abrir portas reais na rede
 nem abrir abas de navegador.
 Compatível tanto com `pytest` quanto com `python -m unittest`.
 """
+import email.message
 import io
 import os
 import sys
@@ -31,6 +32,7 @@ from server.logger import (
     sanitize_log_message,
 )
 from server.security import (
+    host_permitido,
     ip_na_rede_local,
     origem_confiavel,
     resolve_public_path,
@@ -300,7 +302,17 @@ class DummyHandler(RastreioRequestHandler):
         self.path = path
         self.requestline = f"{command} {path} HTTP/1.1"
         self.request_version = "HTTP/1.1"
-        self.headers = dict(headers or {})
+        # headers como dict: Host padrão de acesso legítimo, sobrescrito pelo teste.
+        # headers como lista de pares: exatamente esses cabeçalhos (ex.: Host duplicado ou ausente).
+        if isinstance(headers, list):
+            pares = headers
+        else:
+            base = {"Host": "127.0.0.1:8000"}
+            base.update(headers or {})
+            pares = list(base.items())
+        self.headers = email.message.Message()
+        for nome, valor in pares:
+            self.headers[nome] = valor
         self.server_version = "TestServer/1.0"
         self.sys_version = "Python/3.12"
         self.close_connection = True
@@ -449,6 +461,19 @@ class TestListaDePermissao(unittest.TestCase):
         self.assertIsNotNone(resolve_public_path(PROJECT_ROOT, "web/css/main.css", self.permitidas))
         self.assertIsNotNone(resolve_public_path(PROJECT_ROOT, "alert_frete.js", self.permitidas))
 
+    def test_dupla_codificacao_nao_vira_traversal(self):
+        # %252e%252e decodifica uma vez para "%2e%2e" (texto literal), nunca para ".."
+        self.assertIsNone(resolve_public_path(PROJECT_ROOT, "/web/%252e%252e/run.py", self.permitidas))
+        self.assertIsNone(resolve_safe_path(PROJECT_ROOT, "/web/%252e%252e/run.py", self.permitidas))
+
+    def test_dupla_codificacao_no_servidor_retorna_404(self):
+        for caminho in ("/web/%252e%252e/run.py", "/web/%252e%252e%252frun.py"):
+            with self.subTest(caminho=caminho):
+                handler = DummyHandler(b"", "GET", caminho)
+                handler.do_GET()
+                out = handler.wfile.getvalue().decode("utf-8")
+                self.assertTrue("HTTP/1.0 404" in out or "HTTP/1.0 403" in out)
+
     def test_traversal_dentro_de_web_bloqueado(self):
         self.assertIsNone(
             resolve_public_path(PROJECT_ROOT, "web/../Arquivos/rastreios_cache.json", self.permitidas)
@@ -553,6 +578,148 @@ class TestHandlerRedeLocal(unittest.TestCase):
         handler = DummyHandler(b"", "HEAD", "/Arquivos/rastreios_cache.json")
         handler.do_HEAD()
         self.assertIn("HTTP/1.0 405", self._saida(handler))
+
+
+class TestHostPermitido(unittest.TestCase):
+    """Cabeçalho Host: só nomes deste servidor (anti DNS rebinding)."""
+
+    def test_hosts_locais_e_privados_aceitos(self):
+        for host in (
+            "localhost",
+            "localhost:8000",
+            "127.0.0.1",
+            "127.0.0.1:8000",
+            "[::1]:8000",
+            "192.168.15.45",
+            "192.168.15.45:8000",
+            "10.0.0.7:8000",
+            "172.16.5.5:8000",
+        ):
+            with self.subTest(host=host):
+                self.assertTrue(host_permitido(host, 8000))
+
+    def test_ip_configurado_do_servidor_aceito(self):
+        self.assertTrue(host_permitido("200.160.0.1:8000", 8000, "200.160.0.1"))
+        self.assertFalse(host_permitido("200.160.0.1:8000", 8000, "0.0.0.0"))
+
+    def test_dominios_e_ips_publicos_recusados(self):
+        for host in ("evil.example", "evil.example:8000", "8.8.8.8:8000", "localhost.evil.example", "", None):
+            with self.subTest(host=host):
+                self.assertFalse(host_permitido(host, 8000))
+
+    def test_host_com_arroba_recusado(self):
+        self.assertFalse(host_permitido("evil.example@127.0.0.1:8000", 8000))
+
+    def test_host_com_barra_recusado(self):
+        self.assertFalse(host_permitido("127.0.0.1/evil:8000", 8000))
+
+    def test_host_com_query_e_fragmento_recusado(self):
+        self.assertFalse(host_permitido("127.0.0.1?x#:8000", 8000))
+
+    def test_porta_diferente_da_configurada_recusada(self):
+        self.assertFalse(host_permitido("127.0.0.1:9999", 8000))
+
+    def test_host_malformado_recusado(self):
+        self.assertFalse(host_permitido("127.0.0.1:porta_invalida", 8000))
+        self.assertFalse(host_permitido("[::1", 8000))
+
+
+class TestHandlerHost(unittest.TestCase):
+    """Host do cabeçalho nas rotas GET e POST do handler."""
+
+    def setUp(self):
+        self.config = ServerConfig(base_dir=PROJECT_ROOT, cooldown_seconds=10)
+        self.log_queue = ServerLogQueue()
+        self.manager = UpdateManager(self.config, self.log_queue, runner_fn=lambda: None)
+
+        RastreioRequestHandler.server_config = self.config
+        RastreioRequestHandler.log_queue = self.log_queue
+        RastreioRequestHandler.update_manager = self.manager
+
+    def _saida(self, handler):
+        return handler.wfile.getvalue().decode("utf-8")
+
+    def test_host_evil_bloqueado_em_get(self):
+        handler = DummyHandler(b"", "GET", "/", headers={"Host": "evil.example"})
+        handler.do_GET()
+        out = self._saida(handler)
+        self.assertIn("HTTP/1.0 403", out)
+        self.assertNotIn("<html", out.lower())
+
+    def test_host_evil_bloqueado_em_post_e_nao_atualiza(self):
+        handler = DummyHandler(b"", "POST", "/atualizar", headers={"Host": "evil.example"})
+        handler.do_POST()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+        self.assertTrue(self.manager.can_update())
+
+    def test_host_evil_bloqueado_em_options_e_head(self):
+        handler = DummyHandler(b"", "OPTIONS", "/", headers={"Host": "evil.example"})
+        handler.do_OPTIONS()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+        handler = DummyHandler(b"", "HEAD", "/", headers={"Host": "evil.example"})
+        handler.do_HEAD()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_sem_cabecalho_host_recusado_com_403(self):
+        for metodo, rota in (("GET", "/"), ("POST", "/atualizar"), ("HEAD", "/"), ("OPTIONS", "/")):
+            with self.subTest(metodo=metodo):
+                handler = DummyHandler(b"", metodo, rota, headers=[])
+                getattr(handler, f"do_{metodo}")()
+                self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_host_duplicado_local_primeiro_e_recusado(self):
+        handler = DummyHandler(
+            b"", "GET", "/", headers=[("Host", "127.0.0.1:8000"), ("Host", "evil.example")]
+        )
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_host_duplicado_hostil_primeiro_e_recusado(self):
+        handler = DummyHandler(
+            b"", "GET", "/", headers=[("Host", "evil.example"), ("Host", "127.0.0.1:8000")]
+        )
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_host_duplicado_local_nao_e_aceito_nem_isolado(self):
+        handler = DummyHandler(
+            b"", "GET", "/", headers=[("Host", "127.0.0.1:8000"), ("Host", "127.0.0.1:8000")]
+        )
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_host_127_com_porta_aceito(self):
+        handler = DummyHandler(b"", "GET", "/", headers={"Host": "127.0.0.1:8000"})
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 200", self._saida(handler))
+
+    def test_host_localhost_com_porta_aceito(self):
+        handler = DummyHandler(b"", "GET", "/", headers={"Host": "localhost:8000"})
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 200", self._saida(handler))
+
+    def test_host_ip_da_rede_com_porta_aceito(self):
+        handler = DummyHandler(
+            b"",
+            "GET",
+            "/",
+            client_address=("192.168.15.20", 5000),
+            headers={"Host": "192.168.15.45:8000"},
+        )
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 200", self._saida(handler))
+
+    def test_post_com_host_da_rede_e_origem_propria_aceito(self):
+        handler = DummyHandler(
+            b"",
+            "POST",
+            "/atualizar",
+            client_address=("192.168.15.20", 5000),
+            headers={"Host": "192.168.15.45:8000", "Origin": "http://192.168.15.45:8000"},
+        )
+        handler.do_POST()
+        self.assertIn("HTTP/1.0 200", self._saida(handler))
 
 
 class TestBatsERedeLocal(unittest.TestCase):
