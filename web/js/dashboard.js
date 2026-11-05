@@ -271,9 +271,21 @@ function atualizarTabela() {
             copiar.setAttribute('aria-label', 'Copiar rastreio ' + l.rastreio);
             tdAcoes.appendChild(copiar);
         }
-        var ver = botaoDeLinha('Ver cartão', function() { verCartao(l.card); });
-        ver.classList.add('btn-ver-cartao');
-        if (!isNaN(l.pedido)) ver.setAttribute('aria-label', 'Ver cartão do pedido #' + l.pedido);
+        // Botão só com ícone: o nome acessível diz qual pedido e o title mostra o texto ao passar o mouse
+        var ver = document.createElement('button');
+        ver.type = 'button';
+        ver.className = 'btn-ver-cartao';
+        ver.title = 'Ver cartão';
+        ver.setAttribute('aria-label', isNaN(l.pedido) ? 'Ver cartão' : 'Ver cartão do pedido #' + l.pedido);
+        var icone = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        icone.setAttribute('class', 'icon icon-package');
+        icone.setAttribute('aria-hidden', 'true');
+        icone.setAttribute('focusable', 'false');
+        var simbolo = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        simbolo.setAttribute('href', '#i-package');
+        icone.appendChild(simbolo);
+        ver.appendChild(icone);
+        ver.addEventListener('click', function() { verCartao(l.card); });
         tdAcoes.appendChild(ver);
         tr.appendChild(tdAcoes);
     });
@@ -395,6 +407,31 @@ function restaurarFiltro() {
     } catch (e) {
         // Dado inválido ou storage indisponível: começa sem filtro
     }
+}
+
+// Rolagem da faixa de pílulas: só a própria faixa rola (a página fica parada) e só o necessário
+// para a pílula aparecer inteira, respeitando as folgas do padding da faixa (4px à esquerda, 28px do fade à direita)
+function mostrarPilulaInteira(faixa, pill) {
+    var folgaEsq = 4, folgaDir = 28;
+    var origem = faixa.getBoundingClientRect().left - faixa.scrollLeft;
+    var inicio = pill.getBoundingClientRect().left - origem;
+    var fim = inicio + pill.getBoundingClientRect().width;
+    var pos = faixa.scrollLeft;
+    if (inicio >= pos + folgaEsq && fim <= pos + faixa.clientWidth - folgaDir) return;
+    // A rolagem para no início de uma pílula: a mais à esquerda que ainda deixa a ativa inteira.
+    // Assim nenhuma pílula aparece cortada na borda esquerda
+    var minimo = fim + folgaEsq + folgaDir - faixa.clientWidth;
+    var alvo = inicio;
+    Array.prototype.slice.call(faixa.querySelectorAll('.filter-pill')).forEach(function(p) {
+        var inicioP = p.getBoundingClientRect().left - origem;
+        if (inicioP >= minimo && inicioP <= inicio && inicioP < alvo) alvo = inicioP;
+    });
+    faixa.scrollLeft = Math.max(0, Math.min(alvo - folgaEsq, faixa.scrollWidth - faixa.clientWidth));
+}
+
+// O esmaecimento da borda direita só aparece quando há pílulas escondidas
+function atualizarFadeFaixa(faixa) {
+    faixa.classList.toggle('tem-rolagem', faixa.scrollWidth > faixa.clientWidth + 1);
 }
 
 function filterOrders(status) {
@@ -640,10 +677,10 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.prototype.slice.call(faixaPilulas.querySelectorAll('.filter-pill[aria-disabled="true"]')).forEach(function(pill) {
             faixaPilulas.appendChild(pill);
         });
-        // O foco do Tab não rola uma pílula já parcialmente visível; esta rolagem leva cada uma até ficar inteira
+        // Foco pelo teclado leva a pílula até ficar inteira; clique com o mouse não mexe na posição da faixa
         faixaPilulas.addEventListener('focusin', function(e) {
-            if (e.target.classList && e.target.classList.contains('filter-pill')) {
-                e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            if (e.target.classList && e.target.classList.contains('filter-pill') && e.target.matches(':focus-visible')) {
+                mostrarPilulaInteira(faixaPilulas, e.target);
             }
         });
     }
@@ -693,4 +730,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Aplica contagem inicial
     applyFilters();
+
+    // Depois de marcar a pílula ativa: a faixa começa do início e mostra a ativa inteira
+    var faixa = document.querySelector('.filter-pills');
+    if (faixa) {
+        faixa.scrollLeft = 0;
+        var pillAtiva = faixa.querySelector('.filter-pill[aria-pressed="true"]');
+        if (pillAtiva) mostrarPilulaInteira(faixa, pillAtiva);
+        atualizarFadeFaixa(faixa);
+        window.addEventListener('resize', function() { atualizarFadeFaixa(faixa); });
+    }
 });

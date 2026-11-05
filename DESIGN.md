@@ -264,7 +264,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Inputs / Fields
 - **Search (`.search-input`):** cantos de 16px, borda fina, fundo branco, padding vertical de 14px, ícone de lupa à esquerda em Tinta Sutil. Fica dentro de `.search-row`, ao lado do contador de pedidos.
 - **Focus:** borda azul e anel de 3px a 12% de azul.
-- **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. Os cartões de serviço têm no máximo 280px, alinhados à esquerda. No celular, entre 360 e 640px, os serviços ficam em 2 colunas (abaixo de 360px, em coluna única). "Menor frete do lote" é link para o cartão do pedido de origem: a página rola até ele e o foco vai junto.
+- **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. No desktop (acima de 640px), cada serviço é uma linha compacta de cerca de 44px na largura do cartão do pedido, com colunas Serviço | Preço | Prazo | Selos alinhadas entre as linhas; o preço tem peso 800 e 1.25rem, e os selos ficam à direita. O serviço "Mais barato" tem realce sutil de 3px na borda esquerda, na cor de destaque (sem verde). No celular, entre 360 e 640px, os serviços ficam em 2 colunas (abaixo de 360px, em coluna única). "Menor frete do lote" é link para o cartão do pedido de origem: a página rola até ele e o foco vai junto.
 - **Placeholder:** Tinta Sutil. Contraste de placeholder abaixo do recomendado; aceitável apenas por ser texto de apoio.
 
 ### Badges
@@ -296,7 +296,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Tabela (visão Tabela)
 - **Desktop, de 641 a 1023px:** a tabela rola na horizontal dentro do próprio contêiner (`.orders-table-wrap`, `overflow-x: auto`). O cabeçalho não fica fixo.
 - **A partir de 1024px:** larguras fixas por coluna (`table-layout: fixed`) e cabeçalho fixo ao rolar a lista. O contêiner não rola na horizontal.
-- **Ações:** "Copiar rastreio" é o botão principal da célula, e "Ver cartão" aparece como link (`.btn-ver-cartao`) logo abaixo dele, em qualquer largura de desktop.
+- **Ações:** "Copiar rastreio" (`.btn-copy`) e "Ver cartão" ficam numa linha só na visão Tabela: "Ver cartão" é um botão só com ícone (`.btn-ver-cartao`, 36×36, alvo de toque de 44px, nome "Ver cartão do pedido #N" e `title` "Ver cartão"), em qualquer largura de desktop. A linha da tabela fica com até 64px quando o texto cabe numa linha.
 - **Celular:** a visão Tabela fica desativada (ver Controles da lista).
 
 ### Navigation (`.nav-tabs`)

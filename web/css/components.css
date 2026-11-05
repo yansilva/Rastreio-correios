@@ -261,6 +261,14 @@
     padding: 4px 28px 4px 4px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Sem pílula escondida: sem fade e sem a folga do lado direito */
+.filter-pills:not(.tem-rolagem) {
+    padding-right: 4px;
+}
+
+.filter-pills.tem-rolagem {
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
@@ -271,8 +279,6 @@
 
 .filter-pill {
     flex-shrink: 0;
-    /* Foco pelo Tab rola a pílula parcialmente escondida até ela ficar inteira, fora do esmaecimento */
-    scroll-margin-inline: 4px 32px;
     padding: 7px 14px;
     border-radius: var(--radius-full);
     font-size: 0.875rem;
@@ -1771,26 +1777,45 @@ h1 .icon {
         white-space: normal;
     }
 
-    /* Ações empilhadas: Copiar rastreio em cima e Ver cartão como link embaixo */
+    /* Ações numa linha só: Copiar rastreio (.btn-copy) e Ver cartão como botão de ícone ao lado */
     .orders-table-actions .btn-copy {
-        display: block;
-        width: max-content;
-        margin: 0 0 4px;
-        padding: 4px 8px;
-        font-size: 0.8125rem;
+        vertical-align: middle;
     }
 
     .orders-table-actions .btn-ver-cartao {
-        padding: 4px 0;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        margin-left: 6px;
+        padding: 0;
+        vertical-align: middle;
+        color: var(--color-text-muted);
         background: none;
-        border-color: transparent;
-        text-decoration: underline;
-        text-underline-offset: 3px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-full);
+        cursor: pointer;
+    }
+
+    /* Alvo de toque de 44px sem aumentar o botão visual. O bloco absoluto usa a área de preenchimento,
+       que começa dentro da borda de 1px: por isso -5px (e não -4px) dá 4px de cada lado além dos 36px */
+    .orders-table-actions .btn-ver-cartao::before {
+        content: "";
+        position: absolute;
+        inset: -5px;
     }
 
     .orders-table-actions .btn-ver-cartao:hover {
-        background: none;
-        border-color: transparent;
+        color: var(--color-link);
+        border-color: var(--color-primary);
+        background: var(--color-primary-light);
+    }
+
+    .orders-table-actions .btn-ver-cartao:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
     }
 }
 
@@ -1822,7 +1847,7 @@ h1 .icon {
     /* Maior selo inteiro ("AGUARDANDO RETIRADA", 168px com nowrap) + padding da célula (2 × 6px) */
     .orders-table th:nth-child(4) { width: 184px; }
     .orders-table th:nth-child(6) { width: 100px; }
-    .orders-table th:nth-child(7) { width: 140px; }
+    .orders-table th:nth-child(7) { width: 180px; }
 }
 
 /* Totais zerados da página de atrasados ficam neutros */

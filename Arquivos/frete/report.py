@@ -19,7 +19,19 @@ from .config import FreteConfig
 
 logger = logging.getLogger("frete.report")
 
-_MOTIVO_PADRAO = "Indisponível para este destino"
+_MOTIVO_PADRAO = "sem atendimento para esta rota"
+
+# Ícones dos selos (traço, mesmo estilo do sprite): etiqueta = mais barato, raio = mais rápido.
+# Inline porque o sprite de correios/icons.py não tem esses dois símbolos.
+_ICONE_BARATO = (
+    '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    '<path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/>'
+    '<circle cx="7" cy="7" r="1.5"/></svg>'
+)
+_ICONE_RAPIDO = (
+    '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    '<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+)
 
 
 def _fmt_prazo(prazo: Any) -> str:
@@ -39,7 +51,8 @@ def _motivo_indisponivel(info: dict[str, Any]) -> str:
     """Motivo curto de indisponibilidade; ignora textos vazios, genéricos ou longos (erros técnicos)."""
     for chave in ("motivo", "erro"):
         texto = str(info.get(chave) or "").strip()
-        if texto and texto.lower() != "indisponível" and len(texto) <= 60:
+        # Textos com "indisponível" repetem o rótulo da linha; ficam de fora
+        if texto and "indispon" not in texto.lower() and len(texto) <= 60:
             return html.escape(texto)
     return _MOTIVO_PADRAO
 
@@ -65,20 +78,20 @@ def _linha_indisponiveis(indisponiveis: list[tuple[str, str]], todos: bool) -> s
         return ""
     if todos:
         return "Nenhum serviço disponível para este destino."
-    nomes = [n for n, _ in indisponiveis]
+    rotulo = "Indisponível" if len(indisponiveis) == 1 else "Indisponíveis"
     motivos = {m for _, m in indisponiveis}
-    plural = "indisponíveis" if len(nomes) > 1 else "indisponível"
-    if motivos == {_MOTIVO_PADRAO}:
-        lista = nomes[0] if len(nomes) == 1 else ", ".join(nomes[:-1]) + " e " + nomes[-1]
-        return f"{lista} {plural} para este destino"
-    partes = [n if m == _MOTIVO_PADRAO else f"{n} ({m})" for n, m in indisponiveis]
-    lista = partes[0] if len(partes) == 1 else ", ".join(partes[:-1]) + " e " + partes[-1]
-    return f"{lista} {plural}"
+    if len(motivos) == 1:
+        nomes = ", ".join(n for n, _ in indisponiveis)
+        return f"{rotulo}: {nomes} ({motivos.pop()})"
+    partes = ", ".join(f"{n} ({m})" for n, m in indisponiveis)
+    return f"{rotulo}: {partes}"
 
 
-def _destaques(servicos: dict[str, Any], codigos: Any) -> tuple[set[str], set[str]]:
-    """Códigos do serviço mais barato e do mais rápido (empates incluídos).
+def _destaques(servicos: dict[str, Any], codigos: list[str]) -> tuple[str | None, str | None]:
+    """Código do serviço mais barato e do mais rápido: um único serviço para cada selo.
 
+    Empate no prazo: o mais rápido é o mais barato entre eles. Empate no preço: o mais barato é
+    o de menor prazo. Persistindo o empate, vale a ordem da configuração.
     Só destaca quando há pelo menos duas opções comparáveis; com uma só, o selo seria ruído.
     """
     precos: dict[str, float] = {}
@@ -92,13 +105,14 @@ def _destaques(servicos: dict[str, Any], codigos: Any) -> tuple[set[str], set[st
         if isinstance(info.get("prazo"), (int, float)) and info["prazo"] > 0:
             prazos[cod] = info["prazo"]
 
-    def minimos(valores: dict[str, float]) -> set[str]:
-        if len(valores) < 2:
-            return set()
-        menor = min(valores.values())
-        return {c for c, v in valores.items() if v == menor}
-
-    return minimos(precos), minimos(prazos)
+    ordem = {cod: i for i, cod in enumerate(codigos)}
+    sem_dado = float("inf")
+    barato = rapido = None
+    if len(precos) >= 2:
+        barato = min(precos, key=lambda c: (precos[c], prazos.get(c, sem_dado), ordem[c]))
+    if len(prazos) >= 2:
+        rapido = min(prazos, key=lambda c: (prazos[c], precos.get(c, sem_dado), ordem[c]))
+    return barato, rapido
 
 
 class FreteReportGenerator:
@@ -150,7 +164,7 @@ class FreteReportGenerator:
                 valor_fmt = "R$ 0,00"
 
             servicos_pedido = pedido.get("servicos", {})
-            codigos_barato, codigos_rapido = _destaques(servicos_pedido, config.servicos.keys())
+            cod_barato, cod_rapido = _destaques(servicos_pedido, list(config.servicos.keys()))
 
             servicos_html = ""
             indisponiveis: list[tuple[str, str]] = []
@@ -176,14 +190,14 @@ class FreteReportGenerator:
                         msg_prazo_html = f'\n                    <div class="servico-msg-prazo" title="{msg}">{icone("alert-triangle")} {msg}</div>'
 
                     selos = ""
-                    if cod in codigos_barato:
-                        selos += '<span class="servico-selo">Mais barato</span>'
-                    if cod in codigos_rapido:
-                        selos += '<span class="servico-selo">Mais rápido</span>'
+                    if cod == cod_barato:
+                        selos += f'<span class="servico-selo servico-selo-barato">{_ICONE_BARATO} Mais barato</span>'
+                    if cod == cod_rapido:
+                        selos += f'<span class="servico-selo servico-selo-rapido">{_ICONE_RAPIDO} Mais rápido</span>'
                     selos_html = f'\n                    <div class="servico-selos">{selos}</div>' if selos else ""
 
                     servicos_html += f"""
-                <div class="servico-card disponivel">
+                <div class="servico-card disponivel{' barato' if cod == cod_barato else ''}">
                     <div class="servico-nome">{nome}</div>
                     <div class="servico-preco">{preco_display}</div>
                     <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}{selos_html}
@@ -630,11 +644,10 @@ class FreteReportGenerator:
         }}
 
         /* Serviços Grid */
-        /* Cartões com largura máxima de 280px, alinhados à esquerda: um serviço sozinho não estica */
+        /* Base (celular abaixo de 360px): uma coluna; 2 colunas de 360px, e linhas no desktop (ver @media 641px) */
         .servicos-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 280px));
-            justify-content: start;
+            grid-template-columns: 1fr;
             gap: 12px;
             padding: 18px 24px;
         }}
@@ -677,6 +690,9 @@ class FreteReportGenerator:
             margin-top: 10px;
         }}
         .servico-selo {{
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             background: var(--color-badge-bg);
             color: var(--color-badge-fg);
             border: 1px solid var(--color-badge-border);
@@ -687,6 +703,8 @@ class FreteReportGenerator:
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }}
+        /* Selo com ícone: etiqueta = mais barato, raio = mais rápido (cor do texto, sem verde) */
+        .servico-selo .icon {{ width: 0.95em; height: 0.95em; vertical-align: 0; }}
         .servico-prazo {{
             font-size: 0.875rem;
             color: var(--color-text-muted);
@@ -785,6 +803,30 @@ class FreteReportGenerator:
         /* Abaixo de 360px: uma coluna */
         @media (max-width: 359px) {{
             .servicos-grid {{ grid-template-columns: 1fr; }}
+        }}
+        /* Desktop (acima de 640px): cada serviço vira uma linha compacta na largura do cartão.
+           Colunas: Serviço | Preço | Prazo | Selos (alinhadas entre as linhas). */
+        @media (min-width: 641px) {{
+            .servicos-grid {{ display: flex; flex-direction: column; gap: 6px; padding: 10px 24px 4px; }}
+            .servico-card.disponivel {{
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 120px 150px minmax(0, 1.4fr);
+                column-gap: 16px;
+                align-items: center;
+                min-height: 44px;
+                padding: 6px 14px;
+                text-align: left;
+                border-radius: var(--radius-sm);
+            }}
+            /* Mais barato: realce sutil na borda esquerda, na cor de destaque (sem verde) */
+            .servico-card.disponivel.barato {{ border-left: 3px solid var(--color-primary); padding-left: 12px; }}
+            .servico-nome {{ margin: 0; font-size: 0.9375rem; }}
+            .servico-preco {{ margin: 0; font-size: 1.25rem; line-height: 1.3; }}
+            .servico-prazo {{ white-space: nowrap; }}
+            .servico-selos {{ grid-column: 4; grid-row: 1; justify-content: flex-end; flex-wrap: nowrap; margin: 0; }}
+            .servico-selo {{ white-space: nowrap; }}
+            .servico-msg-prazo {{ grid-column: 1 / -1; margin-top: 4px; }}
+            .servicos-indisponiveis {{ padding: 0 24px 14px; }}
         }}
     </style>
 </head>

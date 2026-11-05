@@ -135,6 +135,11 @@ def test_ux_busca_filtros_organizacao():
     # Celular: a linha de busca, visão e Opções fica numa grade só (sem linha própria)
     assert "display: contents" in comp_css
     assert ":has(.search-wrapper:focus-within" in comp_css
+    # Faixa de pílulas: a página não rola ao focar uma pílula; o fade só existe quando há rolagem
+    assert "scrollIntoView({ block: 'nearest', inline: 'nearest' })" not in dash_js
+    assert "mostrarPilulaInteira" in dash_js
+    assert ".filter-pills.tem-rolagem" in comp_css
+    assert "scroll-margin-inline" not in comp_css
 
 
 def test_nav_tabs_fixa_no_celular():
@@ -252,13 +257,25 @@ def test_tabela_tem_layout_fixo_e_acoes_empilhadas_no_desktop():
     assert "table-layout: fixed;" in bloco_1024
 
     # Larguras fixas de cada coluna, pela posição real na tabela
-    larguras = {"Pedido": 72, "Rastreio": 130, "Status": 184, "Tiny": 100, "Ações": 140}
+    larguras = {"Pedido": 72, "Rastreio": 130, "Status": 184, "Tiny": 100, "Ações": 180}
     for rotulo, px in larguras.items():
         posicao = ordem.index(rotulo) + 1
         assert f".orders-table th:nth-child({posicao}) {{ width: {px}px; }}" in bloco_1024
 
+    # Ações numa linha: "Ver cartão" é botão só com ícone de 36px, alvo de toque de 44px, nome e title
     assert ".orders-table-actions .btn-ver-cartao {" in comp_css
-    assert "ver.classList.add('btn-ver-cartao');" in dash_js
+    assert "width: 36px;" in comp_css.split(".orders-table-actions .btn-ver-cartao {")[1].split("}")[0]
+    assert ".orders-table-actions .btn-ver-cartao::before {" in comp_css
+    # -5px e não -4px: o bloco absoluto parte da área de preenchimento, dentro da borda de 1px
+    assert "inset: -5px;" in comp_css.split(".orders-table-actions .btn-ver-cartao::before {")[1].split("}")[0]
+    assert "ver.className = 'btn-ver-cartao';" in dash_js
+    assert "ver.title = 'Ver cartão';" in dash_js
+    assert "'Ver cartão do pedido #' + l.pedido" in dash_js
+    assert "#i-package" in dash_js
+    # O botão não herda a classe de cópia (estilo e alvo próprios)
+    assert "ver.classList.add('btn-copy')" not in dash_js
+    assert "botaoDeLinha('Ver cartão'" not in dash_js
+    assert "Ver cartão como link" not in comp_css
 
 
 def test_busca_ignora_texto_so_para_leitor_de_tela():

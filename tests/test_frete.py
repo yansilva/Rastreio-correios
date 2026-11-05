@@ -563,6 +563,12 @@ class TestFreteReportGenerator(unittest.TestCase):
         return {"disponivel": True, "preco": preco, "preco_fmt": f"R$ {preco:.2f}".replace(".", ","),
                 "prazo": prazo, "msg_prazo": None, "erro": None, **extra}
 
+    @staticmethod
+    def _cards(html):
+        """Conteúdo de cada cartão de serviço disponível, na ordem da página (com ou sem a classe 'barato')."""
+        import re
+        return re.split(r'class="servico-card disponivel[^"]*">', html)[1:]
+
     def test_prazo_plural_correto(self):
         html = self._renderizar({
             "03220": self._servico(30.0, 1),
@@ -579,11 +585,67 @@ class TestFreteReportGenerator(unittest.TestCase):
             "03158": self._servico(50.0, 1),
             "03140": self._servico(35.0, 2),
         })
-        self.assertEqual(html.count('<span class="servico-selo">Mais barato</span>'), 1)
-        self.assertEqual(html.count('<span class="servico-selo">Mais rápido</span>'), 1)
+        self.assertEqual(html.count("Mais barato</span>"), 1)
+        self.assertEqual(html.count("Mais rápido</span>"), 1)
+        self.assertEqual(html.count("servico-selo-barato"), 1)
+        self.assertEqual(html.count("servico-selo-rapido"), 1)
         # Cartão disponível é neutro: sem verde de "entregue"
         self.assertNotIn("var(--color-success-bg)", html)
         self.assertNotIn("var(--color-success-text)", html)
+
+    def test_empate_no_prazo_mais_rapido_e_o_mais_barato(self):
+        # Mesmo prazo: só o mais barato leva "Mais rápido" (e também "Mais barato", por ser o menor preço)
+        html = self._renderizar({
+            "03220": self._servico(31.27, 1),
+            "03158": self._servico(54.0, 1),
+            "03140": {"disponivel": False},
+        })
+        self.assertEqual(html.count("Mais rápido</span>"), 1)
+        self.assertEqual(html.count("Mais barato</span>"), 1)
+        self.assertEqual(html.count('<div class="servico-selos">'), 1)
+        self.assertIn('servico-selo-rapido">', html)
+        cards = self._cards(html)
+        self.assertIn("Mais rápido", cards[0])            # SEDEX (R$ 31,27)
+        self.assertNotIn("Mais rápido", cards[1])         # SEDEX 12 (R$ 54,00)
+
+    def test_empate_no_prazo_com_mais_barato_em_outro_servico(self):
+        # Mais barato é o de prazo maior; entre os de 1 dia, vence o mais barato
+        html = self._renderizar({
+            "03220": self._servico(20.0, 3),
+            "03158": self._servico(30.0, 1),
+            "03140": self._servico(25.0, 1),
+        })
+        self.assertEqual(html.count("Mais barato</span>"), 1)
+        self.assertEqual(html.count("Mais rápido</span>"), 1)
+        cards = self._cards(html)
+        self.assertIn("Mais barato", cards[0])            # SEDEX (R$ 20,00)
+        self.assertNotIn("Mais rápido", cards[0])
+        self.assertNotIn("Mais barato", cards[1])         # SEDEX 10 (R$ 30,00): nenhum selo
+        self.assertNotIn("Mais rápido", cards[1])
+        self.assertIn("Mais rápido", cards[2])            # SEDEX 12 (R$ 25,00): o mais rápido e mais barato entre os de 1 dia
+
+    def test_empate_no_preco_desempata_pelo_prazo(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 4),
+            "03158": self._servico(20.0, 2),
+            "03140": self._servico(35.0, 5),
+        })
+        cards = self._cards(html)
+        self.assertIn("Mais barato", cards[1])            # SEDEX 10: mesmo preço, prazo menor
+        self.assertNotIn("Mais barato", cards[0])
+        self.assertIn("Mais rápido", cards[1])
+        self.assertEqual(html.count("Mais barato</span>"), 1)
+        self.assertEqual(html.count("Mais rápido</span>"), 1)
+
+    def test_selos_com_icone_diferenciado_sem_verde(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 4),
+            "03158": self._servico(50.0, 1),
+            "03140": self._servico(35.0, 2),
+        })
+        self.assertIn('<path d="M20.6 13.4', html)        # etiqueta: mais barato
+        self.assertIn('<path d="M13 2L3 14h9', html)      # raio: mais rápido
+        self.assertNotIn("var(--color-success", html)
 
     def test_sem_selo_com_uma_unica_opcao(self):
         html = self._renderizar({
@@ -611,8 +673,27 @@ class TestFreteReportGenerator(unittest.TestCase):
         })
         self.assertEqual(html.count('class="servico-card'), 1)
         self.assertEqual(html.count('<p class="servicos-indisponiveis">'), 1)
-        self.assertIn("SEDEX 10 e SEDEX 12 indisponíveis para este destino", html)
+        self.assertIn("Indisponíveis: SEDEX 10, SEDEX 12 (sem atendimento para esta rota)", html)
         self.assertNotIn("servico-card indisponivel", html)
+
+    def test_indisponivel_sem_repetir_a_palavra(self):
+        import re
+        html = self._renderizar({
+            "03220": self._servico(20.0, 2),
+            "03158": {"disponivel": False, "motivo": "Indisponível para esta rota"},
+            "03140": {"disponivel": False, "motivo": "Indisponível"},
+        })
+        linha = re.search(r'<p class="servicos-indisponiveis">(.*?)</p>', html).group(1)
+        self.assertEqual(linha.lower().count("indispon"), 1)
+        self.assertEqual(linha, "Indisponíveis: SEDEX 10, SEDEX 12 (sem atendimento para esta rota)")
+
+    def test_indisponivel_unico_formato(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 2),
+            "03158": {"disponivel": False},
+            "03140": self._servico(30.0, 3),
+        })
+        self.assertIn("Indisponível: SEDEX 10 (sem atendimento para esta rota)", html)
 
     def test_todos_indisponiveis_frase_unica(self):
         html = self._renderizar({c: {"disponivel": False} for c in ("03220", "03158", "03140")})
@@ -650,13 +731,33 @@ class TestFreteReportGenerator(unittest.TestCase):
         self.assertIn("e.key === '/'", html)
         self.assertIn("e.key === 'Escape'", html)
 
-    def test_servico_unico_com_no_maximo_280px(self):
+    def test_desktop_linhas_compactas_sem_cartao_estreito(self):
         import re
+        html = self._renderizar({"03220": self._servico(20.0, 2), "03158": self._servico(30.0, 3)})
+        # Acima de 640px: uma linha por serviço, em coluna, na largura do cartão (sem a grade de 280px)
+        bloco = re.search(r"@media \(min-width: 641px\) \{(.*?)\n        \}", html, re.S)
+        self.assertIsNotNone(bloco)
+        self.assertIn(".servicos-grid { display: flex; flex-direction: column;", bloco.group(1))
+        self.assertIn("grid-template-columns: minmax(0, 1fr) 120px 150px minmax(0, 1.4fr);", bloco.group(1))
+        self.assertIn("min-height: 44px;", bloco.group(1))
+        self.assertNotIn("280px", html)
+        # Colunas: serviço, preço, prazo e selos (à direita)
+        self.assertIn(".servico-selos { grid-column: 4; grid-row: 1; justify-content: flex-end;", bloco.group(1))
+
+    def test_mais_barato_tem_realce_de_linha(self):
+        html = self._renderizar({
+            "03220": self._servico(20.0, 4),
+            "03158": self._servico(50.0, 1),
+            "03140": self._servico(35.0, 2),
+        })
+        self.assertIn('class="servico-card disponivel barato"', html)
+        self.assertEqual(html.count("servico-card disponivel barato"), 1)
+        self.assertIn(".servico-card.disponivel.barato { border-left: 3px solid var(--color-primary);", html)
+        self.assertNotIn("var(--color-success", html)
+
+    def test_servicos_em_duas_colunas_no_celular_continuam(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
-        regra = re.search(r"\n\s*\.servicos-grid \{([^}]*)\}", html)
-        self.assertIsNotNone(regra)
-        self.assertIn("repeat(auto-fill, minmax(200px, 280px))", regra.group(1))
-        self.assertIn("justify-content: start", regra.group(1))
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", html)
 
     def test_selo_de_situacao_so_quando_difere_do_lote(self):
         generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))
