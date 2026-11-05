@@ -13,6 +13,7 @@ if _arquivos not in sys.path:
 from correios.cards import (  # noqa: E402
     DESCRICAO_STATUS,
     PRIORIDADE_STATUS,
+    ROTULO_SELO,
     bloco_descricoes_status,
     chave_selo,
     dias_desde,
@@ -264,6 +265,8 @@ class TestMontarCardPedido(unittest.TestCase):
         card = self._card(['<div class="event">x</div>'], rastreio='AB"1')
         self.assertIn('data-copy="AB&quot;1"', card)
         self.assertIn("Copiar rastreio", card)
+        # Label in Name (WCAG 2.5.3): o nome acessível começa pelo texto visível
+        self.assertIn('aria-label="Copiar rastreio AB&quot;1"', card)
 
 
 class TestFaixaAcao(unittest.TestCase):
@@ -283,6 +286,31 @@ class TestFaixaAcao(unittest.TestCase):
     def test_zero_so_marca_contador_zerado(self):
         self.assertEqual(zero(0), " is-zero")
         self.assertEqual(zero(2), "")
+
+
+class TestRotuloSeloPorChave(unittest.TestCase):
+    """selo_status e chave_selo seguem uma só precedência: o texto do selo sai da chave."""
+
+    def test_todo_rotulo_tem_descricao(self):
+        # sem_postagem é só de pílula, por isso as chaves de selo são um subconjunto das descrições
+        self.assertTrue(set(ROTULO_SELO) <= set(DESCRICAO_STATUS))
+
+    def test_rotulo_do_selo_bate_com_a_chave_em_todas_as_combinacoes(self):
+        for categoria in ("em_transito", "nao_enviado", "entregue", "devolvido"):
+            for retirada in (False, True):
+                for atrasado in (False, True):
+                    with self.subTest(categoria=categoria, retirada=retirada, atrasado=atrasado):
+                        chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+                        texto, classe = selo_status(
+                            categoria, retirada=retirada, atrasado=atrasado, dias_atraso=4
+                        )
+                        self.assertIn(chave, DESCRICAO_STATUS)
+                        rotulo, classe_esperada = ROTULO_SELO[chave]
+                        self.assertEqual(classe, classe_esperada)
+                        if chave == "atrasado":
+                            self.assertEqual(texto, "Atrasado · 4 dias")
+                        else:
+                            self.assertEqual(texto, rotulo)
 
 
 class TestDescricoesStatus(unittest.TestCase):
@@ -336,12 +364,14 @@ class TestDescricoesStatus(unittest.TestCase):
             eventos_html=["<p>x</p>"],
             chave_descricao="atrasado",
         )
+        self.assertIn('class="badge badge-red">Atrasado · 4 dias</span>', card)
+        # Sem title nem aria-describedby no selo: a descrição vai só para o sr-only logo depois dele
+        self.assertNotIn("title=", card)
+        self.assertNotIn("aria-describedby", card)
         self.assertIn(
-            'class="badge badge-red" title="Mais de 3 dias em trânsito desde a postagem." '
-            'aria-describedby="desc-status-atrasado">Atrasado · 4 dias</span>',
+            '</span><span class="sr-only">: Mais de 3 dias em trânsito desde a postagem.</span>',
             card,
         )
-        self.assertNotIn("sr-only", card)
 
     def test_selo_sem_chave_nao_ganha_atributo_extra(self):
         card = montar_card_pedido(

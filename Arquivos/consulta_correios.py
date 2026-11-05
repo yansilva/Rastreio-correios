@@ -70,7 +70,9 @@ def consultar_objeto(objeto, token):
     return client.consultar_objeto(objeto, token=token)
 
 
-def formatar_evento_html(evento):
+def formatar_evento_html(evento, selo_cabecalho=""):
+    """HTML de um evento da linha do tempo. `selo_cabecalho` é o selo do cabeçalho do cartão:
+    se o selo do evento tiver o mesmo texto, ele não se repete."""
     dt_iso = evento.get("dtHrCriado", "")
     desc = evento.get("descricao", "")
     unidade = evento.get("unidade", {})
@@ -90,22 +92,29 @@ def formatar_evento_html(evento):
     det_upper = detalhe.upper()
 
     status_class = ""
-    badge = ""
+    texto_badge = ""
+    classe_badge = ""
 
     if "RETIRADA" in desc_upper or "RETIRADA" in det_upper:
         status_class = "status-warning"
-        badge = '<span class="badge badge-yellow">AGUARDANDO RETIRADA</span>'
+        texto_badge, classe_badge = "AGUARDANDO RETIRADA", "badge-yellow"
     elif "REMETENTE" in desc_upper:
         status_class = "status-devolvido"
-        badge = '<span class="badge badge-purple">DEVOLVIDO AO REMETENTE</span>'
+        texto_badge, classe_badge = "DEVOLVIDO AO REMETENTE", "badge-purple"
     elif "CANCELADA" in desc_upper or "CANCELADA" in det_upper:
         status_class = "status-warning"
-        badge = '<span class="badge badge-yellow">ENTREGA CANCELADA</span>'
+        texto_badge, classe_badge = "ENTREGA CANCELADA", "badge-yellow"
     elif "DEVOLVIDO" in desc_upper or "DEVOLUÇÃO" in desc_upper:
         status_class = "status-devolvido"
-        badge = '<span class="badge badge-purple">DEVOLVIDO</span>'
+        texto_badge, classe_badge = "DEVOLVIDO", "badge-purple"
     elif "POSTADO" in desc_upper:
-        badge = '<span class="badge badge-green">POSTADO</span>'
+        # Verde é "entregue" (One Meaning Per Color): postagem é etapa de trânsito, então azul
+        texto_badge, classe_badge = "POSTADO", "badge-blue"
+
+    # O selo do evento some quando repete o do cabeçalho (ex.: "Aguardando retirada" nos dois)
+    badge = ""
+    if texto_badge and texto_badge.casefold() != selo_cabecalho.casefold():
+        badge = f'<span class="badge {classe_badge}">{texto_badge}</span>'
 
     detalhe_html = f'<div class="event-detail">{detalhe}</div>' if detalhe else ""
 
@@ -119,6 +128,19 @@ def formatar_evento_html(evento):
         {detalhe_html}
     </div>
     """
+
+
+_PASTA_WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web")
+
+
+def _versao_assets() -> int:
+    """Versão do cache dos CSS/JS: muda quando qualquer arquivo de web/ muda, então o navegador não reusa o CSS antigo."""
+    return int(
+        max(
+            (os.path.getmtime(os.path.join(raiz, nome)) for raiz, _, nomes in os.walk(_PASTA_WEB) for nome in nomes),
+            default=0,
+        )
+    )
 
 
 def processar(usar_cache=False):
@@ -185,6 +207,10 @@ def processar(usar_cache=False):
                 <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
+                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
+                    <div id="spinner" class="spinner"></div>
+                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
+                </button>
             </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
@@ -267,13 +293,6 @@ def processar(usar_cache=False):
         </main>
     </div>
 
-    <div class="floating-actions">
-        <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
-            <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
-        </button>
-    </div>
-
     <script src="web/js/app.js?v={versao_cache}"></script>
     <script src="web/js/dashboard.js?v={versao_cache}"></script>
     <script src="web/js/logs.js?v={versao_cache}"></script>
@@ -318,15 +337,6 @@ def processar(usar_cache=False):
                 if not usar_cache:
                     time.sleep(0.2)
                 continue
-
-            events_html = []
-            if obj_data and "eventos" in obj_data:
-                for evento in obj_data["eventos"]:
-                    events_html.append(formatar_evento_html(evento))
-            else:
-                events_html.append(
-                    '<div class="event"><em>Sem informações de rastreio disponíveis nos Correios para este objeto.</em></div>'
-                )
 
             # Contabilização de status
             if obj_classificado.is_devolvido:
@@ -386,6 +396,15 @@ def processar(usar_cache=False):
             chave_descricao = "sem_postagem" if semp else chave_selo(
                 status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
             )
+            # Eventos depois do selo do cabeçalho, para o selo do evento não repetir o dele
+            events_html = []
+            if obj_data and "eventos" in obj_data:
+                for evento in obj_data["eventos"]:
+                    events_html.append(formatar_evento_html(evento, selo_cabecalho=selo))
+            else:
+                events_html.append(
+                    '<div class="event"><em>Sem informações de rastreio disponíveis nos Correios para este objeto.</em></div>'
+                )
             card = montar_card_pedido(
                 # Título em partes: número, cliente (campo novo do CSV, quando houver) e código de rastreio
                 numero_txt=str(pedido),
@@ -481,7 +500,7 @@ def processar(usar_cache=False):
             dashboard=dashboard_html,
             content="".join(orders_html),
             atrasados_link=atrasados_link_html,
-            versao_cache=int(time.time()),
+            versao_cache=_versao_assets(),
             descricoes_status=bloco_descricoes_status(),
             **textos_descricao(),
         )

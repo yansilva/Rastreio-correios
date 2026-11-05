@@ -66,9 +66,74 @@ function toggleTheme() {
 // 2. Sistema de Notificações Toast
 var toastTimeout = null;
 
-function showToast(mensagem, cor, duracao) {
-    cor = cor || '#2563eb';
+// Texto do toast: branco ou escuro, o que tiver mais contraste sobre o fundo já resolvido pelo navegador.
+// Os tons de sucesso e erro do tema escuro são claros, então o texto deve ser escuro neles (0,179 é o ponto de empate).
+function corTextoToast(fundoCss) {
+    var n = (fundoCss || '').match(/[\d.]+/g);
+    if (!n || n.length < 3) return 'var(--console-text)';
+    var linear = function(c) {
+        c = Number(c) / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    var luminancia = 0.2126 * linear(n[0]) + 0.7152 * linear(n[1]) + 0.0722 * linear(n[2]);
+    return luminancia > 0.179 ? 'var(--console-bg)' : 'var(--console-text)';
+}
+
+var toastDuracao = 3500;
+var toastPersistente = false;
+
+function fecharToast() {
+    var toast = document.getElementById('toast');
+    if (toast) toast.style.display = 'none';
+    toastTimeout = null;
+}
+
+function agendarFechamento(duracao) {
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = null;
+    // Erros ficam abertos até o usuário fechar: sem temporizador
+    if (toastPersistente) return;
+    toastTimeout = setTimeout(fecharToast, duracao);
+}
+
+function pausarFechamento() {
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = null;
+}
+
+// Hover, foco ou toque seguram o toast (para dar tempo de copiar); um toque ou clique fecha,
+// exceto quando o usuário selecionou texto dentro dele
+function ligarInteracaoToast(toast) {
+    if (toast.dataset.interativo) return;
+    toast.dataset.interativo = '1';
+    toast.tabIndex = -1;
+    toast.addEventListener('mouseenter', pausarFechamento);
+    toast.addEventListener('focusin', pausarFechamento);
+    toast.addEventListener('touchstart', pausarFechamento);
+    toast.addEventListener('mouseleave', function() { agendarFechamento(toastDuracao); });
+    toast.addEventListener('focusout', function() { agendarFechamento(toastDuracao); });
+    toast.addEventListener('touchend', function() { agendarFechamento(toastDuracao); });
+    toast.addEventListener('click', function() {
+        var selecao = window.getSelection ? window.getSelection().toString() : '';
+        if (!selecao && !toastPersistente) fecharToast();
+    });
+}
+
+// Botão "Fechar" do toast de erro: focável pelo teclado, fecha o toast
+function botaoFecharToast() {
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.textContent = 'Fechar';
+    botao.style.cssText = 'margin-left:12px;padding:2px 10px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:var(--radius-sm);font:inherit;cursor:pointer;';
+    botao.addEventListener('click', fecharToast);
+    return botao;
+}
+
+// tipo 'erro': role="alert", fica aberto até o usuário fechar. Sem tipo: role="status", some sozinho
+function showToast(mensagem, cor, duracao, tipo) {
+    cor = cor || 'var(--color-primary)';
     duracao = duracao || 3500;
+    var erro = tipo === 'erro';
     var toast = document.getElementById('toast');
     if (!toast) {
         toast = document.createElement('div');
@@ -76,41 +141,76 @@ function showToast(mensagem, cor, duracao) {
         document.body.appendChild(toast);
     }
 
-    toast.textContent = mensagem;
+    toast.setAttribute('role', erro ? 'alert' : 'status');
+    if (erro) {
+        toast.removeAttribute('aria-live');
+    } else {
+        toast.setAttribute('aria-live', 'polite');
+    }
+    var texto = document.createElement('span');
+    texto.textContent = mensagem;
+    toast.replaceChildren(texto);
     toast.style.backgroundColor = cor;
+    // Lê a cor já resolvida (mesmo quando cor é variável do tema) para escolher o texto
+    toast.style.color = corTextoToast(getComputedStyle(toast).backgroundColor);
+    // Permite selecionar o texto: o código de rastreio pode precisar ser copiado à mão
+    toast.style.userSelect = 'text';
+    if (erro) {
+        toast.appendChild(botaoFecharToast());
+    }
     toast.style.display = 'block';
 
-    if (toastTimeout) {
-        clearTimeout(toastTimeout);
-    }
-
-    toastTimeout = setTimeout(function() {
-        toast.style.display = 'none';
-    }, duracao);
+    toastPersistente = erro;
+    toastDuracao = duracao;
+    ligarInteracaoToast(toast);
+    agendarFechamento(duracao);
 }
 
 // 2b. Copiar o código de rastreio: um só ouvinte para os botões do painel, da tabela e da página de atrasados
-function copiarRastreio(botao) {
-    var codigo = botao.getAttribute('data-copy');
-    var avisar = function(ok) {
-        showToast(ok ? 'Rastreio ' + codigo + ' copiado' : 'Não foi possível copiar o rastreio', ok ? '#15803d' : '#b91c1c', 2000);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(codigo).then(function() { avisar(true); }, function() { avisar(false); });
-        return;
-    }
-    // Contexto sem Clipboard API: seleciona um campo temporário e usa o comando antigo
+// Caminho antigo: textarea oculto + execCommand. Serve quando a Clipboard API falta ou recusa (http na rede local, no celular)
+function copiarPeloCampoOculto(codigo, aoCopiar, aoFalhar) {
+    // O select() tira o foco de quem usa teclado: ele volta para o mesmo lugar depois
+    var focoAnterior = document.activeElement;
     var campo = document.createElement('textarea');
     campo.value = codigo;
     campo.setAttribute('readonly', '');
     campo.style.position = 'fixed';
     campo.style.opacity = '0';
     document.body.appendChild(campo);
-    campo.select();
     var copiou = false;
-    try { copiou = document.execCommand('copy'); } catch (e) { copiou = false; }
-    document.body.removeChild(campo);
-    avisar(copiou);
+    try {
+        campo.select();
+        copiou = document.execCommand('copy');
+    } catch (e) {
+        copiou = false;
+    } finally {
+        document.body.removeChild(campo);
+        if (focoAnterior && focoAnterior.focus) focoAnterior.focus({ preventScroll: true });
+    }
+    if (copiou) {
+        aoCopiar();
+    } else {
+        aoFalhar();
+    }
+}
+
+function copiarRastreio(botao) {
+    var codigo = botao.getAttribute('data-copy');
+    var aoCopiar = function() {
+        showToast('Rastreio ' + codigo + ' copiado', 'var(--color-success)', 2000);
+    };
+    var aoFalhar = function() {
+        // Sem cópia automática: o código fica no toast para ser copiado à mão
+        showToast('Copie manualmente: ' + codigo, 'var(--color-danger)', 5000, 'erro');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(codigo).then(aoCopiar, function() {
+            // A API existe, mas recusou (contexto não seguro, permissão): tenta o caminho antigo
+            copiarPeloCampoOculto(codigo, aoCopiar, aoFalhar);
+        });
+        return;
+    }
+    copiarPeloCampoOculto(codigo, aoCopiar, aoFalhar);
 }
 
 document.addEventListener('click', function(e) {
@@ -132,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verifica retorno pós-atualização via query param
     if (window.location.search.indexOf('updated=true') !== -1) {
-        showToast('Painel atualizado com sucesso!', '#15803d');
+        showToast('Painel atualizado com sucesso!', 'var(--color-success)');
         if (window.history.replaceState) {
             var cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             window.history.replaceState({ path: cleanUrl }, '', cleanUrl);

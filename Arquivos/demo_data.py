@@ -6,6 +6,7 @@ ou dos Correios.
 """
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 # Garante que o diretório Arquivos/ esteja no PYTHONPATH (importável fora do script)
@@ -13,7 +14,9 @@ _DIR_ARQUIVOS = str(Path(__file__).resolve().parent)
 if _DIR_ARQUIVOS not in sys.path:
     sys.path.insert(0, _DIR_ARQUIVOS)
 
+from consulta_correios import formatar_evento_html  # noqa: E402
 from correios.cards import (  # noqa: E402
+    chave_selo,
     divergencia_tiny,
     esta_encerrado,
     faixa_acao,
@@ -27,6 +30,17 @@ from correios.icons import ICON_SPRITE  # noqa: E402
 
 # Obtém a raiz do projeto
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _evento_api(ev: dict) -> dict:
+    """Converte um evento da demonstração para o formato que a API dos Correios devolve."""
+    cidade, _, uf = ev["local"].partition("/")
+    return {
+        "dtHrCriado": datetime.strptime(ev["data"], "%d/%m/%Y %H:%M").isoformat(),
+        "descricao": ev["desc"],
+        "detalhe": ev["detalhe"],
+        "unidade": {"endereco": {"cidade": cidade, "uf": uf}},
+    }
 
 
 def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[str, str]:
@@ -92,27 +106,21 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "11/09/2026 10:52",
-                    "badge": '<span class="badge badge-yellow">SAIU PARA ENTREGA</span>',
                     "desc": "Objeto saiu para entrega ao destinatário",
                     "local": "CABO FRIO/RJ",
                     "detalhe": "É preciso ter alguém no endereço para receber o carteiro",
-                    "class": "status-warning",
                 },
                 {
                     "data": "10/09/2026 10:16",
-                    "badge": "",
                     "desc": "Objeto em transferência - por favor aguarde",
                     "local": "RIO DE JANEIRO/RJ",
                     "detalhe": "",
-                    "class": "",
                 },
                 {
                     "data": "09/09/2026 15:43",
-                    "badge": '<span class="badge badge-green">POSTADO</span>',
                     "desc": "Objeto postado após o horário limite",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -125,19 +133,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "10/09/2026 16:30",
-                    "badge": '<span class="badge badge-green">ENTREGUE</span>',
                     "desc": "Objeto entregue ao destinatário",
                     "local": "CURITIBA/PR",
                     "detalhe": "",
-                    "class": "",
                 },
                 {
                     "data": "09/09/2026 09:20",
-                    "badge": "",
                     "desc": "Objeto em transferência",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -150,19 +154,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "11/09/2026 08:15",
-                    "badge": "",
                     "desc": "Objeto em transferência para Centro de Distribuição",
                     "local": "BELO HORIZONTE/MG",
                     "detalhe": "",
-                    "class": "",
                 },
                 {
                     "data": "09/09/2026 14:00",
-                    "badge": '<span class="badge badge-green">POSTADO</span>',
                     "desc": "Objeto postado",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -176,19 +176,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "05/09/2026 11:00",
-                    "badge": '<span class="badge badge-yellow">ATRASO DETECTADO</span>',
                     "desc": "Objeto em transferência - trânsito lento",
                     "local": "RECIFE/PE",
                     "detalhe": "Prazo prometido de entrega expirado há 5 dias",
-                    "class": "status-warning",
                 },
                 {
                     "data": "02/09/2026 14:30",
-                    "badge": '<span class="badge badge-green">POSTADO</span>',
                     "desc": "Objeto postado",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -201,19 +197,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "10/09/2026 14:20",
-                    "badge": '<span class="badge badge-yellow">AGUARDANDO RETIRADA</span>',
                     "desc": "Objeto aguardando retirada na agência dos Correios",
                     "local": "SAO PAULO/SP",
                     "detalhe": "AC República — Prazo de permanência: 7 dias corridos",
-                    "class": "status-warning",
                 },
                 {
                     "data": "09/09/2026 17:00",
-                    "badge": "",
                     "desc": "Tentativa de entrega não efetuada - Carteiro não atendido",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -226,19 +218,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "10/09/2026 09:10",
-                    "badge": '<span class="badge badge-purple">DEVOLVIDO AO REMETENTE</span>',
                     "desc": "Objeto em devolução ao remetente",
                     "local": "RIO DE JANEIRO/RJ",
                     "detalhe": "Endereço com numeração inexistente",
-                    "class": "status-devolvido",
                 },
                 {
                     "data": "06/09/2026 11:30",
-                    "badge": '<span class="badge badge-green">POSTADO</span>',
                     "desc": "Objeto postado",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -251,11 +239,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "09/09/2026 15:40",
-                    "badge": '<span class="badge badge-green">ENTREGUE</span>',
                     "desc": "Objeto entregue ao destinatário",
                     "local": "FLORIANOPOLIS/SC",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -268,11 +254,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "11/09/2026 07:45",
-                    "badge": "",
                     "desc": "Objeto em transferência",
                     "local": "BRASILIA/DF",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -285,11 +269,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "11/09/2026 09:00",
-                    "badge": '<span class="badge badge-yellow">AGUARDANDO COLETA</span>',
                     "desc": "Etiqueta impressa pelo Tiny ERP — Aguardando despacho",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -302,11 +284,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             "eventos": [
                 {
                     "data": "11/09/2026 08:30",
-                    "badge": '<span class="badge badge-yellow">SEPARAÇÃO</span>',
                     "desc": "Pedido faturado no estoque — Aguardando expedição",
                     "local": "SAO PAULO/SP",
                     "detalhe": "",
-                    "class": "",
                 },
             ],
         },
@@ -314,20 +294,6 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 
     orders_cards = []
     for o in orders:
-        events_html = []
-        for ev in o["eventos"]:
-            detalhe_div = f'<div class="event-detail">{ev["detalhe"]}</div>' if ev["detalhe"] else ""
-            events_html.append(f"""
-                <div class="event {ev['class']}">
-                    <div class="event-header">
-                        <span class="event-date">{ev['data']}</span>
-                        {ev['badge']}
-                    </div>
-                    <div class="event-desc">{ev['desc']} - <strong>{ev['local']}</strong></div>
-                    {detalhe_div}
-                </div>
-            """)
-
         # Os status "atrasado" e "aguardando_retirada" da demonstração são derivados de "em_transito"
         categoria = "em_transito" if o["status"] in ("atrasado", "aguardando_retirada") else o["status"]
         retirada = o["status"] == "aguardando_retirada"
@@ -335,6 +301,9 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         selo, classe_selo = selo_status(
             categoria, retirada=retirada, atrasado=atrasado, dias_atraso=o.get("dias_atraso", 0)
         )
+        chave_descricao = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+        # Eventos passam pelo mesmo gerador do painel real, para a demo não divergir dele
+        events_html = [formatar_evento_html(_evento_api(ev), selo_cabecalho=selo) for ev in o["eventos"]]
 
         card = montar_card_pedido(
             numero_txt=str(o["pedido"]),
@@ -349,6 +318,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             divergencia=divergencia_tiny(categoria, o["situacao"]),
             rastreio=o["rastreio"],
             cliente=o["cliente"],
+            chave_descricao=chave_descricao,
         )
         ordem = prioridade(categoria, retirada=retirada, atrasado=atrasado)
         orders_cards.append((ordem, -o.get("dias_atraso", 0), card))
@@ -385,6 +355,10 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
+                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
+                    <div id="spinner" class="spinner"></div>
+                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
+                </button>
             </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
@@ -465,13 +439,6 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         <main class="orders-list" id="conteudo" tabindex="-1">
             {''.join(orders_cards)}
         </main>
-    </div>
-
-    <div class="floating-actions">
-        <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
-            <div id="spinner" class="spinner"></div>
-            <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
-        </button>
     </div>
 
     <script src="web/js/app.js?v={versao_cache}"></script>

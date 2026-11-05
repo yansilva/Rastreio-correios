@@ -82,21 +82,26 @@ def prioridade(categoria: str, *, retirada: bool = False, atrasado: bool = False
     return PRIORIDADE_STATUS.get(categoria, PRIORIDADE_STATUS["nao_enviado"])
 
 
+# Texto e classe de badge de cada chave de chave_selo. O texto de atraso ganha os dias em selo_status.
+ROTULO_SELO = {
+    "devolvido": ("Devolvido", "badge-purple"),
+    "entregue": ("Entregue", "badge-green"),
+    "aguardando_retirada": ("Aguardando retirada", "badge-yellow"),
+    "atrasado": ("Atrasado", "badge-red"),
+    "em_transito": ("Em trânsito", "badge-blue"),
+    "nao_enviado": ("Não enviado", "badge-yellow"),
+}
+
+
 def selo_status(
     categoria: str, *, retirada: bool = False, atrasado: bool = False, dias_atraso: int = 0
 ) -> tuple[str, str]:
     """Texto e classe de badge do status atual do pedido, para o cabeçalho do cartão."""
-    if categoria == "devolvido":
-        return "Devolvido", "badge-purple"
-    if categoria == "entregue":
-        return "Entregue", "badge-green"
-    if retirada:
-        return "Aguardando retirada", "badge-yellow"
-    if atrasado:
-        return f"Atrasado · {dias_atraso} dias", "badge-red"
-    if categoria == "em_transito":
-        return "Em trânsito", "badge-blue"
-    return "Não enviado", "badge-yellow"
+    chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+    texto, classe = ROTULO_SELO[chave]
+    if chave == "atrasado":
+        texto = f"{texto} · {dias_atraso} dias"
+    return texto, classe
 
 
 def chave_selo(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> str:
@@ -207,21 +212,21 @@ def montar_card_pedido(
     if oculto:
         classe += " order-hidden"
     idade_html = f'<span class="order-age">{escape(idade)}</span>' if idade else ""
-    # Explicação do selo: title para o mouse e aria-describedby (texto escondido do bloco da página).
-    # Fica fora do texto do selo, porque o painel copia o texto do selo para a tabela e para a busca.
-    descricao_selo_attr = (
-        f' title="{escape(DESCRICAO_STATUS[chave_descricao], quote=True)}" aria-describedby="desc-status-{chave_descricao}"'
-        if chave_descricao
-        else ""
+    # Explicação do selo: um sr-only logo depois do selo, para o leitor de tela (span sem foco não anuncia
+    # aria-describedby). Sem title no .badge, para não ser lido duas vezes. Fica fora do .badge, porque a
+    # coluna Status da tabela copia só o texto do .badge. A busca usa textoDeBusca (dashboard.js), que ignora
+    # o .sr-only, então a descrição não entra nela.
+    descricao_selo_sr = (
+        f'<span class="sr-only">: {escape(DESCRICAO_STATUS[chave_descricao])}</span>' if chave_descricao else ""
     )
     divergencia_html = (
-        f'<span class="badge badge-yellow" title="{escape(divergencia, quote=True)}">Tiny desatualizado</span>'
+        f'<span class="badge badge-yellow badge-divergencia" title="{escape(divergencia, quote=True)}">Tiny desatualizado</span>'
         if divergencia
         else ""
     )
     copiar_html = (
         f'<button type="button" class="btn-copy" data-copy="{escape(rastreio, quote=True)}" '
-        f'aria-label="Copiar código de rastreio {escape(rastreio, quote=True)}">Copiar rastreio</button>'
+        f'aria-label="Copiar rastreio {escape(rastreio, quote=True)}">Copiar rastreio</button>'
         if rastreio
         else ""
     )
@@ -257,7 +262,7 @@ def montar_card_pedido(
                 <div class="order-header">
                     <h2 class="order-title">{titulo_html}</h2>
                     <div class="order-meta">
-                        <span class="badge {classe_selo}"{descricao_selo_attr}>{escape(selo)}</span>
+                        <span class="badge {classe_selo}">{escape(selo)}</span>{descricao_selo_sr}
                         {divergencia_html}
                         {idade_html}
                         <span class="order-tiny-status">Situação no Tiny: {escape(situacao_tiny or "—")}</span>

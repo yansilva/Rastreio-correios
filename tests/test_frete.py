@@ -743,6 +743,42 @@ class TestFreteReportGenerator(unittest.TestCase):
         self.assertNotIn("2.25rem", regra.group(1))
         self.assertNotIn("3rem", html)
 
+    def test_celular_360px_servicos_em_duas_colunas(self):
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        self.assertIn("@media (min-width: 360px) and (max-width: 640px)", html)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", html)
+        # Abaixo de 360px volta para uma coluna, num bloco posterior ao de 2 colunas (vence na cascata)
+        bloco_1col = html.index("@media (max-width: 359px)")
+        self.assertIn("grid-template-columns: 1fr;", html[bloco_1col:bloco_1col + 120])
+        self.assertGreater(bloco_1col, html.index("@media (min-width: 360px) and (max-width: 640px)"))
+
+    def _gerar_com_menores(self, precos):
+        """HTML com um pedido por preço mínimo informado (numeração 1001, 1002...)."""
+        generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))
+        pedidos = [{
+            "numero": str(1001 + i), "situacao": "Aberto", "nome_cliente": "Teste", "valor": 150.0,
+            "cep_destino": "01001000", "destino_label": "São Paulo/SP",
+            "servicos": {"03220": self._servico(preco, 2), "03158": {"disponivel": False}, "03140": {"disponivel": False}},
+        } for i, preco in enumerate(precos)]
+        with patch("builtins.open", unittest.mock.mock_open()) as mock_file:
+            generator.gerar_html(pedidos)
+            return "".join(c.args[0] for c in mock_file().write.call_args_list if c.args)
+
+    def test_menor_frete_do_lote_aponta_para_o_pedido(self):
+        html = self._gerar_com_menores([30.0, 11.94, 25.0])
+        # Número do pedido dentro do link (nome acessível) e cartão focável para receber o foco
+        self.assertIn('<a class="summary-link" id="sumMenorLink" href="#pedido-1002">Menor frete do lote'
+                      '<span id="sumMenorPedido"> · Pedido #1002</span></a>', html)
+        self.assertIn('id="pedido-1002" tabindex="-1" data-pedido="1002"', html)
+        self.assertIn("alvo.focus({ preventScroll: true })", html)
+        self.assertIn('id="sumMenor">R$ 11,94<', html)
+
+    def test_menor_frete_empatado_cita_todos_os_pedidos(self):
+        html = self._gerar_com_menores([11.94, 30.0, 11.94])
+        # Âncora vai para o primeiro empatado; o rótulo cita os demais
+        self.assertIn('href="#pedido-1001"', html)
+        self.assertIn('<span id="sumMenorPedido"> · Pedidos #1001 e #1003</span>', html)
+
 
 # ============== TESTES DE COMPATIBILIDADE ==============
 

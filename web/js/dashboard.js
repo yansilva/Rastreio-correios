@@ -101,6 +101,8 @@ function definirVisao(modo) {
     listaPedidos.hidden = modo === 'tabela';
     // Na tabela a ordem vem dos cabeçalhos: o select "Ordenar por" some para não haver dois controles de ordem
     document.body.classList.toggle('view-tabela', modo === 'tabela');
+    // Na compacta o histórico fica escondido (CSS): o controle "Expandir históricos" também some ali
+    document.body.classList.toggle('view-compacta', modo === 'compacta');
     var envoltorio = document.getElementById('ordersTableWrap');
     if (modo === 'tabela') {
         if (!envoltorio) {
@@ -265,10 +267,12 @@ function atualizarTabela() {
         if (l.rastreio) {
             var copiar = botaoDeLinha('Copiar rastreio', null);
             copiar.setAttribute('data-copy', l.rastreio);
-            copiar.setAttribute('aria-label', 'Copiar código de rastreio ' + l.rastreio);
+            // O nome acessível começa com o texto visível (WCAG 2.5.3, Label in Name)
+            copiar.setAttribute('aria-label', 'Copiar rastreio ' + l.rastreio);
             tdAcoes.appendChild(copiar);
         }
         var ver = botaoDeLinha('Ver cartão', function() { verCartao(l.card); });
+        ver.classList.add('btn-ver-cartao');
         if (!isNaN(l.pedido)) ver.setAttribute('aria-label', 'Ver cartão do pedido #' + l.pedido);
         tdAcoes.appendChild(ver);
         tr.appendChild(tdAcoes);
@@ -283,6 +287,16 @@ function marcarPressionado(elemento, ativo) {
     elemento.setAttribute('aria-pressed', ativo ? 'true' : 'false');
 }
 
+// Texto que a busca enxerga: como textContent, mas sem os .sr-only (descrição do selo para leitor de tela).
+// Sem isso, buscar "trânsito" acharia cartões só pela descrição que nenhum operador vê.
+function textoDeBusca(no) {
+    if (no.nodeType === Node.TEXT_NODE) return no.nodeValue;
+    if (no.nodeType !== Node.ELEMENT_NODE || no.classList.contains('sr-only')) return '';
+    var texto = '';
+    for (var i = 0; i < no.childNodes.length; i++) texto += textoDeBusca(no.childNodes[i]);
+    return texto;
+}
+
 function applyFilters() {
     var cards = document.querySelectorAll('.order-card');
     var term = currentSearchTerm.toLowerCase().trim();
@@ -290,7 +304,7 @@ function applyFilters() {
 
     cards.forEach(function(card) {
         var cardStatus = card.getAttribute('data-status') || '';
-        var cardText = card.textContent.toLowerCase();
+        var cardText = textoDeBusca(card).toLowerCase();
 
         // Condição 1: Filtro de status
         // data-status aceita várias categorias separadas por espaço (ex.: "em_transito atrasado")

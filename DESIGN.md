@@ -173,7 +173,7 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 - **Borda do selo "Mais barato"** (#bfdbfe, `--color-badge-border`): borda do selo de frete em `Arquivos/frete/report.py`, que define a variável no CSS embutido do relatório. Não está na tabela de tokens acima; no escuro vira `rgba(147, 197, 253, 0.35)`; fica registrada aqui como exceção de página, e poderia virar token do sistema se o selo for reutilizado.
 
 **Exceções do detector** (registradas em `.impeccable/config.json`, só para o arquivo indicado; o CSS não muda):
-- `side-tab` em `web/css/components.css`: a borda esquerda de 3px usa a cor neutra `--color-border` como trilho da timeline. Não é acento colorido, então o alerta é falso positivo.
+- `side-tab` em `web/css/components.css`: a borda esquerda de 3px (`border-left: 3px solid var(--color-border)`) usa a cor neutra `--color-border` como trilho da timeline. Não é acento colorido, então o alerta é falso positivo. O detector não extrai valor de `side-tab`, então a exceção é um curinga restrito ao arquivo (`hooks ignore-value side-tab "*" --file web/css/components.css`); a exceção antiga, por valor, nunca casava.
 - `design-system-font` em `web/css/components.css`: `Sfmono-Regular` é o fallback monoespaçado da pilha de DESIGN.md (SFMono). Não é família nova.
 
 ### Named Rules
@@ -213,13 +213,13 @@ Rampa de seis tamanhos (0.75, 0.8125, 0.875, 1, 1.25 e 1.75rem); todo `font-size
 
 ## Layout
 
-Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. No celular (até 640px) o título ocupa a linha de cima, com 44px de altura para deixar o botão de tema acima da meta, e a meta fica numa linha só, a 12px, sem a palavra "de" (ela fica em `.meta-longo`): "Dados 04/11 15:24 (há 13 min) · próxima em 35 min". A navegação de abas sai do `<header>` e, no celular, fica fixa no topo (ver Navigation). A idade dos dados ("há N min") fica sempre visível. Abaixo de 640px a contagem mostra só os minutos e o horário "(às HH:MM)" fica na versão completa, que o desktop mostra. A meta usa duas versões do mesmo texto, `.meta-longo`/`.meta-curto` e `.contagem-completa`/`.contagem-curta`, escolhidas por CSS. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile (até 640px), uma faixa de 4 colunas com o número acima de um rótulo curto em 0.75rem (`.dashboard` e `.summary`), sem ícone e com 2px de respiro lateral. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
+Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. No desktop (≥641px), "Consultar Tiny e Correios" e o tema ficam em `.header-tools`; entre 641 e 1099px essas ferramentas sobem para uma linha acima do título. No celular (até 640px) o título ocupa a linha de cima, com 44px de altura para deixar o botão de tema acima da meta, e a meta fica numa linha só, a 12px, sem a palavra "de" (ela fica em `.meta-longo`): "Dados 04/11 15:24 (há 13 min) · próxima em 35 min". A navegação de abas sai do `<header>` e, no celular, fica fixa no topo (ver Navigation). A idade dos dados ("há N min") fica sempre visível. Abaixo de 640px a contagem mostra só os minutos e o horário "(às HH:MM)" fica na versão completa, que o desktop mostra. A meta usa duas versões do mesmo texto, `.meta-longo`/`.meta-curto` e `.contagem-completa`/`.contagem-curta`, escolhidas por CSS. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile (até 640px), uma faixa de 4 colunas com o número acima de um rótulo curto em 0.75rem (`.dashboard` e `.summary`), sem ícone e com 2px de respiro lateral. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
 
 A faixa de pílulas nunca quebra linha: rola horizontalmente quando não cabe, em qualquer largura. Em telas estreitas a barra de filtros vira coluna.
 
 Espaçamento observado: 8, 10, 14, 16, 18, 20 e 28–32px entre blocos. No celular, o bloco do cabeçalho (navegação de abas), os cartões de resumo e a busca usam 14px, 16px e 20px, para que o primeiro pedido apareça logo. Não há escala formal de espaçamento no código.
 
-Botão de sincronização é flutuante no canto inferior direito, com 24px de margem (16px no mobile).
+Botão de consulta (Consultar Tiny e Correios): no desktop (≥641px) fica no cabeçalho, em `.header-tools`, ao lado do tema. No celular (até 640px) é um círculo flutuante de 52px no canto inferior direito, com 16px de margem (ver Components).
 
 ## Elevation & Depth
 
@@ -246,7 +246,7 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Buttons
 - **Shape:** pílula (9999px).
-- **Primary (`.btn-action`):** fundo Correio Azul, texto branco, 12px × 22px, peso 700, sombra grande. Flutuante no canto inferior direito.
+- **Primary (`.btn-action`):** fundo Correio Azul, texto branco, 12px × 22px, peso 700, sombra grande. No desktop fica no cabeçalho; no celular vira círculo flutuante de 52px no canto inferior direito (ver Ferramentas do cabeçalho).
 - **Hover / Focus:** hover escurece para Azul Pressionado, sobe 2px e aumenta a sombra. Foco visível com contorno de 2px em azul e deslocamento de 3px.
 - **Disabled:** fundo Tinta Sutil, sem sombra e sem movimento.
 - **Secondary (`.btn-theme`):** fundo branco, borda fina, texto principal. Hover troca a borda para azul.
@@ -258,18 +258,25 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ### Cards / Containers
 - **Summary card (`.dash-card`, `.summary-card`):** cantos de 16px, fundo branco, borda fina, 18px × 20px. Hover sobe 2px. Estado ativo usa contorno azul de 2px e fundo Azul Névoa. Os quatro cartões (não enviados, em trânsito, entregues, devolvidos) são exclusivos e somam o total de pedidos. O que pede ação fica fora deles, na faixa "Precisam de ação" (`.action-strip`), com botões `.action-chip` para atrasados e aguardando retirada; esses são subconjuntos de "em trânsito" e por isso não entram na soma.
-- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com o título à esquerda e, à direita, o selo do status atual (`.badge`), há quanto tempo foi o último evento e o status do Tiny. Só o último evento fica visível; o restante abre em `<details class="order-history">` ("Ver histórico completo"). A lista é ordenada por urgência: aguardando retirada, atrasados (mais antigos antes), em trânsito, não enviados, devolvidos e entregues. Casos encerrados (entregues e devolvidos sem pendência) ganham `.order-closed`: título em tom discreto, cabeçalho sem fundo e sem tinta no evento, e ficam no fim. Quando a situação do Tiny contradiz os Correios (por exemplo, entregue nos Correios e "Enviado" no Tiny), o cabeçalho mostra o selo amarelo "Tiny desatualizado", com a explicação na dica. "Atrasado" conta só pedidos ainda a caminho; devolvidos têm status próprio.
-- **Event timeline:** linha vertical de 3px em Borda Fina, bolinha de 12px no início de cada evento. Eventos críticos ganham a cor do status na barra e na bolinha, com fundo levemente tingido.
+- **Order card (`.order-card`):** cantos de 12px, borda fina, sombra média. Cabeçalho em Cinza Cabeçalho com o título à esquerda e, à direita, o selo do status atual (`.badge`), há quanto tempo foi o último evento e o status do Tiny. Só o último evento fica visível; o restante abre em `<details class="order-history">` ("Ver histórico completo"). A lista é ordenada por urgência: aguardando retirada, atrasados (mais antigos antes), em trânsito, não enviados, devolvidos e entregues. Casos encerrados (entregues e devolvidos sem pendência) ganham `.order-closed`: título em tom discreto, cabeçalho sem fundo e sem tinta no evento, e ficam no fim. Quando a situação do Tiny contradiz os Correios (por exemplo, entregue nos Correios e "Enviado" no Tiny), o cabeçalho mostra o selo amarelo "Tiny desatualizado" (classe `badge-divergencia`), com a explicação na dica. No celular esse selo ocupa a segunda linha do cabeçalho. "Atrasado" conta só pedidos ainda a caminho; devolvidos têm status próprio.
+- **Event timeline:** linha vertical de 3px em Borda Fina, bolinha de 12px no início de cada evento. Eventos críticos ganham a cor do status na barra e na bolinha, com fundo levemente tingido. O selo do evento segue o mesmo mapa de cor: POSTADO é azul (`badge-blue`), nunca verde, porque verde é só "entregue". O selo do evento é omitido quando repete o texto do selo do cabeçalho (por exemplo, "Aguardando retirada" aparece uma vez só no cartão).
 
 ### Inputs / Fields
 - **Search (`.search-input`):** cantos de 16px, borda fina, fundo branco, padding vertical de 14px, ícone de lupa à esquerda em Tinta Sutil. Fica dentro de `.search-row`, ao lado do contador de pedidos.
 - **Focus:** borda azul e anel de 3px a 12% de azul.
-- **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. Os cartões de serviço têm no máximo 280px, alinhados à esquerda.
+- **Busca do frete:** a página de opções de frete usa o mesmo campo, na primeira linha da barra de filtros, acima dos filtros de valor. Busca por pedido, cliente, cidade e CEP (com ou sem hífen), sem acento; `/` foca e Esc limpa. Os cartões de serviço têm no máximo 280px, alinhados à esquerda. No celular, entre 360 e 640px, os serviços ficam em 2 colunas (abaixo de 360px, em coluna única). "Menor frete do lote" é link para o cartão do pedido de origem: a página rola até ele e o foco vai junto.
 - **Placeholder:** Tinta Sutil. Contraste de placeholder abaixo do recomendado; aceitável apenas por ser texto de apoio.
 
 ### Badges
-- **Style:** texto em caixa-alta, peso 700, 0.7rem, cantos de 99px.
-- **Variants:** vermelho, âmbar, verde e roxo, cada um com fundo tingido, texto da cor e borda da mesma família.
+- **Style:** texto em caixa-alta, peso 700, 0.75rem, cantos de 99px. `white-space: nowrap`: o selo nunca quebra por dentro; se não couber na linha do cabeçalho, desce inteiro (`.order-meta` tem `flex-wrap: wrap`).
+- **Variants:** vermelho, âmbar, verde, roxo e azul (`badge-blue`, usado em "Em trânsito" e "POSTADO"), cada um com fundo tingido, texto da cor e borda da mesma família.
+- **Descrição do status:** no cartão, a explicação do selo fica num `<span class="sr-only">` logo depois dele (texto ": descrição"). O selo não tem `title` nem `aria-describedby`. A busca e a cópia do Status para a tabela usam só o texto visível do selo.
+
+### Toasts
+- **Cores:** pelos tokens do tema: `--color-success` (cópia e atualização), `--color-danger` (erro e "Copie manualmente"), `--color-warning` (cooldown) e `--color-primary` por padrão. O texto usa `--console-bg` ou `--console-text`, o que tiver mais contraste sobre o fundo. Pendência: `web/js/dashboard.js` (aviso de motivo da tabela) ainda usa `#b45309` fixo.
+- **Sucesso:** `role="status"` e `aria-live="polite"`. A confirmação de cópia some em 2 s; os demais sucessos, em 3,5 s.
+- **Erro:** `role="alert"`. Fica aberto até o botão "Fechar" (focável), sem temporizador. Quando a cópia falha nos dois caminhos (Clipboard API e campo oculto), o toast mostra "Copie manualmente: CÓDIGO" com o texto selecionável.
+- Foco, hover ou toque seguram o toast; um clique o fecha, exceto quando há texto selecionado.
 
 ### Console (SSE)
 - **Style:** fundo Tinta Principal (#0f172a), cabeçalho em #1e293b, texto claro em monoespaçada de 0.84rem.
@@ -281,10 +288,16 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Theme button:** mostra o ícone do tema de destino (sol no escuro, lua no claro).
 
 ### Ferramentas do cabeçalho e da lista
-- **Tema:** o botão fica no topo da página (.header-tools), à direita no desktop e acima do título no celular.
-- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, à direita, junto de "Opções". Essa linha é uma só em 1280, 1040 e 375px: à esquerda fica o "Limpar filtros" (aparece só com filtro ativo, mas reserva o espaço) e não há título de lista; o contador segue ao lado da busca. No celular os rótulos da Visão ficam um degrau menores e o "Limpar filtros" pode quebrar em duas linhas. O botão ativo usa `aria-pressed` e fica em estado "pressionado" neutro: fundo Cinza Cabeçalho (`--color-surface-hover`), texto Tinta Principal e contorno interno de 1px em `--color-border-strong`, sem azul (o azul de decisão fica no filtro ativo e no botão flutuante). No celular a Tabela fica desativada, pois não cabe na tela. "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
+- **Tema:** o botão fica no topo da página (`.header-tools`), à direita no desktop; no celular vira só o ícone de 44px, no canto superior direito, ao lado do título.
+- **Visão:** controle segmentado (Cartões, Compacta, Tabela) na linha da lista, à direita, junto de "Opções". Essa linha é uma só em 1280, 1040 e 375px: à esquerda fica o "Limpar filtros" (aparece só com filtro ativo, mas reserva o espaço) e não há título de lista; o contador segue ao lado da busca. No celular os rótulos da Visão ficam um degrau menores e o "Limpar filtros" pode quebrar em duas linhas. O botão ativo usa `aria-pressed` e fica em estado "pressionado" neutro: fundo Cinza Cabeçalho (`--color-surface-hover`), texto Tinta Principal e contorno interno de 1px em `--color-border-strong`, sem azul (o azul de decisão fica no filtro ativo e no botão flutuante). No celular a Tabela fica desativada, com contorno tracejado (sem o anel de "pressionado"), pois não cabe na tela. "Expandir históricos" só aparece com a visão Cartões, em qualquer largura (na Compacta e na Tabela ele fica oculto). "Opções" guarda o seletor de ordem (urgência, último evento mais recente ou mais antigo, número do pedido), o "Recarregar dados salvos" e "Expandir históricos", em grade de rótulo e controle.
 - **Atalhos:** a tecla `/` foca a busca e Esc limpa o texto. A legenda "O que significam os status?" também fica em Opções, no topo do menu, para deixar a lista logo abaixo da busca. "Recarregar dados salvos de HH:MM" (em Opções) reconstrói o relatório com os últimos dados já consultados, sem chamar o Tiny nem os Correios; o cabeçalho mostra "Dados consultados em" para deixar claro de quando são os dados.
-- **Consultar Tiny e Correios:** único botão flutuante (consulta as APIs); no celular vira um círculo de 52px só com o ícone, com `aria-label`.
+- **Consultar Tiny e Correios:** consulta as APIs. No desktop (≥641px) fica em `.header-tools`, ao lado do tema; entre 641 e 1099px sobe para a linha acima do título. No celular (até 640px) vira um círculo flutuante de 52px no canto inferior direito, só com o ícone e com `aria-label`.
+
+### Tabela (visão Tabela)
+- **Desktop, de 641 a 1023px:** a tabela rola na horizontal dentro do próprio contêiner (`.orders-table-wrap`, `overflow-x: auto`). O cabeçalho não fica fixo.
+- **A partir de 1024px:** larguras fixas por coluna (`table-layout: fixed`) e cabeçalho fixo ao rolar a lista. O contêiner não rola na horizontal.
+- **Ações:** "Copiar rastreio" é o botão principal da célula, e "Ver cartão" aparece como link (`.btn-ver-cartao`) logo abaixo dele, em qualquer largura de desktop.
+- **Celular:** a visão Tabela fica desativada (ver Controles da lista).
 
 ### Navigation (`.nav-tabs`)
 - **Style:** pílulas com borda fina. Aba atual com estado neutro de "selecionado": superfície mais forte (`--color-surface-hover`), texto principal e sublinhado azul de 2px (`--color-link`) na base. Sem sombra nem brilho; o azul sólido fica reservado ao filtro ativo e ao botão flutuante.
@@ -295,8 +308,9 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Desktop:** busca e contador na primeira linha; pílulas de status na segunda; Limpar, visão (Cartões/Compacta/Tabela) e Opções na terceira. Alvos de 40px.
 - **Celular (até 640px):** o painel vira uma grade de uma linha só. A busca fica fechada como ícone de 44px, com o contador "N pedidos" ao lado, e a visão (segmentada, 44px) e "Opções" à direita. Ao focar ou ao ter texto, a busca ocupa a linha e visão e Opções saem dela; "Limpar filtros" aparece no lugar. Opções abre como popover sobre a lista, com o seletor de ordem em 44px e 16px (o iOS não amplia a página ao focar).
 - **Pílulas:** 44px de altura e 8px de espaço entre elas, em faixa com rolagem horizontal.
+- **Faixa de ação (`.action-strip`) no celular:** chips compactos, cada um do tamanho do próprio texto (`flex: 0 1 auto`, `nowrap`). O chip zerado encolhe, e "Aguardando retirada" não quebra em duas linhas.
 - **Placeholder:** "Pedido, cliente ou rastreio" no celular (`data-placeholder-curto`, aplicado em `web/js/dashboard.js` por `matchMedia`); no desktop, "Pedido, cliente, rastreio ou cidade" (`data-placeholder-longo`).
-- **Primeiro pedido:** medido sem filtros: 360px y=417, 375px y=417, 412px y=379 (meta de ≤420 em 360 e 375px).
+- **Primeiro pedido:** medido sem filtros: 360px y=417, 375px y≈419, 412px y=379 (meta de ≤420 em 360 e 375px). A medição de 375px é da 12ª rodada (lote L7); não foi refeita na documentação.
 - **Limitação conhecida:** no celular, "Limpar filtros" só aparece com a busca aberta. Com só um filtro de status ativo, a volta é pela pílula "Todos".
 
 ## Do's and Don'ts
@@ -317,4 +331,4 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 
 ## Dark Mode
 
-O modo escuro redefine apenas as superfícies e o texto: fundo `#0b0f19`, cartões `#151c2c`, cabeçalhos `#192237`, borda `#26334d`, texto principal `#f8fafc`, texto discreto `#b6c2d2`. As cores de status usam fundos translúcidos (15% de opacidade) e textos mais claros para manter 4.5:1 sobre as superfícies escuras: verde `#4ade80`, âmbar `#fbbf24`, vermelho `#f87171` e laranja `#fb923c`. Console e toast ficam escuros nos dois temas, com tokens próprios (`--console-*`, `--log-*`). Azul Névoa vira `#1e293b`.
+O modo escuro redefine apenas as superfícies e o texto: fundo `#0b0f19`, cartões `#151c2c`, cabeçalhos `#192237`, borda `#26334d`, texto principal `#f8fafc`, texto discreto `#b6c2d2`. As cores de status usam fundos translúcidos (15% de opacidade) e textos mais claros para manter 4.5:1 sobre as superfícies escuras: verde `#4ade80`, âmbar `#fbbf24`, vermelho `#f87171` e laranja `#fb923c`. Console fica escuro nos dois temas, com tokens próprios (`--console-*`, `--log-*`). O fundo do toast segue a cor de estado do tema (ver Toasts); só o texto usa `--console-*`. Azul Névoa vira `#1e293b`.

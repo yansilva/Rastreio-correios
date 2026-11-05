@@ -49,6 +49,13 @@ def _fmt_brl(valor: float) -> str:
     return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
 
+def _rotulo_pedidos(numeros: list[str]) -> str:
+    """'Pedido #1' ou 'Pedidos #1, #2 e #3' (mesma regra do JS de filtro)."""
+    if len(numeros) == 1:
+        return f"Pedido #{numeros[0]}"
+    return "Pedidos " + ", ".join(f"#{n}" for n in numeros[:-1]) + f" e #{numeros[-1]}"
+
+
 def _linha_indisponiveis(indisponiveis: list[tuple[str, str]], todos: bool) -> str:
     """Frase única (já escapada) sobre os serviços indisponíveis de um pedido.
 
@@ -124,6 +131,7 @@ class FreteReportGenerator:
         )
 
         total_menores: list[float] = []
+        minimos_pedidos: list[tuple[float, str]] = []  # (menor preço do pedido, número do pedido)
         total_longos = 0
         pedidos_com_prazo_longo = []
 
@@ -202,7 +210,7 @@ class FreteReportGenerator:
             badge_html = f'<span class="pedido-badge">{situacao}</span>' if situacao != situacao_comum else ""
 
             cards_html += f"""
-        <div class="pedido-card" data-pedido="{pedido['numero']}" data-busca="{texto_busca}" data-valor="{valor_float}" data-menor="{menor_attr}" data-longo="{1 if prazo_longo else 0}">
+        <div class="pedido-card" id="pedido-{html.escape(str(pedido['numero']), quote=True)}" tabindex="-1" data-pedido="{pedido['numero']}" data-busca="{texto_busca}" data-valor="{valor_float}" data-menor="{menor_attr}" data-longo="{1 if prazo_longo else 0}">
             <div class="pedido-header">
                 <div class="pedido-left">
                     <span class="pedido-linha"><span class="pedido-numero">Pedido #{pedido['numero']}</span> <span class="pedido-valor">{valor_fmt}</span></span>
@@ -216,6 +224,8 @@ class FreteReportGenerator:
             {grid_html}{nota_html}
         </div>"""
             total_menores.extend(precos_pedido)
+            if precos_pedido:
+                minimos_pedidos.append((min(precos_pedido), str(pedido['numero'])))
             total_longos += 1 if prazo_longo else 0
 
         # Estado vazio
@@ -226,6 +236,21 @@ class FreteReportGenerator:
             <h2>Nenhum pedido em aberto</h2>
             <p>Todos os pedidos do período já foram enviados ou não possuem CEP de destino.</p>
         </div>"""
+
+        # Menor frete do lote: link para o pedido de origem (no empate, o primeiro é o destino e os demais são citados)
+        if minimos_pedidos:
+            menor_valor = min(v for v, _ in minimos_pedidos)
+            numeros_menor = [n for v, n in minimos_pedidos if v == menor_valor]
+            ancora_menor = f' href="#pedido-{html.escape(numeros_menor[0], quote=True)}"'
+            pedido_menor_txt = html.escape(f" · {_rotulo_pedidos(numeros_menor)}")
+        else:
+            ancora_menor = ""
+            pedido_menor_txt = ""
+        # O número do pedido fica dentro do link: o nome acessível diz de qual pedido é
+        rotulo_menor_html = (
+            f'<a class="summary-link" id="sumMenorLink"{ancora_menor}>Menor frete do lote'
+            f'<span id="sumMenorPedido">{pedido_menor_txt}</span></a>'
+        )
 
         html_page = f"""<!DOCTYPE html>
 <html lang="pt-br">
@@ -554,6 +579,9 @@ class FreteReportGenerator:
         .num-blue {{ color: var(--color-primary); }}
         [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
         .num-neutral {{ color: var(--color-text-main); }}
+        .summary-link {{ color: inherit; text-decoration: underline; text-decoration-color: var(--color-border-strong); text-underline-offset: 3px; }}
+        .summary-link:hover {{ color: var(--color-link); }}
+        .summary-link:focus-visible {{ outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: 4px; }}
 
         /* Pedido Cards */
         .pedido-card {{
@@ -564,7 +592,11 @@ class FreteReportGenerator:
             overflow: hidden;
             box-shadow: var(--shadow-md);
             animation: fadeIn 0.4s ease forwards;
+            scroll-margin-top: 16px; /* destino do link "Menor frete do lote" não fica sob a navegação */
         }}
+        /* Cartão alvo do link "Menor frete do lote": destaque visível */
+        .pedido-card:target {{ box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-md); }}
+        .pedido-card:focus-visible {{ outline: 2px solid var(--color-primary); outline-offset: 3px; }}
         .pedido-header {{
             padding: 16px 24px;
             background: var(--color-header-bg);
@@ -738,12 +770,21 @@ class FreteReportGenerator:
             .filter-bar .search-wrapper {{ grid-column: 1 / -1; }}
             .filter-count, .filter-aviso {{ grid-column: 1 / -1; margin-left: 0; text-align: center; }}
             .filter-count:empty {{ display: none; }}
-            .pedido-card {{ margin-bottom: 14px; }}
+            .pedido-card {{ margin-bottom: 14px; scroll-margin-top: 72px; }}
             .pedido-header {{ flex-direction: column; align-items: flex-start; padding: 12px 16px; gap: 6px; }}
             .pedido-right {{ align-items: flex-start; }}
-            .servicos-grid {{ grid-template-columns: 1fr; padding: 12px 16px; gap: 8px; }}
+            .servicos-grid {{ padding: 12px 16px; gap: 8px; }}
             .servico-card {{ padding: 12px; }}
             .servico-nome {{ margin-bottom: 4px; }}
+        }}
+        /* Celular a partir de 360px: serviços lado a lado (2 colunas); abaixo disso, uma coluna */
+        @media (min-width: 360px) and (max-width: 640px) {{
+            .servicos-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+            .servico-card {{ min-width: 0; }}
+        }}
+        /* Abaixo de 360px: uma coluna */
+        @media (max-width: 359px) {{
+            .servicos-grid {{ grid-template-columns: 1fr; }}
         }}
     </style>
 </head>
@@ -774,7 +815,7 @@ class FreteReportGenerator:
             </div>
             <div class="summary-card">
                 <div class="summary-number num-neutral" id="sumMenor">{_fmt_brl(min(total_menores)) if total_menores else "—"}</div>
-                <div class="summary-label">Menor frete do lote</div>
+                <div class="summary-label">{rotulo_menor_html}</div>
             </div>
             <div class="summary-card" id="sumLongoCard"{"" if total_longos else " hidden"}>
                 <div class="summary-number num-neutral" id="sumLongo">{total_longos}</div>
@@ -835,6 +876,10 @@ class FreteReportGenerator:
         }})();
 
         // Lógica de Filtro: busca de texto e intervalo de valor, combinados
+        function rotuloPedidos(numeros) {{
+            if (numeros.length === 1) {{ return 'Pedido #' + numeros[0]; }}
+            return 'Pedidos #' + numeros.slice(0, -1).join(', #') + ' e #' + numeros[numeros.length - 1];
+        }}
         function normalizarTexto(texto) {{
             return texto.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
         }}
@@ -851,6 +896,7 @@ class FreteReportGenerator:
             const invertido = minVal > maxVal;
             let visiveis = 0;
             let menor = null;
+            let numerosMenor = [];
             let longos = 0;
 
             cards.forEach(card => {{
@@ -861,7 +907,10 @@ class FreteReportGenerator:
                     card.style.display = '';
                     visiveis++;
                     const m = parseFloat(card.getAttribute('data-menor'));
-                    if (!isNaN(m) && (menor === null || m < menor)) {{ menor = m; }}
+                    if (!isNaN(m)) {{
+                        if (menor === null || m < menor) {{ menor = m; numerosMenor = [card.getAttribute('data-pedido')]; }}
+                        else if (m === menor) {{ numerosMenor.push(card.getAttribute('data-pedido')); }}
+                    }}
                     if (card.getAttribute('data-longo') === '1') {{ longos++; }}
                 }} else {{
                     card.style.display = 'none';
@@ -872,6 +921,17 @@ class FreteReportGenerator:
             document.getElementById('sumMostrados').textContent = visiveis;
             document.getElementById('sumMenor').textContent = menor === null ? '—'
                 : menor.toLocaleString('pt-BR', {{ style: 'currency', currency: 'BRL' }}).replace(/\\s/g, ' ');
+            const linkMenor = document.getElementById('sumMenorLink');
+            const pedidoMenor = document.getElementById('sumMenorPedido');
+            if (linkMenor && pedidoMenor) {{
+                if (numerosMenor.length) {{
+                    linkMenor.setAttribute('href', '#pedido-' + numerosMenor[0]);
+                    pedidoMenor.textContent = ' · ' + rotuloPedidos(numerosMenor);
+                }} else {{
+                    linkMenor.removeAttribute('href');
+                    pedidoMenor.textContent = '';
+                }}
+            }}
             document.getElementById('sumLongo').textContent = longos;
             const cardLongo = document.getElementById('sumLongoCard');
             if (cardLongo) {{ cardLongo.hidden = longos === 0; }}
@@ -901,6 +961,13 @@ class FreteReportGenerator:
             aplicarFiltros();
             document.getElementById('valMin').focus();
         }}
+
+        // Link "Menor frete do lote": depois da rolagem do navegador, o foco vai para o cartão de destino
+        document.getElementById('sumMenorLink').addEventListener('click', function () {{
+            const id = this.getAttribute('href');
+            const alvo = id ? document.querySelector(id) : null;
+            if (alvo) {{ alvo.focus({{ preventScroll: true }}); }}
+        }});
 
         // Atalhos: "/" foca a busca (fora de campos de texto) e Esc limpa a busca
         document.addEventListener('keydown', function (e) {{

@@ -503,8 +503,9 @@
 
 .event-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 4px 10px;
     margin-bottom: 5px;
 }
 
@@ -527,7 +528,11 @@
 }
 
 /* Badges */
+/* Selo inteiro: não quebra por dentro. Se não couber na linha, desce o selo todo */
 .badge {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
     font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: 99px;
@@ -597,15 +602,7 @@
    4. Botões Flutuantes & Ações
    ========================================================================== */
 
-.floating-actions {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 1000;
-}
+/* Consultar Tiny e Correios fica no cabeçalho (.header-tools); no celular vira o círculo flutuante (ver @media ≤640) */
 
 .btn-action {
     background: var(--color-primary);
@@ -911,26 +908,43 @@ tbody tr:hover {
     }
 
     .order-header {
-        padding: 14px 16px;
+        padding: 10px 16px;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        align-items: stretch;
+        gap: 4px;
     }
 
+    /* Cartão mais curto: selo e idade na 1ª linha; Tiny e "Copiar rastreio" na 2ª (divergência, se houver, ocupa a linha toda) */
     .order-meta {
-        justify-content: flex-start;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 8px;
     }
 
-    /* Tema acima do título, alinhado à direita, sem sobrepor o conteúdo */
-    .header-tools {
-        position: static;
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 8px;
+    .order-meta > .badge { grid-column: 1; grid-row: 1; justify-self: start; }
+    /* Divergência do Tiny: é o badge que vem depois do selo (o selo amarelo de "Aguardando retirada" é o primeiro) */
+    .order-meta > .badge-divergencia { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+    .order-meta > .order-age { grid-column: 2 / 4; grid-row: 1; justify-self: end; }
+    .order-meta > .order-tiny-status { grid-column: 1 / 3; min-width: 0; }
+    .order-meta > .btn-copy { grid-column: 3; justify-self: end; }
+
+    /* Nome do cliente: no máximo 2 linhas */
+    .order-client {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        max-width: 100%;
+        overflow-wrap: anywhere;
     }
 
-    /* Botão de atualizar compacto: só o ícone, com o texto disponível para leitores de tela */
+    /* Botão de consulta: no celular sai do cabeçalho e vira o círculo de 52px no canto, só com o ícone */
     .btn-update {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 1000;
         width: 52px;
         height: 52px;
         padding: 0;
@@ -953,11 +967,6 @@ tbody tr:hover {
 
     .action-chip {
         min-height: 44px;
-    }
-
-    .floating-actions {
-        bottom: 16px;
-        right: 16px;
     }
 
     /* nowrap: em coluna com wrap, a linha cresce até o conteúdo mais largo (as pílulas) e estoura a página */
@@ -1176,6 +1185,18 @@ h1 .icon {
     position: absolute;
     top: 0;
     right: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Entre 641 e 1099px o cabeçalho não cabe ao lado do título: as ferramentas sobem para uma linha acima dele */
+@media (min-width: 641px) and (max-width: 1099px) {
+    .header-tools {
+        position: static;
+        justify-content: flex-end;
+        margin-bottom: 8px;
+    }
 }
 
 /* Ferramentas da lista: ordenar e expandir/recolher históricos */
@@ -1279,13 +1300,6 @@ h1 .icon {
 @media (max-width: 640px) {
     .status-legend-details > summary {
         min-height: 44px;
-    }
-
-    .header-tools {
-        position: static;
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 8px;
     }
 
     .btn-link {
@@ -1402,11 +1416,11 @@ h1 .icon {
     .dashboard {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4px;
-        margin-bottom: 16px;
+        margin-bottom: 10px;
     }
 
     .dash-card {
-        padding: 8px;
+        padding: 6px 8px;
         justify-content: center;
         text-align: center;
     }
@@ -1436,16 +1450,19 @@ h1 .icon {
         font-size: 0.75rem;
     }
 
+    /* Chip cabe no próprio texto: o zerado não ocupa metade da faixa e "Aguardando retirada" não quebra */
     .action-strip .action-chip {
-        flex: 1 1 0;
+        flex: 0 1 auto;
         justify-content: center;
         padding: 6px 8px;
+        font-size: 0.8125rem;
+        white-space: nowrap;
     }
 
     .action-strip {
         gap: 4px 8px;
-        padding: 8px 12px;
-        margin-bottom: 10px;
+        padding: 6px 12px;
+        margin-bottom: 8px;
     }
 
     .action-strip-ok {
@@ -1571,6 +1588,8 @@ h1 .icon {
 
 .orders-table-wrap {
     margin-bottom: 24px;
+    /* Rede de segurança: rolagem lateral se a tabela passar do contêiner. No desktop (≥641px) a regra abaixo volta a visible, para o cabeçalho fixo funcionar */
+    overflow-x: auto;
 }
 
 .th-sort {
@@ -1602,7 +1621,6 @@ h1 .icon {
 
 .orders-table-actions .btn-copy {
     min-height: 36px;
-    margin-right: 6px;
     padding: 4px 10px;
 }
 
@@ -1612,7 +1630,6 @@ h1 .icon {
     }
 }
 
-.orders-table .badge,
 .orders-table td[data-label="Rastreio"] {
     white-space: nowrap;
 }
@@ -1694,12 +1711,67 @@ h1 .icon {
     display: none;
 }
 
+/* "Expandir históricos" só faz sentido nos cartões: na Compacta o histórico fica escondido e na Tabela ele não existe */
+.view-compacta #btnToggleHistory,
+.view-tabela #btnToggleHistory {
+    display: none;
+}
+
+/* Rótulo "Históricos" (o span logo antes do botão). Regra separada: sem suporte a :has, a regra do botão continua valendo */
+.view-compacta .sort-label:has(+ #btnToggleHistory),
+.view-tabela .sort-label:has(+ #btnToggleHistory) {
+    display: none;
+}
+
 .th-sort {
     white-space: nowrap;
 }
 
-/* Desktop: cabeçalho da tabela fixo ao rolar listas longas (o contêiner não rola na horizontal) */
+/* Entre 641 e 1023px a tabela rola dentro do próprio contêiner (overflow-x da regra base) e o cabeçalho não fica fixo */
 @media (min-width: 641px) {
+    /* Abaixo de 1024px o layout é automático: Cliente e Último evento quebram dentro da própria coluna */
+    .orders-table th,
+    .orders-table td {
+        padding: 10px 6px;
+    }
+
+    .orders-table td[data-label="Cliente"],
+    .orders-table td[data-label="Último evento"] {
+        overflow-wrap: anywhere;
+    }
+
+    /* Cabeçalhos quebram linha ("Último / evento"): com nowrap a coluna não encolhe e a tabela passa do contêiner */
+    .orders-table .th-sort {
+        white-space: normal;
+    }
+
+    /* Ações empilhadas: Copiar rastreio em cima e Ver cartão como link embaixo */
+    .orders-table-actions .btn-copy {
+        display: block;
+        width: max-content;
+        margin: 0 0 4px;
+        padding: 4px 8px;
+        font-size: 0.8125rem;
+    }
+
+    .orders-table-actions .btn-ver-cartao {
+        padding: 4px 0;
+        background: none;
+        border-color: transparent;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .orders-table-actions .btn-ver-cartao:hover {
+        background: none;
+        border-color: transparent;
+    }
+}
+
+/* A partir de 1024px, layout fixo com larguras por coluna: Cliente e Último evento absorvem a sobra.
+   Na ordem das colunas: Pedido, Cliente, Rastreio, Status, Último evento, Tiny, Ações.
+   Também aqui o cabeçalho fica fixo ao rolar listas longas: por isso o contêiner não rola na horizontal. */
+@media (min-width: 1024px) {
     .orders-table-wrap {
         overflow: visible;
     }
@@ -1710,6 +1782,21 @@ h1 .icon {
         z-index: 2;
         background: var(--color-header-bg);
     }
+
+    .orders-table {
+        table-layout: fixed;
+    }
+
+    .orders-table .th-sort {
+        white-space: nowrap;
+    }
+
+    .orders-table th:nth-child(1) { width: 72px; }
+    .orders-table th:nth-child(3) { width: 130px; }
+    /* Maior selo inteiro ("AGUARDANDO RETIRADA", 168px com nowrap) + padding da célula (2 × 6px) */
+    .orders-table th:nth-child(4) { width: 184px; }
+    .orders-table th:nth-child(6) { width: 100px; }
+    .orders-table th:nth-child(7) { width: 140px; }
 }
 
 /* Totais zerados da página de atrasados ficam neutros */
@@ -1903,16 +1990,18 @@ main.orders-list {
 }
 
 /* Lote C */
-/* Tabela indisponível no celular: mesmo visual do :disabled, sem perder foco nem toque (aria-disabled) */
-/* Indisponível sem opacity (contraste): texto em --color-text-muted e o estado marcado por um contorno interno */
+/* Tabela indisponível no celular: aria-disabled sem anel (o anel é só do aria-pressed), sem opacity (contraste).
+   Texto apagado, contorno tracejado por dentro (outline não muda o tamanho do botão) e cursor de bloqueado.
+   Foco e toque continuam, para o motivo chegar ao leitor de tela. */
 .view-option[aria-disabled="true"] {
     color: var(--color-text-muted);
-    box-shadow: inset 0 0 0 1px var(--color-border-strong);
+    outline: 1px dashed var(--color-border-strong);
+    outline-offset: -1px;
     cursor: not-allowed;
 }
 
 .view-switch .view-option[aria-disabled="true"]:hover:not([aria-pressed="true"]):not(:disabled) {
-    color: inherit;
+    color: var(--color-text-muted);
     background: transparent;
 }
 
@@ -1925,8 +2014,8 @@ main.orders-list {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto auto auto;
         align-items: center;
-        gap: 8px 4px;
-        margin-bottom: 8px;
+        gap: 6px 4px;
+        margin-bottom: 4px;
     }
 
     /* Os blocos viram itens da grade do painel: a linha da busca e a da visão são uma só */

@@ -8,6 +8,24 @@ function getBaseUrl() {
     return window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
 }
 
+const ROTULO_CONSULTA = 'Consultar Tiny e Correios';
+
+// Texto visível e nome acessível do botão andam juntos. O aria-label do HTML traz o rótulo normal,
+// então durante a consulta ele vira "Consultando..." e volta ao rótulo no fim
+function ajustarBotaoConsulta(consultando) {
+    const btn = document.getElementById('btnUpdate');
+    const btnText = document.getElementById('btnUpdateText');
+    if (btnText) btnText.textContent = consultando ? 'Consultando...' : ROTULO_CONSULTA;
+    if (btn) {
+        btn.setAttribute('aria-label', consultando ? 'Consultando...' : ROTULO_CONSULTA);
+        if (consultando) {
+            btn.setAttribute('aria-busy', 'true');
+        } else {
+            btn.removeAttribute('aria-busy');
+        }
+    }
+}
+
 function addLog(message) {
     const consoleBody = document.getElementById('consoleBody');
     if (!consoleBody) return;
@@ -31,7 +49,6 @@ function addLog(message) {
 async function atualizarDados() {
     const btn = document.getElementById('btnUpdate');
     const spinner = document.getElementById('spinner');
-    const btnText = document.getElementById('btnUpdateText');
     const consoleDiv = document.getElementById('console');
     const consoleBody = document.getElementById('consoleBody');
 
@@ -52,7 +69,7 @@ async function atualizarDados() {
     try {
         if (btn) btn.disabled = true;
         if (spinner) spinner.style.display = 'block';
-        if (btnText) btnText.textContent = 'Consultando...';
+        ajustarBotaoConsulta(true);
 
         if (consoleBody) consoleBody.innerHTML = '';
         if (consoleDiv) consoleDiv.style.display = 'block';
@@ -76,7 +93,7 @@ async function atualizarDados() {
 
                 if (event.data.includes('✅ PROCESSO FINALIZADO')) {
                     eventSource.close();
-                    showToast('Atualização concluída com sucesso!', '#15803d');
+                    showToast('Atualização concluída com sucesso!', 'var(--color-success)');
                     setTimeout(() => {
                         const targetUrl = window.location.pathname + '?updated=true';
                         window.location.href = targetUrl;
@@ -90,10 +107,10 @@ async function atualizarDados() {
                     eventSource.close();
                 }
                 addLog('[ERRO] Conexão com o servidor perdida antes do fim da atualização.');
-                showToast('❌ Conexão de logs interrompida. Tente atualizar novamente.', '#dc2626');
+                showToast('❌ Conexão de logs interrompida. Tente atualizar novamente.', 'var(--color-danger)', null, 'erro');
                 if (btn) btn.disabled = false;
                 if (spinner) spinner.style.display = 'none';
-                if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
+                ajustarBotaoConsulta(false);
             };
         } else if (response.status === 429) {
             let remaining = 0;
@@ -105,23 +122,23 @@ async function atualizarDados() {
             }
             const min = Math.floor(remaining / 60);
             const sec = remaining % 60;
-            showToast(`⏳ Cooldown ativo! Próxima atualização permitida em ${min}m ${sec}s`, '#b45309');
+            showToast(`⏳ Cooldown ativo! Próxima atualização permitida em ${min}m ${sec}s`, 'var(--color-warning)');
             if (consoleDiv) consoleDiv.style.display = 'none';
             if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';
-            if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
+            ajustarBotaoConsulta(false);
         } else {
-            showToast('❌ Erro na resposta do servidor.', '#dc2626');
+            showToast('❌ Erro na resposta do servidor.', 'var(--color-danger)', null, 'erro');
             if (btn) btn.disabled = false;
             if (spinner) spinner.style.display = 'none';
-            if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
+            ajustarBotaoConsulta(false);
         }
     } catch (err) {
         console.error('Falha ao conectar com o servidor:', err);
-        showToast('❌ Servidor offline ou inacessível.', '#dc2626');
+        showToast('❌ Servidor offline ou inacessível.', 'var(--color-danger)', null, 'erro');
         if (btn) btn.disabled = false;
         if (spinner) spinner.style.display = 'none';
-        if (btnText) btnText.textContent = 'Consultar Tiny e Correios';
+        ajustarBotaoConsulta(false);
     }
 }
 
@@ -175,17 +192,17 @@ async function regerarPagina() {
         }
 
         if (response.ok) {
-            showToast('Página regerada com os últimos dados consultados.', '#15803d');
+            showToast('Página regerada com os últimos dados consultados.', 'var(--color-success)');
             setTimeout(() => {
                 window.location.href = window.location.pathname + '?updated=true';
             }, 700);
         } else {
-            showToast(`❌ ${data.erro || 'Não foi possível regerar a página.'}`, '#dc2626', 6000);
+            showToast(`❌ ${data.erro || 'Não foi possível regerar a página.'}`, 'var(--color-danger)', null, 'erro');
             restaurar();
         }
     } catch (err) {
         console.error('Falha ao regerar a página:', err);
-        showToast('❌ Servidor offline ou inacessível.', '#dc2626');
+        showToast('❌ Servidor offline ou inacessível.', 'var(--color-danger)', null, 'erro');
         restaurar();
     }
 }
@@ -201,12 +218,12 @@ function atualizarElementoContador() {
     if (remainingSeconds <= 0) {
         timerEl.textContent = 'iniciando verificação...';
     } else {
-        // Duas versões do mesmo texto: o CSS mostra a curta (só minutos) abaixo de 640px e a completa acima
+        // Duas versões do mesmo texto: o CSS mostra a curta (só minutos, sem horário) abaixo de 640px e a completa acima
         const minutes = Math.floor(remainingSeconds / 60);
         const seconds = remainingSeconds % 60;
         const curta = document.createElement('span');
         curta.className = 'contagem-curta';
-        curta.textContent = (minutes < 1 ? 'menos de 1 min' : `${minutes} min`) + ` (às ${nextTimeStr})`;
+        curta.textContent = minutes < 1 ? 'menos de 1 min' : `${minutes} min`;
         const completa = document.createElement('span');
         completa.className = 'contagem-completa';
         completa.textContent = `${minutes}m ${seconds.toString().padStart(2, '0')}s (às ${nextTimeStr})`;
