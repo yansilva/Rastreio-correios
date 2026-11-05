@@ -3,11 +3,12 @@ import http.server
 import json
 import mimetypes
 import queue
+import urllib.parse
 from typing import Any
 
 from .config import ServerConfig
 from .logger import ServerLogQueue, logger
-from .security import resolve_safe_path
+from .security import ip_na_rede_local, origem_confiavel, resolve_public_path
 from .service import UpdateManager
 
 
@@ -20,19 +21,36 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
     update_manager: UpdateManager | None = None
 
     def end_headers(self) -> None:
-        """Adiciona headers CORS e de segurança padrão."""
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type")
+        """Não envia CORS: o painel é same-origin, nenhum outro site pode ler respostas."""
         super().end_headers()
 
+    def _recusar_ip_externo(self) -> bool:
+        """Responde 403 e devolve True se o cliente não estiver na rede local."""
+        endereco = self.client_address[0] if self.client_address else ""
+        if ip_na_rede_local(endereco):
+            return False
+        self._send_json_response({"sucesso": False, "erro": "Acesso negado"}, status=403)
+        return True
+
     def do_OPTIONS(self) -> None:
-        """Responde requisições preflight CORS."""
+        """Responde requisições OPTIONS sem liberar CORS."""
+        if self._recusar_ip_externo():
+            return
         self.send_response(200)
+        self.end_headers()
+
+    def do_HEAD(self) -> None:
+        """HEAD não é usado pelo painel; sem isso o SimpleHTTPRequestHandler serviria arquivos da pasta."""
+        if self._recusar_ip_externo():
+            return
+        self.send_response(405)
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self) -> None:
         """Roteia requisições GET."""
+        if self._recusar_ip_externo():
+            return
         clean_path = self.path.split("?")[0].strip()
 
         # Rota 1: Streaming de logs via Server-Sent Events (SSE)
@@ -60,7 +78,16 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
         self._serve_static_file(clean_path)
 
     def do_POST(self) -> None:
-        """Roteia requisições POST."""
+        """Roteia requisições POST, só da rede local e só de origem própria (anti-CSRF)."""
+        if self._recusar_ip_externo():
+            return
+        if not origem_confiavel(
+            host=self.headers.get("Host", ""),
+            origin=self.headers.get("Origin"),
+            referer=self.headers.get("Referer"),
+        ):
+            self._send_json_response({"sucesso": False, "erro": "Origem não permitida"}, status=403)
+            return
         clean_path = self.path.split("?")[0].strip()
 
         if clean_path == "/atualizar":
@@ -163,15 +190,15 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def _serve_static_file(self, requested_url_path: str) -> None:
         """Serve arquivo estático validado contra Path Traversal e arquivos confidenciais."""
-        safe_file = resolve_safe_path(
+        safe_file = resolve_public_path(
             base_dir=self.server_config.base_dir,
             requested_url_path=requested_url_path,
             allowed_extensions=self.server_config.allowed_extensions,
         )
 
         if not safe_file:
-            # Rejeita com 404 (ou 403 se foi tentativa explícita de traversal/bloqueado)
-            if ".." in requested_url_path or ".env" in requested_url_path or ".py" in requested_url_path:
+            # Fora da lista de permissão: 404. Tentativa explícita de traversal: 403.
+            if ".." in urllib.parse.unquote(requested_url_path):
                 self._send_json_response({"sucesso": False, "erro": "Acesso negado"}, status=403)
             else:
                 self._send_json_response({"sucesso": False, "erro": "Arquivo não encontrado"}, status=404)

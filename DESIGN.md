@@ -172,6 +172,10 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 - **Âmbar Texto** (`--color-warning-text`, #92400e no claro; #fbbf24 no escuro): texto do selo "Não enviado" sobre o fundo âmbar.
 - **Borda do selo "Mais barato"** (#bfdbfe, `--color-badge-border`): borda do selo de frete em `Arquivos/frete/report.py`, que define a variável no CSS embutido do relatório. Não está na tabela de tokens acima; no escuro vira `rgba(147, 197, 253, 0.35)`; fica registrada aqui como exceção de página, e poderia virar token do sistema se o selo for reutilizado.
 
+**Exceções do detector** (registradas em `.impeccable/config.json`, só para o arquivo indicado; o CSS não muda):
+- `side-tab` em `web/css/components.css`: a borda esquerda de 3px usa a cor neutra `--color-border` como trilho da timeline. Não é acento colorido, então o alerta é falso positivo.
+- `design-system-font` em `web/css/components.css`: `Sfmono-Regular` é o fallback monoespaçado da pilha de DESIGN.md (SFMono). Não é família nova.
+
 ### Named Rules
 **The One Signal Rule.** O azul de ação aparece em no máximo um elemento de decisão por área visível. Cor de status é reservada para estado do pedido; nunca usar vermelho ou verde como decoração.
 
@@ -209,7 +213,7 @@ Rampa de seis tamanhos (0.75, 0.8125, 0.875, 1, 1.25 e 1.75rem); todo `font-size
 
 ## Layout
 
-Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. No celular (até 640px) o título ocupa a linha de cima, com 44px de altura para deixar o botão de tema acima da meta, e a meta fica numa linha só, a 12px: "Dados de 04/11 15:24 (há 13 min) · próxima em 35 min". A idade dos dados ("há N min") fica sempre visível. Abaixo de 640px a contagem mostra só os minutos e o horário "(às HH:MM)" fica na versão completa, que o desktop mostra. A meta usa duas versões do mesmo texto, `.meta-longo`/`.meta-curto` e `.contagem-completa`/`.contagem-curta`, escolhidas por CSS. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile, duas colunas fixas. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
+Coluna central com largura máxima de 1040px e margem de 20px nas laterais de página (12px no mobile). Cabeçalho centralizado com título e meta. No celular (até 640px) o título ocupa a linha de cima, com 44px de altura para deixar o botão de tema acima da meta, e a meta fica numa linha só, a 12px, sem a palavra "de" (ela fica em `.meta-longo`): "Dados 04/11 15:24 (há 13 min) · próxima em 35 min". A navegação de abas sai do `<header>` e, no celular, fica fixa no topo (ver Navigation). A idade dos dados ("há N min") fica sempre visível. Abaixo de 640px a contagem mostra só os minutos e o horário "(às HH:MM)" fica na versão completa, que o desktop mostra. A meta usa duas versões do mesmo texto, `.meta-longo`/`.meta-curto` e `.contagem-completa`/`.contagem-curta`, escolhidas por CSS. Os cartões de resumo usam grade automática com colunas mínimas de 180px; no mobile (até 640px), uma faixa de 4 colunas com o número acima de um rótulo curto em 0.75rem (`.dashboard` e `.summary`), sem ícone e com 2px de respiro lateral. Controles (busca e filtros) ocupam a largura total. O contador de pedidos (`#filterCount`) fica à direita do campo de busca, na mesma linha (`.search-row`), e não solto entre a legenda e a visão.
 
 A faixa de pílulas nunca quebra linha: rola horizontalmente quando não cabe, em qualquer largura. Em telas estreitas a barra de filtros vira coluna.
 
@@ -285,6 +289,15 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 ### Navigation (`.nav-tabs`)
 - **Style:** pílulas com borda fina. Aba atual com estado neutro de "selecionado": superfície mais forte (`--color-surface-hover`), texto principal e sublinhado azul de 2px (`--color-link`) na base. Sem sombra nem brilho; o azul sólido fica reservado ao filtro ativo e ao botão flutuante.
 - **Hover:** texto e borda em azul. Na aba atual, o hover mantém o texto principal.
+- **Celular (até 640px):** a nav fica fora do `<header>` e é `position: sticky` no topo, com fundo de Cartão Branco (`--color-surface`), 44px de altura e as três abas numa linha só, sem ícones e em 0.8125rem. Ao rolar, o conteúdo some por baixo dela sem transparência. Os alvos de toque têm 44px.
+
+### Controles da lista (`.search-row`, `.list-meta`, `.filters-row`)
+- **Desktop:** busca e contador na primeira linha; pílulas de status na segunda; Limpar, visão (Cartões/Compacta/Tabela) e Opções na terceira. Alvos de 40px.
+- **Celular (até 640px):** o painel vira uma grade de uma linha só. A busca fica fechada como ícone de 44px, com o contador "N pedidos" ao lado, e a visão (segmentada, 44px) e "Opções" à direita. Ao focar ou ao ter texto, a busca ocupa a linha e visão e Opções saem dela; "Limpar filtros" aparece no lugar. Opções abre como popover sobre a lista, com o seletor de ordem em 44px e 16px (o iOS não amplia a página ao focar).
+- **Pílulas:** 44px de altura e 8px de espaço entre elas, em faixa com rolagem horizontal.
+- **Placeholder:** "Pedido, cliente ou rastreio" no celular (`data-placeholder-curto`, aplicado em `web/js/dashboard.js` por `matchMedia`); no desktop, "Pedido, cliente, rastreio ou cidade" (`data-placeholder-longo`).
+- **Primeiro pedido:** medido sem filtros: 360px y=417, 375px y=417, 412px y=379 (meta de ≤420 em 360 e 375px).
+- **Limitação conhecida:** no celular, "Limpar filtros" só aparece com a busca aberta. Com só um filtro de status ativo, a volta é pela pílula "Todos".
 
 ## Do's and Don'ts
 

@@ -30,7 +30,12 @@ from server.logger import (
     StreamToQueue,
     sanitize_log_message,
 )
-from server.security import resolve_safe_path
+from server.security import (
+    ip_na_rede_local,
+    origem_confiavel,
+    resolve_public_path,
+    resolve_safe_path,
+)
 from server.service import UpdateManager
 
 
@@ -280,15 +285,22 @@ class TestUpdateManager(unittest.TestCase):
 class DummyHandler(RastreioRequestHandler):
     """Handler adaptado para testes unitários com I/O em memória."""
 
-    def __init__(self, request_bytes: bytes, command: str, path: str):
+    def __init__(
+        self,
+        request_bytes: bytes,
+        command: str,
+        path: str,
+        client_address: tuple = ("127.0.0.1", 12345),
+        headers: dict | None = None,
+    ):
         self.rfile = io.BytesIO(request_bytes)
         self.wfile = io.BytesIO()
-        self.client_address = ("127.0.0.1", 12345)
+        self.client_address = client_address
         self.command = command
         self.path = path
         self.requestline = f"{command} {path} HTTP/1.1"
         self.request_version = "HTTP/1.1"
-        self.headers = {}
+        self.headers = dict(headers or {})
         self.server_version = "TestServer/1.0"
         self.sys_version = "Python/3.12"
         self.close_connection = True
@@ -317,7 +329,7 @@ class TestRastreioRequestHandler(unittest.TestCase):
         handler.do_OPTIONS()
         output = handler.wfile.getvalue().decode("utf-8")
         self.assertIn("HTTP/1.0 200", output)
-        self.assertIn("Access-Control-Allow-Origin: *", output)
+        self.assertNotIn("Access-Control-Allow-Origin", output)
 
     def test_get_proxima_atualizacao(self):
         handler = DummyHandler(b"", "GET", "/proxima-atualizacao")
@@ -363,11 +375,11 @@ class TestRastreioRequestHandler(unittest.TestCase):
         self.assertIn("HTTP/1.0 403", out)
         self.assertIn("Acesso negado", out)
 
-    def test_get_arquivo_python_bloqueado_com_403(self):
+    def test_get_arquivo_python_fora_da_lista_retorna_404(self):
         handler = DummyHandler(b"", "GET", "/run.py")
         handler.do_GET()
         out = handler.wfile.getvalue().decode("utf-8")
-        self.assertIn("HTTP/1.0 403", out)
+        self.assertIn("HTTP/1.0 404", out)
 
     def test_get_arquivo_inexistente_retorna_404(self):
         handler = DummyHandler(b"", "GET", "/arquivo_inexistente_xyz.html")
@@ -412,6 +424,155 @@ class TestFachadaRetrocompatibilidade(unittest.TestCase):
         self.assertTrue(callable(servidor_rastreio.iniciar_servidor))
         self.assertTrue(callable(servidor_rastreio.open_browser))
         self.assertIs(servidor_rastreio.RastreioHandler, RastreioRequestHandler)
+
+
+class TestListaDePermissao(unittest.TestCase):
+    """Só páginas da raiz, alerta_frete.js e web/ podem ser servidos."""
+
+    def setUp(self):
+        self.permitidas = ServerConfig().allowed_extensions
+
+    def test_dados_internos_nao_resolvem(self):
+        for caminho in (
+            "Arquivos/rastreios_cache.json",
+            "Arquivos/server/handler.py",
+            "tests/test_server.py",
+            ".env",
+            ".git/config",
+            "run.py",
+        ):
+            with self.subTest(caminho=caminho):
+                self.assertIsNone(resolve_public_path(PROJECT_ROOT, caminho, self.permitidas))
+
+    def test_paginas_web_e_alerta_resolvem(self):
+        self.assertIsNotNone(resolve_public_path(PROJECT_ROOT, "relatorio_rastreio.html", self.permitidas))
+        self.assertIsNotNone(resolve_public_path(PROJECT_ROOT, "web/css/main.css", self.permitidas))
+        self.assertIsNotNone(resolve_public_path(PROJECT_ROOT, "alert_frete.js", self.permitidas))
+
+    def test_traversal_dentro_de_web_bloqueado(self):
+        self.assertIsNone(
+            resolve_public_path(PROJECT_ROOT, "web/../Arquivos/rastreios_cache.json", self.permitidas)
+        )
+        self.assertIsNone(
+            resolve_public_path(PROJECT_ROOT, "web/..%2fArquivos%2frastreios_cache.json", self.permitidas)
+        )
+
+
+class TestRedeLocal(unittest.TestCase):
+    """IP do cliente e origem do POST."""
+
+    def test_ips_locais_permitidos(self):
+        for ip in ("127.0.0.1", "::1", "192.168.1.50", "10.0.0.7", "172.16.5.5", "::ffff:192.168.0.9"):
+            with self.subTest(ip=ip):
+                self.assertTrue(ip_na_rede_local(ip))
+
+    def test_ips_publicos_bloqueados(self):
+        for ip in ("8.8.8.8", "200.160.0.1", "172.32.0.1", "", "lixo"):
+            with self.subTest(ip=ip):
+                self.assertFalse(ip_na_rede_local(ip))
+
+    def test_origem_so_do_proprio_host(self):
+        host = "192.168.1.50:8000"
+        self.assertTrue(origem_confiavel(host, "http://192.168.1.50:8000", None))
+        self.assertTrue(origem_confiavel(host, None, "http://192.168.1.50:8000/relatorio_rastreio.html"))
+        self.assertTrue(origem_confiavel(host, None, None))
+        self.assertFalse(origem_confiavel(host, "http://site-externo.example", None))
+        self.assertFalse(origem_confiavel(host, "null", None))
+        self.assertFalse(origem_confiavel(host, None, "http://site-externo.example/pagina"))
+
+
+class TestHandlerRedeLocal(unittest.TestCase):
+    """Rotas do handler com IP externo, Origin de outro site e arquivos fora da lista."""
+
+    def setUp(self):
+        self.config = ServerConfig(base_dir=PROJECT_ROOT, cooldown_seconds=10)
+        self.log_queue = ServerLogQueue()
+        self.manager = UpdateManager(self.config, self.log_queue, runner_fn=lambda: None)
+
+        RastreioRequestHandler.server_config = self.config
+        RastreioRequestHandler.log_queue = self.log_queue
+        RastreioRequestHandler.update_manager = self.manager
+
+    def _saida(self, handler):
+        return handler.wfile.getvalue().decode("utf-8")
+
+    def test_post_de_ip_publico_retorna_403_e_nao_atualiza(self):
+        handler = DummyHandler(b"", "POST", "/atualizar", client_address=("8.8.8.8", 5000))
+        handler.do_POST()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+        self.assertTrue(self.manager.can_update())
+
+    def test_post_com_origin_de_outro_site_retorna_403(self):
+        handler = DummyHandler(
+            b"",
+            "POST",
+            "/atualizar",
+            client_address=("192.168.1.20", 5000),
+            headers={"Host": "192.168.1.50:8000", "Origin": "http://site-externo.example"},
+        )
+        handler.do_POST()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+        self.assertTrue(self.manager.can_update())
+
+    def test_post_com_origin_do_proprio_host_aceito(self):
+        handler = DummyHandler(
+            b"",
+            "POST",
+            "/atualizar",
+            client_address=("192.168.1.20", 5000),
+            headers={"Host": "192.168.1.50:8000", "Origin": "http://192.168.1.50:8000"},
+        )
+        handler.do_POST()
+        self.assertIn("HTTP/1.0 200", self._saida(handler))
+
+    def test_get_de_ip_publico_retorna_403(self):
+        handler = DummyHandler(b"", "GET", "/web/css/main.css", client_address=("8.8.8.8", 5000))
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 403", self._saida(handler))
+
+    def test_cache_json_de_arquivos_retorna_404(self):
+        handler = DummyHandler(b"", "GET", "/Arquivos/rastreios_cache.json")
+        handler.do_GET()
+        self.assertIn("HTTP/1.0 404", self._saida(handler))
+
+    def test_env_e_tests_retornam_404(self):
+        for caminho in ("/.env", "/tests/test_server.py", "/.git/config"):
+            with self.subTest(caminho=caminho):
+                handler = DummyHandler(b"", "GET", caminho)
+                handler.do_GET()
+                self.assertIn("HTTP/1.0 404", self._saida(handler))
+
+    def test_css_do_painel_e_pagina_principal_retornam_200(self):
+        for caminho in ("/web/css/main.css", "/relatorio_rastreio.html"):
+            with self.subTest(caminho=caminho):
+                handler = DummyHandler(b"", "GET", caminho)
+                handler.do_GET()
+                self.assertIn("HTTP/1.0 200", self._saida(handler))
+
+    def test_head_nao_serve_arquivos(self):
+        handler = DummyHandler(b"", "HEAD", "/Arquivos/rastreios_cache.json")
+        handler.do_HEAD()
+        self.assertIn("HTTP/1.0 405", self._saida(handler))
+
+
+class TestBatsERedeLocal(unittest.TestCase):
+    """Painel padrão só escuta neste PC; o .bat do celular escuta na rede."""
+
+    def test_painel_padrao_nao_expoe_rede(self):
+        texto = (PROJECT_ROOT / "ABRIR_PAINEL.bat").read_text(encoding="utf-8", errors="replace")
+        self.assertNotIn("SERVER_HOST=0.0.0.0", texto)
+
+    def test_bat_celular_expoe_rede_local(self):
+        texto = (PROJECT_ROOT / "ABRIR_PAINEL_CELULAR.bat").read_text(encoding="utf-8", errors="replace")
+        self.assertIn("SERVER_HOST=0.0.0.0", texto)
+        self.assertIn("run.py", texto)
+
+    def test_url_de_rede_nao_mostra_localhost_quando_0_0_0_0(self):
+        cfg = ServerConfig(host="0.0.0.0", port=8000)
+        self.assertTrue(cfg.url_rede.startswith("http://"))
+        self.assertTrue(cfg.url_rede.endswith(":8000"))
+        self.assertNotIn("localhost", cfg.url_rede)
+        self.assertEqual(cfg.url, "http://localhost:8000")
 
 
 if __name__ == "__main__":

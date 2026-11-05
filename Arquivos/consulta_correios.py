@@ -189,17 +189,17 @@ def processar(usar_cache=False):
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
-                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Dados de <time id="dadosEm" datetime="{iso_dados}">{data_dados_curta}</time> <span id="dadosIdade" class="meta-idade"></span></span>
+                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Dados <span class="meta-longo">de </span><time id="dadosEm" datetime="{iso_dados}">{data_dados_curta}</time> <span id="dadosIdade" class="meta-idade"></span></span>
                     <span class="meta-sep" aria-hidden="true">·</span>
                     <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> <span class="meta-longo">Próxima consulta automática em </span><span class="meta-curto">próxima em </span><strong id="countdown-timer">—</strong></span>
                 </div>
             </div>
-            <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-                {atrasados_link}
-                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-            </nav>
         </header>
+        <nav class="nav-tabs" aria-label="Navegação do painel">
+            <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+            {atrasados_link}
+            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
+        </nav>
 
         {dashboard}
 
@@ -208,7 +208,7 @@ def processar(usar_cache=False):
             <div class="search-row">
                 <div class="search-wrapper">
                     <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" data-placeholder-longo="Pedido, cliente, rastreio ou cidade" data-placeholder-curto="Pedido, cliente ou rastreio" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
                 </div>
                 <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
@@ -624,12 +624,12 @@ def processar(usar_cache=False):
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
             </div>
-            <nav class="nav-tabs" aria-label="Navegação de atrasados">
-                <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-                <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
-                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-            </nav>
         </header>
+        <nav class="nav-tabs" aria-label="Navegação de atrasados">
+            <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+            <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
+            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
+        </nav>
 
         <main id="conteudo" tabindex="-1">
         {resumo_html}

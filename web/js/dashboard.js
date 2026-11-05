@@ -473,6 +473,19 @@ function clearAllFilters() {
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Campo de Busca Instantânea
     var searchInput = document.getElementById('searchInput');
+    // Celular: placeholder curto para caber em 360px; o desktop mantém a lista completa (data-placeholder-*)
+    if (searchInput && window.matchMedia) {
+        var telaPequena = window.matchMedia('(max-width: 640px)');
+        var ajustarPlaceholder = function() {
+            var curto = searchInput.getAttribute('data-placeholder-curto');
+            var longo = searchInput.getAttribute('data-placeholder-longo');
+            var texto = telaPequena.matches && curto ? curto : longo;
+            // Sem valor nos atributos, mantém o placeholder que já está no HTML (evita o texto "null")
+            if (texto) searchInput.placeholder = texto;
+        };
+        ajustarPlaceholder();
+        if (telaPequena.addEventListener) telaPequena.addEventListener('change', ajustarPlaceholder);
+    }
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
             currentSearchTerm = e.target.value;
@@ -536,16 +549,33 @@ document.addEventListener('DOMContentLoaded', function() {
     listaPedidos = document.querySelector('.orders-list');
     if (controleVisao && listaPedidos) {
         var botaoTabela = controleVisao.querySelector('[data-view="tabela"]');
-        // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: fica desativada
+        // No celular a tabela vira uma pilha de campos (7 linhas por pedido) e perde a ordenação: fica indisponível.
+        // aria-disabled (e não disabled) mantém o botão focável e tocável, para o motivo chegar a leitores e ao toque.
+        var motivoTabela = 'Tabela indisponível no celular';
+        var dicaTabela = document.createElement('span');
+        dicaTabela.id = 'dicaTabelaCelular';
+        dicaTabela.className = 'sr-only';
+        dicaTabela.textContent = motivoTabela + '. A preferência é mantida e a tabela volta em tela maior.';
+        if (botaoTabela) {
+            controleVisao.appendChild(dicaTabela);
+            botaoTabela.setAttribute('aria-describedby', dicaTabela.id);
+        }
         var consultaCelular = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
         var celular = !!(consultaCelular && consultaCelular.matches);
         function ajustarTabelaAoTamanho(pequeno) {
             if (botaoTabela) {
-                botaoTabela.disabled = pequeno;
-                botaoTabela.title = pequeno ? 'A tabela não cabe na tela do celular' : '';
+                if (pequeno) {
+                    botaoTabela.setAttribute('aria-disabled', 'true');
+                    botaoTabela.title = motivoTabela;
+                } else {
+                    botaoTabela.removeAttribute('aria-disabled');
+                    botaoTabela.removeAttribute('title');
+                }
             }
-            // A tela encolheu (ou o aparelho girou) com a tabela aberta: volta à visão compacta
+            // A tela encolheu (ou o aparelho girou) com a tabela aberta: mostra a compacta, mas NÃO grava a preferência
             if (pequeno && visaoAtiva === 'tabela') definirVisao('compacta');
+            // Voltou a tela grande: a tabela reaparece se for a preferência salva
+            if (!pequeno && lerPreferencia('visao') === 'tabela' && visaoAtiva !== 'tabela') definirVisao('tabela');
         }
         ajustarTabelaAoTamanho(celular);
         if (consultaCelular && consultaCelular.addEventListener) {
@@ -553,7 +583,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         controleVisao.querySelectorAll('[data-view]').forEach(function(botao) {
             botao.addEventListener('click', function() {
-                if (botao.disabled) return;
+                if (botao.getAttribute('aria-disabled') === 'true') {
+                    showToast(motivoTabela + '.', '#b45309', 3000);
+                    return;
+                }
                 var modo = botao.getAttribute('data-view');
                 definirVisao(modo);
                 gravarPreferencia('visao', modo);

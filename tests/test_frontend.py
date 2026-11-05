@@ -128,3 +128,61 @@ def test_ux_busca_filtros_organizacao():
     assert "updateClearButton" in dash_js
     assert "clearAllFilters" in dash_js
 
+    # Celular: a busca tem placeholder curto (cabe em 360px); o desktop mantém o texto completo
+    assert 'data-placeholder-curto="Pedido, cliente ou rastreio"' in consulta_py
+    assert 'data-placeholder-longo="Pedido, cliente, rastreio ou cidade"' in consulta_py
+    assert "data-placeholder-curto" in dash_js
+    # Celular: a linha de busca, visão e Opções fica numa grade só (sem linha própria)
+    assert "display: contents" in comp_css
+    assert ":has(.search-wrapper:focus-within" in comp_css
+
+
+def test_nav_tabs_fixa_no_celular():
+    """A faixa de abas fica presa ao topo ao rolar no celular (position: sticky)."""
+    import re
+
+    raiz = Path(__file__).resolve().parent.parent
+    main_css = (raiz / "web" / "css" / "main.css").read_text(encoding="utf-8")
+    assert re.search(r"\.nav-tabs\s*\{[^}]*position:\s*sticky", main_css, re.S) or re.search(
+        r"@media \(max-width: 640px\)\s*\{\s*\.nav-tabs\s*\{[^}]*position:\s*sticky", main_css, re.S
+    )
+
+
+def test_alvos_de_toque_44px_no_celular():
+    """No celular, o link 'Ver o painel', o histórico, a legenda e Opções têm 44px de altura."""
+    raiz = Path(__file__).resolve().parent.parent
+    comp_css = (raiz / "web" / "css" / "components.css").read_text(encoding="utf-8")
+
+    # As regras finais do celular ficam no fim do arquivo (vencem as de 40px do desktop)
+    bloco_celular = comp_css[comp_css.index("Lote B (celular"):]
+    assert "a.btn-link {" in bloco_celular
+    assert "display: inline-flex" in bloco_celular.split("a.btn-link {", 1)[1][:80]
+    assert ".status-legend-details > summary,\n    .order-history > summary,\n    .btn-link {\n        min-height: 44px;" in bloco_celular
+    assert ".options-menu > summary {\n        min-height: 44px;" in bloco_celular
+    assert ".view-option {\n        min-height: 44px;\n        min-width: 44px;" in bloco_celular
+
+
+def test_regras_duplicadas_removidas_do_celular():
+    """Cada regra de celular aparece uma vez: sem duplicatas de .view-option, .btn-theme e .sort-select."""
+    raiz = Path(__file__).resolve().parent.parent
+    comp_css = (raiz / "web" / "css" / "components.css").read_text(encoding="utf-8")
+    assert comp_css.count("    .btn-theme {\n        min-height: 44px;") == 0
+    assert comp_css.count("    .view-option {\n        min-height: 44px;\n        padding: 6px 8px;") == 0
+    assert comp_css.count("    .sort-select,\n    .btn-link {") == 0
+
+
+def test_demo_gera_placeholders_e_estrutura_do_painel():
+    """O demo tem a mesma estrutura de controles do painel e os atributos de placeholder."""
+    raiz = Path(__file__).resolve().parent.parent
+    demo_py = (raiz / "Arquivos" / "demo_data.py").read_text(encoding="utf-8")
+    dash_js = (raiz / "web" / "js" / "dashboard.js").read_text(encoding="utf-8")
+
+    assert 'data-placeholder-curto="Pedido, cliente ou rastreio"' in demo_py
+    assert 'data-placeholder-longo="Pedido, cliente, rastreio ou cidade"' in demo_py
+    assert 'class="search-row"' in demo_py
+    assert 'class="meta-longo"' in demo_py and 'class="meta-curto"' in demo_py
+    # A legenda fica dentro de Opções, como no painel real
+    assert demo_py.index('class="options-panel"') < demo_py.index('class="status-legend-details"')
+    # Sem o atributo, o placeholder não vira a string "null"
+    assert "if (texto) searchInput.placeholder = texto;" in dash_js
+

@@ -151,7 +151,7 @@ body {
 /* Cabeçalho */
 header {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 0;
     position: relative;
 }
 
@@ -201,7 +201,7 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin: 18px 0 28px 0;
+    margin: 18px 0 32px 0;
     flex-wrap: wrap;
 }
 
@@ -255,4 +255,33 @@ h1 {
     bottom: -1px;
     height: 2px;
     background: var(--color-link);
+}
+
+/* Celular: uma faixa de 44px, fixa no topo ao rolar, com as três abas numa linha só.
+   Os ícones saem para caber; o rótulo continua e o alvo tem 44px de altura. */
+@media (max-width: 640px) {
+    .nav-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        flex-wrap: nowrap;
+        gap: 6px;
+        margin: 10px 0 14px 0;
+        padding: 0;
+        background: var(--color-surface);
+    }
+
+    .nav-tab {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 0.8125rem;
+        white-space: nowrap;
+    }
+
+    .nav-tab .icon {
+        display: none;
+    }
 }

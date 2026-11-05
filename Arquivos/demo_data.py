@@ -389,26 +389,28 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
-                    Modo Demonstração (Portfólio) — Gerado em: {data_geracao}
-                    <span id="next-check" style="margin-left: 10px; opacity: 0.9;">
-                        | <svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Próxima verificação automática em: <strong id="countdown-timer">45:00</strong>
-                    </span>
+                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Modo Demonstração<span class="meta-longo"> (Portfólio)</span> · Gerado em {data_geracao}</span>
+                    <span class="meta-sep" aria-hidden="true">·</span>
+                    <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> <span class="meta-longo">Próxima verificação automática em </span><span class="meta-curto">próxima em </span><strong id="countdown-timer">45:00</strong></span>
                 </div>
             </div>
-            <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-                {atrasados_link_html}
-                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-            </nav>
         </header>
+        <nav class="nav-tabs" aria-label="Navegação do painel">
+            <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+            {atrasados_link_html}
+            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
+        </nav>
 
         {dashboard_html}
 
         <!-- Painel de Controles -->
         <div class="controls-panel">
-            <div class="search-wrapper">
-                <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+            <div class="search-row">
+                <div class="search-wrapper">
+                    <span class="search-icon"><svg class="icon icon-search" aria-hidden="true" focusable="false"><use href="#i-search"></use></svg></span>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Pedido, cliente, rastreio ou cidade" data-placeholder-longo="Pedido, cliente, rastreio ou cidade" data-placeholder-curto="Pedido, cliente ou rastreio" aria-label="Buscar pedidos" aria-keyshortcuts="/" title="Atalho: tecla /">
+                </div>
+                <span id="filterCount" class="filter-count" aria-live="polite"></span>
             </div>
             <div class="filters-row">
                 <div class="filter-pills">
@@ -422,8 +424,6 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
             </div>
             <div class="list-meta">
-                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
-                <span id="filterCount" class="filter-count" aria-live="polite"></span>
                 <button type="button" id="btnClearFilter" class="btn-clear-filter" title="Limpar busca e filtros">Limpar filtros</button>
                 <div class="view-switch" role="group" aria-label="Visão">
                     <button type="button" class="view-option" data-view="cartoes" aria-pressed="true">Cartões</button>
@@ -431,6 +431,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                     <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
                 </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> mais de 3 dias em trânsito desde a postagem. <strong>Aguardando retirada:</strong> objeto na agência, esperando o destinatário.</p></details>
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -505,12 +506,12 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao}</div>
             </div>
-            <nav class="nav-tabs" aria-label="Navegação de atrasados">
-                <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-                <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
-                <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-            </nav>
         </header>
+        <nav class="nav-tabs" aria-label="Navegação de atrasados">
+            <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
+            <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
+            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
+        </nav>
 
         <div class="summary">
             <div class="summary-card">

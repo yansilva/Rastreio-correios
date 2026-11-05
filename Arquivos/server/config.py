@@ -1,7 +1,22 @@
 """Configurações do servidor web local do painel de rastreio."""
 import os
+import socket
 from dataclasses import dataclass, field
 from pathlib import Path
+
+
+def obter_ip_local() -> str:
+    """Descobre o IP desta máquina na rede local (Wi-Fi) sem enviar nenhum pacote."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            # UDP não transmite nada aqui: só pede ao sistema a interface de saída.
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except OSError:
+            return "127.0.0.1"
 
 
 @dataclass
@@ -50,3 +65,10 @@ class ServerConfig:
         """URL base de acesso ao servidor."""
         display_host = "localhost" if self.host in ("127.0.0.1", "0.0.0.0", "") else self.host
         return f"http://{display_host}:{self.port}"
+
+    @property
+    def url_rede(self) -> str:
+        """URL que outros aparelhos da rede (celular no Wi-Fi) usam para acessar o painel."""
+        if self.host in ("0.0.0.0", ""):
+            return f"http://{obter_ip_local()}:{self.port}"
+        return self.url

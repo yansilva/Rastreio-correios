@@ -2,6 +2,25 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [],
-    "ignoreValues": []
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "3px solid var(--color-border)",
+        "files": [
+          "web/css/components.css"
+        ],
+        "createdAt": "2026-11-05T14:41:04.814Z",
+        "reason": "Falso positivo: borda esquerda de 3px com cor neutra (--color-border), usada como trilho da timeline; não é acento colorido."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "sfmono-regular",
+        "files": [
+          "web/css/components.css"
+        ],
+        "createdAt": "2026-11-05T14:41:05.030Z",
+        "reason": "Fallback monoespaçado documentado em DESIGN.md (SFMono); não é família nova."
+      }
+    ]
   }
 }

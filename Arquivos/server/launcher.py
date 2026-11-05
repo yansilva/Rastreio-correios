@@ -85,7 +85,11 @@ def iniciar_servidor(
     logger.info("INICIANDO SERVIDOR DO PAINEL DE RASTREIO E FRETE")
     logger.info("=" * 60)
     logger.info(f"Diretório base: {cfg.base_dir}")
-    logger.info(f"URL de acesso:  {cfg.url}")
+    if cfg.host in ("0.0.0.0", ""):
+        logger.info(f"URL de acesso (celular no Wi-Fi): {cfg.url_rede}")
+        logger.info("Atenção: escutando na rede local. Qualquer aparelho do mesmo Wi-Fi pode abrir o painel.")
+    else:
+        logger.info(f"URL de acesso:  {cfg.url}")
     logger.info("Pressione Ctrl+C para encerrar o servidor.")
     logger.info("=" * 60)
 

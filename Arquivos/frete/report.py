@@ -330,6 +330,8 @@ class FreteReportGenerator:
         }}
         [data-theme="dark"] h1 {{ color: var(--color-link); }}
         .meta {{ color: var(--color-text-muted); margin-top: 8px; font-size: 0.875rem; }}
+        /* Textos curtos só para o celular: o desktop mostra a frase completa */
+        .so-cel {{ display: none; }}
         .config-info {{
             display: inline-block;
             margin-top: 10px;
@@ -697,28 +699,39 @@ class FreteReportGenerator:
         }}
 
         @media (max-width: 640px) {{
-            body {{ padding: 12px 12px 32px; }}
-            header {{ margin-bottom: 14px; }}
-            .header-tools {{ position: static; display: flex; justify-content: flex-end; margin-bottom: 4px; }}
-            .meta {{ margin-top: 4px; }}
-            .config-info {{ margin-top: 6px; padding: 4px 12px; }}
-            .nav-tabs {{ margin-top: 10px; gap: 8px; }}
-            .nav-tab {{ padding: 9px 14px; }}
+            body {{ padding: 12px 12px 24px; }}
+            /* Título em uma linha (1.25rem, DESIGN.md); o tema fica no canto, na mesma linha do título */
+            header {{ margin-bottom: 14px; text-align: left; }}
+            h1 {{ display: flex; align-items: center; min-height: 44px; padding-right: 52px; font-size: 1.25rem; line-height: 1.6; }}
+            .so-desk {{ display: none; }}
+            .so-cel {{ display: inline; }}
+            .meta {{ margin-top: 2px; font-size: 0.8125rem; line-height: 1.4; }}
+            .config-info {{ margin-top: 6px; padding: 4px 12px; font-size: 0.8125rem; }}
+            /* Nav igual à do painel (lote A): faixa de 44px, uma linha, fixa ao rolar, fundo sólido */
+            .nav-tabs {{
+                position: sticky; top: 0; z-index: 20;
+                flex-wrap: nowrap; gap: 6px; margin: 10px 0 14px 0; padding: 0;
+                background: var(--color-surface);
+            }}
+            .nav-tab {{ flex: 1 1 auto; justify-content: center; min-height: 44px; min-width: 0; padding: 0 10px; font-size: 0.8125rem; white-space: nowrap; }}
+            .nav-tab .icon {{ display: none; }}
             .summary {{ grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }}
-            .summary-card {{ min-width: 0; padding: 10px 6px; }}
-            .summary-number {{ white-space: nowrap; }}
-            .summary-label {{ font-size: 0.75rem; }}
+            .summary-card {{ min-width: 0; padding: 8px 10px; }}
+            .summary-number {{ font-size: 1.25rem; white-space: nowrap; }}
+            .summary-label {{ font-size: 0.75rem; margin-top: 2px; }}
             .servicos-indisponiveis {{ padding: 0 16px 12px; }}
-            .summary-card {{ padding: 10px 12px; }}
-            .summary-number {{ font-size: 1.25rem; }}
-            .summary-label {{ margin-top: 2px; }}
             .filter-bar {{
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px 10px;
-                padding: 12px;
-                margin-bottom: 14px;
+                padding: 10px;
+                margin-bottom: 12px;
             }}
+            /* Tema só com ícone no celular (rótulo continua no aria-label): o título não cruza o botão */
+            .btn-theme {{ width: 44px; padding: 0; justify-content: center; }}
+            .btn-theme span {{ display: none; }}
+            .search-input {{ min-height: 44px; padding: 10px 14px 10px 44px; }}
+            .search-icon {{ left: 14px; }}
             .filter-group {{ flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }}
             .filter-group label {{ font-size: 0.8125rem; line-height: 1.3; }}
             .filter-group input {{ width: 100%; min-width: 0; }}
@@ -746,13 +759,13 @@ class FreteReportGenerator:
                 </button>
             </div>
             <h1>{icone("package")} Opções de Frete Correios</h1>
-            <div class="meta">Consulta de serviços disponíveis para pedidos em aberto · Gerado em {data_geracao}</div>
-            <div class="config-info">{icone("package")} Pacote padrão: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · Origem CEP: {_fmt_cep(config.cep_origem)}</div>
-            <nav class="nav-tabs" aria-label="Navegação do painel">
-                <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel</a>
-                <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
-            </nav>
+            <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Gerado em {data_geracao}</div>
+            <div class="config-info">{icone("package")} Pacote<span class="so-desk"> padrão</span>: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · <span class="so-desk">Origem CEP: </span><span class="so-cel">Origem </span>{_fmt_cep(config.cep_origem)}</div>
         </header>
+        <nav class="nav-tabs" aria-label="Navegação do painel">
+            <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel</a>
+            <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
+        </nav>
 
         <div class="summary" id="resumo" aria-live="polite">
             <div class="summary-card">
@@ -772,14 +785,14 @@ class FreteReportGenerator:
         <div class="filter-bar">
             <div class="search-wrapper">
                 <span class="search-icon" aria-hidden="true">{icone("search")}</span>
-                <input type="search" id="busca" class="search-input" placeholder="Buscar pedido, cliente, cidade ou CEP" aria-label="Buscar pedido, cliente, cidade ou CEP" autocomplete="off" oninput="aplicarFiltros()">
+                <input type="search" id="busca" class="search-input" placeholder="Buscar pedido, cliente, cidade ou CEP" data-placeholder-longo="Buscar pedido, cliente, cidade ou CEP" data-placeholder-curto="Pedido, cliente, cidade ou CEP" aria-label="Buscar pedido, cliente, cidade ou CEP" autocomplete="off" oninput="aplicarFiltros()">
             </div>
             <div class="filter-group">
-                <label for="valMin">Valor mínimo do pedido (R$)</label>
+                <label for="valMin">Valor mínimo<span class="so-desk"> do pedido</span> (R$)</label>
                 <input type="number" id="valMin" min="0" step="any" inputmode="decimal" placeholder="Sem mínimo" oninput="aplicarFiltros()">
             </div>
             <div class="filter-group">
-                <label for="valMax">Valor máximo do pedido (R$)</label>
+                <label for="valMax">Valor máximo<span class="so-desk"> do pedido</span> (R$)</label>
                 <input type="number" id="valMax" min="0" step="any" inputmode="decimal" placeholder="Sem limite" oninput="aplicarFiltros()">
             </div>
             <span class="filter-count" id="filterCount" aria-live="polite"></span>
@@ -805,6 +818,21 @@ class FreteReportGenerator:
             setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         }}
         setTheme(lerTema());
+
+        // Placeholder da busca: frase curta só no celular, frase completa no desktop (mesma regra do painel)
+        (function() {{
+            const busca = document.getElementById('busca');
+            if (!busca || !window.matchMedia) return;
+            const telaPequena = window.matchMedia('(max-width: 640px)');
+            const ajustarPlaceholder = function() {{
+                const curto = busca.getAttribute('data-placeholder-curto');
+                const longo = busca.getAttribute('data-placeholder-longo');
+                const texto = telaPequena.matches && curto ? curto : longo;
+                if (texto) busca.placeholder = texto;
+            }};
+            ajustarPlaceholder();
+            if (telaPequena.addEventListener) telaPequena.addEventListener('change', ajustarPlaceholder);
+        }})();
 
         // Lógica de Filtro: busca de texto e intervalo de valor, combinados
         function normalizarTexto(texto) {{

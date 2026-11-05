@@ -906,15 +906,6 @@ tbody tr:hover {
         font-size: 1.75rem;
     }
 
-    .dashboard {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-
-    .dash-card {
-        padding: 12px 14px;
-    }
-
     .dash-number {
         font-size: 1.25rem;
     }
@@ -936,15 +927,6 @@ tbody tr:hover {
         display: flex;
         justify-content: flex-end;
         margin-bottom: 8px;
-    }
-
-    .sort-select,
-    .btn-link {
-        min-height: 44px;
-    }
-
-    .btn-link {
-        margin-left: 0;
     }
 
     /* Botão de atualizar compacto: só o ícone, com o texto disponível para leitores de tela */
@@ -993,7 +975,6 @@ tbody tr:hover {
     /* Alvos de toque próximos de 44px nos controles principais */
     .filter-pill,
     .btn-clear-filter,
-    .btn-theme,
     .nav-tab,
     .back-link {
         min-height: 44px;
@@ -1296,7 +1277,6 @@ h1 .icon {
 
 /* Ajustes do celular para as regras acima (ficam depois delas para prevalecer na cascata) */
 @media (max-width: 640px) {
-    .options-menu > summary,
     .status-legend-details > summary {
         min-height: 44px;
     }
@@ -1308,12 +1288,8 @@ h1 .icon {
         margin-bottom: 8px;
     }
 
-    .sort-select,
     .btn-link {
         min-height: 44px;
-    }
-
-    .btn-link {
         margin-left: 0;
     }
 }
@@ -1404,6 +1380,7 @@ h1 .icon {
 
     .header-tools .btn-theme {
         min-width: 44px;
+        min-height: 44px;
         padding: 10px;
         justify-content: center;
     }
@@ -1421,14 +1398,17 @@ h1 .icon {
         padding: 0 52px;
     }
 
-    header {
+    /* Resumo em faixa de 4 colunas: número em cima, rótulo curto embaixo, sem o ícone grande */
+    .dashboard {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
         margin-bottom: 16px;
     }
 
-    /* Resumo em uma linha por cartão: número ao lado do rótulo, sem o ícone grande */
     .dash-card {
-        padding: 8px 12px;
-        min-height: 44px;
+        padding: 8px;
+        justify-content: center;
+        text-align: center;
     }
 
     .dash-card .dash-icon {
@@ -1436,9 +1416,18 @@ h1 .icon {
     }
 
     .dash-info {
-        flex-direction: row;
-        align-items: baseline;
-        gap: 8px;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        min-width: 0;
+    }
+
+    .dash-label {
+        font-size: 0.75rem;
+        letter-spacing: 0;
+        text-transform: none;
+        margin-top: 0;
+        overflow-wrap: anywhere;
     }
 
     /* Faixa de ação: título pequeno e os dois botões lado a lado */
@@ -1492,11 +1481,6 @@ h1 .icon {
         gap: 0 4px;
         margin-top: 0;
         font-size: 0.75rem;
-    }
-
-    /* Espaço entre cabeçalho, cartões e busca: da rampa de 14, 16 e 20px */
-    .nav-tabs {
-        margin: 14px 0 20px 0;
     }
 
     .header-main .meta-sep {
@@ -1875,25 +1859,230 @@ main.orders-list {
         padding-bottom: 80px;
     }
 
-    /* Celular: Visão e Opções na mesma linha do Limpar; alvos de toque de 44px e rótulos um degrau menores */
-    .view-option {
-        min-height: 44px;
-        padding: 6px 8px;
-        font-size: 0.8125rem;
+    /* Âncora do skip link e do foco: o início da lista não fica por baixo da nav fixa de 44px */
+    #conteudo {
+        scroll-margin-top: 64px;
+    }
+
+    /* Rolagem até um foco ou âncora deixa 96px livres embaixo, para o botão flutuante não cobrir o alvo */
+    html {
+        scroll-padding-bottom: 96px;
     }
 
     .list-meta .btn-clear-filter {
         padding: 7px 8px;
     }
 
-    /* Resumo em duas colunas, sem uma coluna vazia no fim, e 16px até a faixa de ação e a busca (rampa de espaçamento) */
+    /* Resumo em faixa de 4 colunas, como no painel: número em cima e rótulo curto embaixo */
     .summary {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
         margin-bottom: 16px;
+    }
+
+    .summary-card {
+        padding: 6px 2px;
+    }
+
+    .summary-number {
+        font-size: 1.25rem;
+        margin-bottom: 0;
+    }
+
+    .summary-label {
+        font-size: 0.75rem;
+        letter-spacing: 0;
+        text-transform: none;
+        overflow-wrap: anywhere;
     }
 
     /* Cartão do pedido no celular: só Pedido, Cliente, Rastreio, Dias e Ações */
     .table-wrapper .col-secundaria {
         display: none;
+    }
+}
+
+/* Lote C */
+/* Tabela indisponível no celular: mesmo visual do :disabled, sem perder foco nem toque (aria-disabled) */
+/* Indisponível sem opacity (contraste): texto em --color-text-muted e o estado marcado por um contorno interno */
+.view-option[aria-disabled="true"] {
+    color: var(--color-text-muted);
+    box-shadow: inset 0 0 0 1px var(--color-border-strong);
+    cursor: not-allowed;
+}
+
+.view-switch .view-option[aria-disabled="true"]:hover:not([aria-pressed="true"]):not(:disabled) {
+    color: inherit;
+    background: transparent;
+}
+
+/* Lote B (celular, <= 640px): busca, visão, Opções e contador numa linha só.
+   A busca vira um ícone de 44px e expande ao focar ou ao ter texto; enquanto expande,
+   visão e Opções saem da linha (Limpar aparece no lugar). Fica no fim do arquivo para
+   vencer as regras de alvo de 40px do desktop, que valem para qualquer largura. */
+@media (max-width: 640px) {
+    .controls-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto auto;
+        align-items: center;
+        gap: 8px 4px;
+        margin-bottom: 8px;
+    }
+
+    /* Os blocos viram itens da grade do painel: a linha da busca e a da visão são uma só */
+    .search-row,
+    .list-meta {
+        display: contents;
+    }
+
+    .search-row .search-wrapper {
+        order: 1;
+        width: 44px;
+        justify-self: start;
+    }
+
+    .search-row .filter-count {
+        order: 2;
+        font-size: 0.75rem;
+        justify-self: end;
+    }
+
+    .list-meta .btn-clear-filter {
+        order: 3;
+        display: none;
+    }
+
+    /* Limpar aparece sempre que há filtro ou busca (classe .visible, definida pelo JS).
+       Quando aparece, ocupa uma linha própria logo abaixo da busca, sem texto quebrado. */
+    .list-meta .btn-clear-filter.visible {
+        display: inline-flex;
+        grid-row: 2;
+        grid-column: 1 / -1;
+        justify-self: start;
+        white-space: nowrap;
+    }
+
+    /* O contorno do controle segmentado (2px + borda) não soma altura à linha: 44px de alvo, 44px de linha */
+    .list-meta .view-switch {
+        order: 4;
+        margin: -3px 0;
+    }
+
+    .list-meta .options-menu {
+        order: 5;
+        position: relative;
+    }
+
+    /* Pílulas numa faixa própria, com a folga compensada para não empurrar o primeiro pedido */
+    .filters-row {
+        order: 6;
+        grid-column: 1 / -1;
+        min-width: 0;
+        margin: -4px 0;
+    }
+
+    /* contain: a faixa de pílulas não conta a largura do conteúdo para a grade (causa do estouro em 320px) */
+    .filter-pills {
+        gap: 8px;
+        contain: inline-size;
+    }
+
+    .filter-pill {
+        min-height: 44px;
+    }
+
+    /* Busca fechada: só o ícone (o campo fica transparente, mas recebe o toque) */
+    .search-input {
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        color: transparent;
+        cursor: pointer;
+    }
+
+    .search-input::placeholder {
+        color: transparent;
+    }
+
+    /* Busca aberta (foco ou texto): ocupa a linha */
+    .controls-panel:has(.search-wrapper:focus-within, .search-input:not(:placeholder-shown)) .search-wrapper {
+        width: auto;
+    }
+
+    /* Com texto e sem foco, a busca ocupa a linha toda; visão, Opções e contador vêm na linha de baixo (não dá para espremer a busca em 2px) */
+    .controls-panel:has(.search-input:not(:placeholder-shown)) .search-wrapper {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+    }
+
+    .controls-panel:has(.search-wrapper:focus-within, .search-input:not(:placeholder-shown)) .search-input {
+        padding: 11px 14px 11px 46px;
+        color: var(--color-text-main);
+        cursor: text;
+    }
+
+    .controls-panel:has(.search-wrapper:focus-within, .search-input:not(:placeholder-shown)) .search-input::placeholder {
+        color: var(--color-text-subtle);
+    }
+
+    /* Visão e Opções saem de cena só enquanto a busca está em foco (com texto e sem foco, continuam visíveis) */
+    .controls-panel:has(.search-wrapper:focus-within) .view-switch,
+    .controls-panel:has(.search-wrapper:focus-within) .options-menu {
+        display: none;
+    }
+
+    /* Visão: rótulos um degrau menores para as três caberem ao lado da busca fechada */
+    .view-option {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 6px 4px;
+        font-size: 0.75rem;
+    }
+
+    /* Opções: painel flutua sobre a lista, como no desktop, em vez de empurrá-la */
+    .options-menu > summary {
+        min-height: 44px;
+        padding: 4px 0;
+        font-size: 0.8125rem;
+    }
+
+    /* Fechado, o painel sai da árvore de foco e da tela (os controles dele não recebem Tab) */
+    .options-menu:not([open]) > .options-panel {
+        display: none;
+    }
+
+    .options-menu[open] > .options-panel {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 30;
+        width: min(320px, calc(100vw - 24px));
+        margin-top: 4px;
+        border-color: var(--color-border-strong);
+        box-shadow: var(--shadow-lg);
+    }
+
+    /* Ordem: 16px para o iOS não ampliar a página ao focar, e 44px de altura */
+    .sort-select {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    /* Limpar e demais alvos da linha: nenhum abaixo de 44px */
+    .btn-clear-filter {
+        min-height: 44px;
+    }
+
+    /* Alvos de 44px que as regras de desktop (40px) e as de Opções sobrescreviam: vêm por último */
+    .status-legend-details > summary,
+    .order-history > summary,
+    .btn-link {
+        min-height: 44px;
+    }
+
+    /* min-height não vale em elemento inline: o link "Ver o painel" (a) vira bloco-flex para ter os 44px */
+    a.btn-link {
+        display: inline-flex;
+        align-items: center;
     }
 }

@@ -706,10 +706,23 @@ class TestFreteReportGenerator(unittest.TestCase):
 
     def test_rotulos_e_placeholders_do_filtro(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
-        self.assertIn("Valor mínimo do pedido (R$)", html)
-        self.assertIn("Valor máximo do pedido (R$)", html)
+        # No celular o trecho " do pedido" fica oculto; no desktop o rótulo completo aparece
+        self.assertIn('Valor mínimo<span class="so-desk"> do pedido</span> (R$)', html)
+        self.assertIn('Valor máximo<span class="so-desk"> do pedido</span> (R$)', html)
         self.assertIn('placeholder="Sem mínimo"', html)
         self.assertIn('placeholder="Sem limite"', html)
+
+    def test_celular_titulo_1_25rem_e_placeholder_curto(self):
+        import re
+        html = self._renderizar({"03220": self._servico(20.0, 2)})
+        bloco = re.search(r"@media \(max-width: 640px\) \{(.*?)\n        \}", html, re.S)
+        self.assertIsNotNone(bloco)
+        self.assertRegex(bloco.group(1), r"h1 \{[^}]*font-size: 1\.25rem")
+        # Desktop: frase completa; celular: frase curta, escolhida por matchMedia (como o painel)
+        self.assertIn('placeholder="Buscar pedido, cliente, cidade ou CEP"', html)
+        self.assertIn('data-placeholder-longo="Buscar pedido, cliente, cidade ou CEP"', html)
+        self.assertIn('data-placeholder-curto="Pedido, cliente, cidade ou CEP"', html)
+        self.assertIn("window.matchMedia('(max-width: 640px)')", html)
 
     def test_abas_de_navegacao_como_o_painel(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
