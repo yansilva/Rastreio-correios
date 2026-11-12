@@ -836,7 +836,7 @@ class FreteReportGenerator:
     <div class="container">
         <header>
             <div class="header-tools">
-                <button type="button" class="btn-theme" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro">
+                <button type="button" class="btn-theme" onclick="toggleTheme()">
                     {icone("moon")}{icone("sun")}
                     <span class="tema-escuro">Escuro</span><span class="tema-claro">Claro</span>
                 </button>
@@ -847,6 +847,7 @@ class FreteReportGenerator:
         </header>
         <nav class="nav-tabs" aria-label="Navegação do painel">
             <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel</a>
+            <a href="entregues_semana.html" class="nav-tab">{icone("check-circle")} Entregues</a>
             <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
         </nav>
 

@@ -410,6 +410,28 @@ class TestTrackingService(unittest.TestCase):
         self.assertEqual(voltando.status_categoria, "devolvido")
         self.assertFalse(TrackingService.deve_ocultar_card(voltando, data_referencia=ref_now))
 
+    def test_entregue_hoje_aparece_no_painel(self):
+        """Entregue no mesmo dia que a consulta: o cartão fica visível até o dia seguinte."""
+        ref_now = datetime(2026, 11, 12, 15, 0, 0)
+        entregue_hoje = ObjetoRastreio(
+            codigo="AE500BR",
+            status_categoria="entregue",
+            is_entregue=True,
+            data_entrega_dt=datetime(2026, 11, 12, 8, 30, 0),
+        )
+        self.assertFalse(TrackingService.deve_ocultar_card(entregue_hoje, data_referencia=ref_now))
+
+    def test_entregue_ontem_fica_oculto(self):
+        """Entregue ontem já sai do painel, mesmo que ainda esteja na semana."""
+        ref_now = datetime(2026, 11, 12, 15, 0, 0)
+        entregue_ontem = ObjetoRastreio(
+            codigo="AE501BR",
+            status_categoria="entregue",
+            is_entregue=True,
+            data_entrega_dt=datetime(2026, 11, 11, 23, 50, 0),
+        )
+        self.assertTrue(TrackingService.deve_ocultar_card(entregue_ontem, data_referencia=ref_now))
+
 
 class TestConsultaCorreiosRetrocompatibilidade(unittest.TestCase):
     """Testes de compatibilidade do script consulta_correios.py."""

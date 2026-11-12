@@ -80,7 +80,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">2</span>
-                    <span class="dash-label">Entregues</span>
+                    <span class="dash-label">Entregues hoje</span>
                 </div>
             </div>
             <div class="dash-card{zero(1)}">
@@ -352,7 +352,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     <div class="container">
         <header>
             <div class="header-tools">
-                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+                <button id="btnTheme" class="btn-theme">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
                 <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
@@ -372,6 +372,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         <nav class="nav-tabs" aria-label="Navegação do painel">
             <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
             {atrasados_link_html}
+            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
             <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
         </nav>
 
@@ -465,7 +466,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     <div class="container">
         <header>
             <div class="header-tools">
-                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+                <button id="btnTheme" class="btn-theme">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
             </div>
@@ -477,6 +478,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
         <nav class="nav-tabs" aria-label="Navegação de atrasados">
             <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
             <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
+            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
             <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
         </nav>
 

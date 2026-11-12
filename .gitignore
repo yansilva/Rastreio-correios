@@ -29,9 +29,11 @@ coverage.xml
 relatorio_rastreio.html
 pedidos_atrasados.html
 opcoes_frete.html
+entregues_semana.html
 alert_frete.js
 Arquivos/rastreios_tiny.csv
 
 # Relatórios de segurança
 gitguard-report-*.md
 Arquivos/rastreios_cache.json
+Arquivos/entregas_historico.json

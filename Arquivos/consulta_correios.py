@@ -16,6 +16,7 @@ from correios import (
     CorreiosClient,
     CorreiosConfig,
     TrackingService,
+    historico_entregas,
 )
 from correios.cache import carregar_cache, salvar_cache
 from correios.cards import (
@@ -36,6 +37,7 @@ from correios.cards import (
     zero,
 )
 from correios.icons import ICON_SPRITE
+from correios.pagina_entregues import gerar_pagina_entregues
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -171,6 +173,12 @@ def processar(usar_cache=False):
         if usar_cache:
             print(f"Regerando o relatório com os dados consultados em {data_dados} (sem chamar as APIs).")
 
+        # Histórico dos pedidos entregues (aba Entregues), na mesma pasta do script e fora do git
+        agora = datetime.now()
+        caminho_historico = os.path.join(os.path.dirname(os.path.abspath(__file__)), historico_entregas.ARQUIVO)
+        historico = historico_entregas.carregar(caminho_historico)
+        acompanhados_novo = {}
+
         # Garante que procuramos o CSV na mesma pasta do script
         caminho_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), CSV_ENTRADA)
         print(f"Lendo '{caminho_csv}'...")
@@ -204,7 +212,7 @@ def processar(usar_cache=False):
     <div class="container">
         <header>
             <div class="header-tools">
-                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+                <button id="btnTheme" class="btn-theme">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
                 <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
@@ -224,6 +232,7 @@ def processar(usar_cache=False):
         <nav class="nav-tabs" aria-label="Navegação do painel">
             <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
             {atrasados_link}
+            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
             <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
         </nav>
 
@@ -330,9 +339,17 @@ def processar(usar_cache=False):
             # Processamento e classificação com TrackingService
             obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
             status_category = obj_classificado.status_categoria
+            historico_entregas.registrar_entrega(historico, obj_classificado, pedido, cliente, agora)
+            if rastreio:
+                acompanhados_novo[str(rastreio)] = {
+                    "pedido": str(pedido),
+                    "cliente": cliente,
+                    "situacao_tiny": situacao_tiny,
+                    "visto_em": agora.isoformat(timespec="seconds"),
+                }
 
             # Pedido que já não precisa aparecer (devolvido à loja, entregue há tempo) some do painel e dos totais
-            if TrackingService.deve_ocultar_card(obj_classificado):
+            if TrackingService.deve_ocultar_card(obj_classificado, data_referencia=agora):
                 print(f">> Pedido #{pedido} ({rastreio}) — fora do painel ({status_category})")
                 if not usar_cache:
                     time.sleep(0.2)
@@ -439,10 +456,33 @@ def processar(usar_cache=False):
                 time.sleep(0.2)
 
         if not usar_cache:
+            # Pedido que saiu do Tiny (entregue, por isso fora do CSV) recebe uma última consulta, uma vez só
+            for rastreio_saiu, visto in historico["acompanhados"].items():
+                if rastreio_saiu in acompanhados_novo:
+                    continue
+                try:
+                    bruto = consultar_objeto(rastreio_saiu, token)
+                    objeto_saiu = TrackingService.processar_objeto(rastreio_saiu, bruto)
+                    if historico_entregas.registrar_entrega(
+                        historico, objeto_saiu, visto.get("pedido", ""), visto.get("cliente", ""), agora
+                    ):
+                        print(f">> Entrega do rastreio {rastreio_saiu} (pedido #{visto.get('pedido', '')}) registrada.")
+                except Exception as exc:
+                    print(f"Aviso: não foi possível consultar o rastreio {rastreio_saiu} que saiu do Tiny ({exc}).")
+                time.sleep(0.2)
+            historico["acompanhados"] = acompanhados_novo
+
             try:
                 salvar_cache(caminho_cache, objetos_cache)
             except (OSError, TypeError, ValueError) as exc:
                 print(f"Aviso: não foi possível gravar o cache dos Correios ({exc}).")
+
+        # Poda e grava o histórico antes de gerar as páginas: se a geração falhar, a entrega já está salva
+        historico_entregas.podar(historico, agora)
+        try:
+            historico_entregas.salvar(caminho_historico, historico)
+        except OSError as exc:
+            print(f"Aviso: não foi possível gravar o histórico de entregas ({exc}).")
 
         # Pedidos que pedem ação primeiro; entre atrasados, os mais antigos antes
         orders_html.sort(key=lambda item: (item[0], item[1]))
@@ -472,7 +512,7 @@ def processar(usar_cache=False):
                 <div class="dash-icon dash-icon-green"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg></div>
                 <div class="dash-info">
                     <span class="dash-number dash-number-green">{entregues_count}</span>
-                    <span class="dash-label">Entregues</span>
+                    <span class="dash-label">Entregues hoje</span>
                 </div>
             </div>
 
@@ -637,7 +677,7 @@ def processar(usar_cache=False):
     <div class="container">
         <header>
             <div class="header-tools">
-                <button id="btnTheme" class="btn-theme" aria-label="Alternar tema claro/escuro">
+                <button id="btnTheme" class="btn-theme">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
             </div>
@@ -649,6 +689,7 @@ def processar(usar_cache=False):
         <nav class="nav-tabs" aria-label="Navegação de atrasados">
             <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
             <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
+            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
             <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
         </nav>
 
@@ -670,6 +711,12 @@ def processar(usar_cache=False):
         print(
             f"Página de atrasados salva em '{caminho_atrasados}' ({len(atrasados_data)} pedido(s) com mais de 3 dias)."
         )
+
+        # Página da aba Entregues (semana atual e anterior), a partir do histórico já salvo
+        try:
+            gerar_pagina_entregues(historico, agora, pasta_projeto)
+        except Exception as exc:
+            print(f"Aviso: não foi possível gerar a página Entregues ({exc}).")
 
         return True
 

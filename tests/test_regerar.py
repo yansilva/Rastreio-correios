@@ -1,5 +1,6 @@
 """Testes do cache dos Correios e da regeração do relatório sem chamar as APIs."""
 import io
+import json
 import os
 import re
 import sys
@@ -7,7 +8,9 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+import requests
 
 _raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _arquivos = os.path.join(_raiz, "Arquivos")
@@ -302,6 +305,171 @@ class TestRegerarSemRede(unittest.TestCase):
             self.assertIs(resultado, False)
             self.assertIn("não há dados em cache", saida.getvalue())
             self.assertFalse(Path(pasta, "relatorio_rastreio.html").exists())
+
+
+def _evento_iso(dias: float, descricao: str) -> dict:
+    quando = (datetime.now() - timedelta(days=dias)).replace(microsecond=0).isoformat()
+    return {"dtHrCriado": quando, "descricao": descricao, "unidade": {"endereco": {"cidade": "RIO DE JANEIRO", "uf": "RJ"}}}
+
+
+def _raw_entregue() -> dict:
+    return {"eventos": [_evento_iso(1, "Objeto entregue ao destinatário"), _evento_iso(4, "Objeto postado")]}
+
+
+def _raw_em_transito() -> dict:
+    return {"eventos": [_evento_iso(1, "Objeto em transferência"), _evento_iso(4, "Objeto postado")]}
+
+
+class TestHistoricoEntregasEmProcessar(unittest.TestCase):
+    """processar() alimenta o histórico de entregas; a última consulta só acontece em consulta real."""
+
+    CSV = "Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente\n"
+
+    def _ambiente(self, pasta, csv_linhas, cache=None, historico=None):
+        arquivos = os.path.join(pasta, "Arquivos")
+        os.makedirs(arquivos)
+        Path(arquivos, "rastreios_tiny.csv").write_text(self.CSV + csv_linhas, encoding="utf-8")
+        if cache is not None:
+            salvar_cache(os.path.join(arquivos, "rastreios_cache.json"), cache, datetime.now())
+        if historico is not None:
+            Path(arquivos, "entregas_historico.json").write_text(json.dumps(historico), encoding="utf-8")
+        return os.path.join(arquivos, "consulta_correios.py")
+
+    def _rodar(self, falso_modulo, usar_cache, consultar):
+        with (
+            patch.object(consulta_correios, "__file__", falso_modulo),
+            patch.object(consulta_correios, "obter_token", return_value="tok"),
+            patch.object(consulta_correios, "consultar_objeto", consultar),
+            patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+            patch.object(consulta_correios.time, "sleep"),
+            patch("sys.stdout", new_callable=io.StringIO),
+        ):
+            return consulta_correios.processar(usar_cache=usar_cache)
+
+    @staticmethod
+    def _respostas(respostas):
+        def fake(codigo, _token):
+            valor = respostas.get(codigo)
+            if isinstance(valor, Exception):
+                raise valor
+            return valor
+
+        return fake
+
+    @staticmethod
+    def _historico(pasta):
+        return json.loads(Path(pasta, "Arquivos", "entregas_historico.json").read_text(encoding="utf-8"))
+
+    def test_processar_registra_entregue_no_historico(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(
+                pasta,
+                "42517,Enviado,AE023423841BR,Fulano de Tal\n",
+                cache={"AE023423841BR": _raw_entregue()},
+            )
+            consultar = MagicMock(side_effect=AssertionError("chamou a rede"))
+            resultado = self._rodar(falso, usar_cache=True, consultar=consultar)
+
+            self.assertIsNot(resultado, False)
+            consultar.assert_not_called()
+            item = self._historico(pasta)["entregas"]["AE023423841BR"]
+            self.assertEqual(item["pedido"], "42517")
+            self.assertEqual(item["cliente"], "Fulano de Tal")
+            self.assertEqual(item["cidade"], "RIO DE JANEIRO/RJ")
+            self.assertIsNotNone(item["postado_em"])
+
+    def test_rastreio_que_saiu_do_tiny_recebe_uma_consulta(self):
+        historico = {
+            "versao": 1,
+            "acompanhados": {"AE111BR": {"pedido": "42934", "cliente": "Fulano", "situacao_tiny": "Enviado", "visto_em": "2026-11-12T10:30:00"}},
+            "entregas": {},
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(pasta, "42935,Enviado,AE222BR,Beltrana\n", historico=historico)
+            consultar = MagicMock(
+                side_effect=self._respostas({"AE111BR": _raw_entregue(), "AE222BR": _raw_em_transito()})
+            )
+            resultado = self._rodar(falso, usar_cache=False, consultar=consultar)
+
+            self.assertIsNot(resultado, False)
+            chamadas = [c.args[0] for c in consultar.call_args_list]
+            self.assertEqual(chamadas.count("AE111BR"), 1)
+            dados = self._historico(pasta)
+            self.assertEqual(dados["entregas"]["AE111BR"]["pedido"], "42934")
+            self.assertEqual(dados["entregas"]["AE111BR"]["cliente"], "Fulano")
+            self.assertEqual(set(dados["acompanhados"]), {"AE222BR"})
+
+    def test_regerar_pelo_cache_nao_faz_ultima_consulta(self):
+        historico = {
+            "versao": 1,
+            "acompanhados": {"AE111BR": {"pedido": "42934", "cliente": "Fulano", "situacao_tiny": "Enviado", "visto_em": "x"}},
+            "entregas": {},
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(
+                pasta,
+                "42935,Enviado,AE222BR,Beltrana\n",
+                cache={"AE222BR": _raw_em_transito()},
+                historico=historico,
+            )
+            consultar = MagicMock()
+            resultado = self._rodar(falso, usar_cache=True, consultar=consultar)
+
+            self.assertIsNot(resultado, False)
+            consultar.assert_not_called()
+            dados = self._historico(pasta)
+            self.assertEqual(set(dados["acompanhados"]), {"AE111BR"})
+            self.assertEqual(dados["entregas"], {})
+
+    def test_entrada_sem_entregue_em_nao_derruba_o_painel(self):
+        historico = {
+            "versao": 1,
+            "acompanhados": {},
+            "entregas": {"RUIM": {"pedido": "9", "rastreio": "RUIM"}},
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(
+                pasta,
+                "42935,Enviado,AE222BR,Beltrana\n",
+                cache={"AE222BR": _raw_em_transito()},
+                historico=historico,
+            )
+            resultado = self._rodar(falso, usar_cache=True, consultar=MagicMock())
+
+            self.assertIsNot(resultado, False)
+            self.assertTrue(Path(pasta, "relatorio_rastreio.html").exists())
+            self.assertTrue(Path(pasta, "entregues_semana.html").exists())
+            self.assertEqual(self._historico(pasta)["entregas"], {})
+
+    def test_falha_ao_gerar_pagina_entregues_nao_devolve_false(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(pasta, "42935,Enviado,AE222BR,Beltrana\n", cache={"AE222BR": _raw_em_transito()})
+            with patch.object(consulta_correios, "gerar_pagina_entregues", side_effect=ValueError("quebrou")):
+                resultado = self._rodar(falso, usar_cache=True, consultar=MagicMock())
+
+            self.assertIsNot(resultado, False)
+            self.assertTrue(Path(pasta, "relatorio_rastreio.html").exists())
+
+    def test_falha_na_ultima_consulta_nao_derruba_relatorio(self):
+        historico = {
+            "versao": 1,
+            "acompanhados": {"AE111BR": {"pedido": "42934", "cliente": "Fulano", "situacao_tiny": "Enviado", "visto_em": "x"}},
+            "entregas": {},
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            falso = self._ambiente(pasta, "42935,Enviado,AE222BR,Beltrana\n", historico=historico)
+            consultar = MagicMock(
+                side_effect=self._respostas(
+                    {"AE111BR": requests.RequestException("sem rede"), "AE222BR": _raw_em_transito()}
+                )
+            )
+            resultado = self._rodar(falso, usar_cache=False, consultar=consultar)
+
+            self.assertIsNot(resultado, False)
+            self.assertTrue(Path(pasta, "relatorio_rastreio.html").exists())
+            dados = self._historico(pasta)
+            self.assertEqual(dados["entregas"], {})
+            self.assertEqual(set(dados["acompanhados"]), {"AE222BR"})
 
 
 class TestUpdateManagerRegenerate(unittest.TestCase):

@@ -138,7 +138,8 @@ class TrackingService:
         Aplica as regras de visibilidade no dashboard:
         - Devolvidos: ocultar assim que o objeto é entregue de volta ao remetente (a loja); enquanto ainda
           está voltando, ocultar se decorridas mais de 24 horas desde o evento de devolução.
-        - Entregues: ocultar se entregue em semana anterior, ou na semana atual após sexta-feira 18:00.
+        - Entregues: ocultar, salvo se foram entregues hoje. Sem data de entrega, ocultar.
+          A aba "Entregues" (histórico local) é que guarda a semana.
         """
         now = data_referencia or datetime.now()
 
@@ -154,10 +155,6 @@ class TrackingService:
         if objeto.status_categoria == "entregue":
             if not objeto.data_entrega_dt:
                 return True
-            entregue_nesta_semana = objeto.data_entrega_dt.isocalendar()[:2] == now.isocalendar()[:2]
-            if entregue_nesta_semana:
-                apos_sexta_18h = (now.weekday() == 4 and now.hour >= 18) or (now.weekday() > 4)
-                return apos_sexta_18h
-            return True
+            return objeto.data_entrega_dt.date() != now.date()
 
         return False

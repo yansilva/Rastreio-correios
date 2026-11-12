@@ -93,16 +93,17 @@ def test_ux_tema_botao_e_script():
     assert "data-theme" in app_js
     assert "localStorage.setItem('theme'" in app_js or 'localStorage.setItem("theme"' in app_js
     assert "btnTheme" in app_js
-    assert "aria-label" in app_js
+    # O nome acessível do botão é o texto visível (WCAG 2.5.3): o JS troca o texto, não o aria-label
+    assert "btnThemeText" in app_js
+    assert "aria-label" not in app_js
 
     # Garante que logs.js NÃO registra o listener para evitar execução duplicada
     logs_js = (raiz / "web" / "js" / "logs.js").read_text(encoding="utf-8")
     assert "btnTheme" not in logs_js
 
-    # Template possui botão com id, classe e aria-label
-    assert 'id="btnTheme"' in consulta_py
-    assert 'class="btn-theme"' in consulta_py
-    assert 'aria-label="Alternar tema claro/escuro"' in consulta_py
+    # Template possui botão com id e classe; sem aria-label, para o nome ser o texto visível
+    assert 'id="btnTheme" class="btn-theme">' in consulta_py
+    assert 'aria-label="Alternar tema' not in consulta_py
 
 
 def test_ux_busca_filtros_organizacao():

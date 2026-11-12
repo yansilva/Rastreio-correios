@@ -313,6 +313,15 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Primeiro pedido:** medido sem filtros: 360px y=417, 375px y≈419, 412px y=379 (meta de ≤420 em 360 e 375px). A medição de 375px é da 12ª rodada (lote L7); não foi refeita na documentação.
 - **Limitação conhecida:** no celular, "Limpar filtros" só aparece com a busca aberta. Com só um filtro de status ativo, a volta é pela pílula "Todos".
 
+### Página Entregues (`entregues_semana.html`)
+- **Escopo:** pedidos entregues na semana do calendário atual (segunda a domingo) e na anterior, lidos do histórico local (`Arquivos/entregas_historico.json`, fora do git). Gerada por `Arquivos/correios/pagina_entregues.py`.
+- **Aba:** "Entregues" (ícone `check-circle`) entra no `.nav-tabs` do painel, de Atrasados e de Opções de Frete, e na demo. A aba ativa leva `aria-current="page"`.
+- **Seletor de semana (`.entregues-seletor`):** dois botões segmentados, "Esta semana (dd/mm–dd/mm)" e "Semana anterior", com `aria-pressed`. As duas listas vêm no HTML e `web/js/entregues.js` mostra uma delas (atributo `hidden`). A escolha não é salva. No celular, o seletor ocupa a largura toda e os botões têm 44px.
+- **Resumo:** três cartões `.summary` com o número primeiro: total de entregues, média de dias e o pedido mais demorado. Dias com uma casa decimal, vírgula como separador.
+- **Lista:** tabela `.table-wrapper` com Pedido, Cliente, Rastreio (com `.btn-copy` "Copiar rastreio"), Cidade, Postado em, Entregue em e Dias. No celular, a mesma tabela vira cartões (regra do `.table-wrapper`). Ordem: da entrega mais recente para a mais antiga.
+- **Dias:** "—" quando não há data de postagem (fica fora da média). Acima de 7 dias, o valor recebe o tom de aviso `.dias-badge.urgencia-baixa`, como em atrasados; nunca verde (One Meaning Per Color).
+- **Semana vazia:** só o estado vazio "Nenhuma entrega nesta semana", sem cartões de resumo e sem zeros (Zero Is Calm).
+
 ## Do's and Don'ts
 
 ### Do:

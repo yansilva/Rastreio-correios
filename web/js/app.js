@@ -30,15 +30,11 @@ function setTheme(theme) {
     storeTheme(theme);
 
     var themeBtn = document.getElementById('btnThemeText');
-    var themeContainer = document.getElementById('btnTheme');
 
     if (themeBtn) {
-        // O ícone (sol ou lua) é alternado por CSS conforme o tema; aqui só o texto
+        // O ícone (sol ou lua) é alternado por CSS conforme o tema; aqui só o texto.
+        // Sem rótulo extra no botão: o nome acessível é o próprio texto visível (WCAG 2.5.3).
         themeBtn.textContent = theme === 'dark' ? 'Claro' : 'Escuro';
-    }
-    if (themeContainer) {
-        themeContainer.setAttribute('aria-label',
-            theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
     }
 }
 
