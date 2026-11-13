@@ -300,6 +300,8 @@ Bordas são sempre finas (1px) em `--color-border`. A exceção é a barra later
 - **Celular:** a visão Tabela fica desativada (ver Controles da lista).
 
 ### Navigation (`.nav-tabs`)
+- **Fonte única:** o menu sai de `nav_html(ativa, atrasados=None)` em `Arquivos/correios/navegacao.py`. Não copie o `<nav>` em nenhuma página. Ordem fixa: Painel, Atrasados, Entregues, Opções de Frete. A aba ativa leva `class="nav-tab active"` e `aria-current="page"`.
+- **Contagem de atrasados:** a aba Atrasados aparece em todas as páginas, na mesma posição. O número (`.atrasados-count`) só aparece quando a página recebe a contagem e ela é maior que zero (Zero Is Calm). Recebem a contagem: o painel, a página Atrasados, a página Entregues (pelo `processar`) e a demo. A página de frete não recebe a contagem: a aba aparece sem número.
 - **Style:** pílulas com borda fina. Aba atual com estado neutro de "selecionado": superfície mais forte (`--color-surface-hover`), texto principal e sublinhado azul de 2px (`--color-link`) na base. Sem sombra nem brilho; o azul sólido fica reservado ao filtro ativo e ao botão flutuante.
 - **Hover:** texto e borda em azul. Na aba atual, o hover mantém o texto principal.
 - **Celular (até 640px):** a nav fica fora do `<header>` e é `position: sticky` no topo, com fundo de Cartão Branco (`--color-surface`), 44px de altura e as três abas numa linha só, sem ícones e em 0.8125rem. Ao rolar, o conteúdo some por baixo dela sem transparência. Os alvos de toque têm 44px.

@@ -136,6 +136,9 @@ CODIGO_ACESSO=seu_codigo_de_acesso_aqui
 # Configuração de envio
 CEP_ORIGEM=seu_cep_origem_aqui
 
+# Pedidos que ficam fora do painel (números separados por vírgula; padrão 39192; vazio não ignora nada)
+PEDIDOS_IGNORADOS=39192
+
 # Servidor (Opcional - padrão: 127.0.0.1:8000)
 SERVER_HOST=127.0.0.1
 SERVER_PORT=8000

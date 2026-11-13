@@ -79,15 +79,27 @@ class TinyClient:
             data_inicial,
             data_final,
         )
+        return self._chamar(self.config.url_pesquisa, params, f"página {pagina}")
 
+    def obter_pedido(self, pedido_id: str | int) -> dict[str, Any]:
+        """Consulta um pedido pelo id no Tiny (pedido.obter.php). Devolve o JSON completo da API."""
+        params = {
+            "token": self.config.token,
+            "formato": self.config.formato,
+            "id": pedido_id,
+        }
+        return self._chamar(self.config.url_obter, params, f"pedido {pedido_id}")
+
+    def _chamar(self, url: str, params: dict[str, Any], descricao: str) -> dict[str, Any]:
+        """Uma chamada GET à API do Tiny, com timeout, novas tentativas e erros tratados (token mascarado)."""
         try:
             response = self._com_tentativas(
                 lambda: requests.get(
-                    self.config.url_pesquisa,
+                    url,
                     params=params,
                     timeout=self.config.timeout_segundos,
                 ),
-                f"página {pagina}",
+                descricao,
             )
         except requests.exceptions.Timeout as exc:
             logger.error("Timeout de %ss excedido na chamada ao Tiny ERP", self.config.timeout_segundos)

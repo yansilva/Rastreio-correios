@@ -918,45 +918,62 @@ class TestConsultaFreteRetrocompatibilidade(unittest.TestCase):
 
 
 class TestChamadasTinyDoFrete(unittest.TestCase):
-    """Chamadas diretas ao Tiny no consulta_frete: timeout obrigatório e erro não apaga a página."""
+    """O frete fala com o Tiny pelo TinyClient (timeout, novas tentativas, token mascarado)."""
+
+    TOKEN = {"TOKEN_TINY": "tok_teste_123"}
 
     @staticmethod
-    def _resposta(json_dados):
+    def _resposta(json_dados, status=200):
         resposta = MagicMock()
+        resposta.status_code = status
         resposta.json.return_value = json_dados
         return resposta
 
-    def test_buscar_pedidos_abertos_tem_timeout(self):
+    @staticmethod
+    def _silencio():
         import io
 
+        return patch("sys.stdout", new_callable=io.StringIO)
+
+    def test_buscar_pedidos_abertos_usa_o_timeout_do_tiny(self):
         import consulta_frete
+        from tiny import TinyConfig
 
         resposta = self._resposta({"retorno": {"status": "OK", "pedidos": [], "numero_paginas": 1}})
-        with patch.object(consulta_frete.requests, "get", return_value=resposta) as get, patch(
-            "sys.stdout", new_callable=io.StringIO
-        ):
+        with patch.dict(os.environ, self.TOKEN), patch("tiny.client.requests.get", return_value=resposta) as get, self._silencio():
             consulta_frete.buscar_pedidos_abertos()
-        self.assertEqual(get.call_args.kwargs.get("timeout"), consulta_frete._frete_config.timeout_segundos)
+        self.assertEqual(get.call_args.kwargs.get("timeout"), TinyConfig().timeout_segundos)
 
-    def test_obter_cep_destino_tem_timeout(self):
-        import io
-
+    def test_buscar_pedidos_abertos_filtra_em_aberto_sem_rastreio(self):
         import consulta_frete
 
-        resposta = self._resposta({"retorno": {"status": "NOK"}})
-        with patch.object(consulta_frete.requests, "get", return_value=resposta) as get, patch(
-            "sys.stdout", new_callable=io.StringIO
-        ):
-            consulta_frete.obter_cep_destino(123)
-        self.assertEqual(get.call_args.kwargs.get("timeout"), consulta_frete._frete_config.timeout_segundos)
+        brutos = [
+            {"pedido": {"id": 1, "numero": "1", "situacao": "Aberto", "codigo_rastreamento": ""}},
+            {"pedido": {"id": 2, "numero": "2", "situacao": "Aberto", "codigo_rastreamento": "AB123BR"}},
+            {"pedido": {"id": 3, "numero": "3", "situacao": "Em aberto", "codigo_rastreamento": ""}},
+            {"pedido": {"id": 4, "numero": "4", "situacao": "Enviado", "codigo_rastreamento": ""}},
+        ]
+        with patch.object(consulta_frete, "TinyClient") as cliente_cls, self._silencio():
+            cliente_cls.return_value.pesquisar_todos_pedidos.return_value = brutos
+            resultado = consulta_frete.buscar_pedidos_abertos()
+        self.assertEqual([p["numero"] for p in resultado], ["1", "3"])
+
+    def test_obter_cep_destino_usa_o_cliente_do_tiny(self):
+        import consulta_frete
+
+        with patch.object(consulta_frete, "TinyClient") as cliente_cls, self._silencio():
+            cliente_cls.return_value.obter_pedido.return_value = {"retorno": {"status": "NOK"}}
+            resultado = consulta_frete.obter_cep_destino(77)
+        cliente_cls.return_value.obter_pedido.assert_called_once_with(77)
+        self.assertEqual(resultado, (None, "", ""))
 
     def test_erro_do_tiny_levanta_excecao(self):
         import consulta_frete
 
         erro = {"retorno": {"status": "Erro", "erros": [{"erro": "Token inválido"}]}}
-        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(erro)), patch(
-            "sys.stdout", new_callable=__import__("io").StringIO
-        ):
+        with patch.dict(os.environ, self.TOKEN), patch(
+            "tiny.client.requests.get", return_value=self._resposta(erro)
+        ), self._silencio():
             with self.assertRaises(consulta_frete.ErroTiny):
                 consulta_frete.buscar_pedidos_abertos()
 
@@ -965,11 +982,25 @@ class TestChamadasTinyDoFrete(unittest.TestCase):
 
         erro = {"retorno": {"status": "Erro", "erros": [{"erro": "Token inválido"}]}}
         report = MagicMock()
-        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(erro)), patch.object(
+        with patch.dict(os.environ, self.TOKEN), patch(
+            "tiny.client.requests.get", return_value=self._resposta(erro)
+        ), patch.object(consulta_frete, "CorreiosClient"), patch.object(consulta_frete, "FreteClient"), patch.object(
+            consulta_frete, "FreteService"
+        ), patch.object(consulta_frete, "FreteReportGenerator", return_value=report), self._silencio():
+            consulta_frete.processar()
+        report.gerar_html.assert_not_called()
+
+    def test_timeout_do_tiny_nao_apaga_pagina_de_frete(self):
+        import consulta_frete
+        from tiny.exceptions import TinyTimeoutError
+
+        report = MagicMock()
+        with patch.object(consulta_frete, "TinyClient") as cliente_cls, patch.object(
             consulta_frete, "CorreiosClient"
         ), patch.object(consulta_frete, "FreteClient"), patch.object(consulta_frete, "FreteService"), patch.object(
             consulta_frete, "FreteReportGenerator", return_value=report
-        ), patch("sys.stdout", new_callable=__import__("io").StringIO):
+        ), self._silencio():
+            cliente_cls.return_value.pesquisar_todos_pedidos.side_effect = TinyTimeoutError("demorou")
             consulta_frete.processar()
         report.gerar_html.assert_not_called()
 
@@ -978,11 +1009,11 @@ class TestChamadasTinyDoFrete(unittest.TestCase):
 
         vazio = {"retorno": {"status": "Erro", "erros": [{"erro": "A consulta não retornou registros"}]}}
         report = MagicMock()
-        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(vazio)), patch.object(
-            consulta_frete, "CorreiosClient"
-        ), patch.object(consulta_frete, "FreteClient"), patch.object(consulta_frete, "FreteService"), patch.object(
-            consulta_frete, "FreteReportGenerator", return_value=report
-        ), patch("sys.stdout", new_callable=__import__("io").StringIO):
+        with patch.dict(os.environ, self.TOKEN), patch(
+            "tiny.client.requests.get", return_value=self._resposta(vazio)
+        ), patch.object(consulta_frete, "CorreiosClient"), patch.object(consulta_frete, "FreteClient"), patch.object(
+            consulta_frete, "FreteService"
+        ), patch.object(consulta_frete, "FreteReportGenerator", return_value=report), self._silencio():
             consulta_frete.processar()
         report.gerar_html.assert_called_once_with([])
 

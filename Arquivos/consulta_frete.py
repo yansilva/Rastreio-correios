@@ -12,7 +12,6 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-import requests  # type: ignore
 from dotenv import load_dotenv
 
 # Garante que o diretório Arquivos/ esteja no PYTHONPATH
@@ -32,6 +31,7 @@ from frete import (
     FreteReportGenerator,
     FreteService,
 )
+from tiny import TinyClient, TinyError
 
 # ============== CONFIGURAÇÃO ==============
 
@@ -51,7 +51,12 @@ class ErroTiny(Exception):
     """A API do Tiny respondeu erro (que não seja 'nenhum registro'): a lista de pedidos não é confiável."""
 
 
-# ============== FUNÇÕES TINY (não alteradas) ==============
+def _cliente_tiny() -> TinyClient:
+    """Cliente do Tiny do painel (timeout, novas tentativas e token mascarado). Lê TOKEN_TINY do ambiente."""
+    return TinyClient()
+
+
+# ============== FUNÇÕES TINY ==============
 
 
 def buscar_pedidos_abertos():
@@ -61,53 +66,29 @@ def buscar_pedidos_abertos():
     data_final = datetime.now().strftime("%d/%m/%Y")
     data_inicial = (datetime.now() - timedelta(days=DIAS_ATRAS)).strftime("%d/%m/%Y")
 
-    pagina = 1
-    num_paginas = 1
+    # Paginação, timeout e novas tentativas ficam no TinyClient, o mesmo do painel de rastreio
+    try:
+        pedidos_brutos = _cliente_tiny().pesquisar_todos_pedidos(data_inicial, data_final)
+    except TinyError as exc:
+        print(f"Erro na API Tiny: {exc}")
+        raise ErroTiny(str(exc)) from exc
+
     pedidos_abertos = []
+    for item in pedidos_brutos:
+        pedido = item.get('pedido', {})
+        rastreio = pedido.get('codigo_rastreamento', '')
+        situacao = pedido.get('situacao', '').upper()
 
-    while pagina <= num_paginas:
-        params = {
-            "token": TOKEN_TINY,
-            "formato": "json",
-            "dataInicial": data_inicial,
-            "dataFinal": data_final,
-            "pagina": pagina,
-            "sort": "DESC"
-        }
-
-        response = requests.get(URL_PESQUISA_TINY, params=params, timeout=_frete_config.timeout_segundos)
-        data = response.json()
-
-        if data['retorno']['status'] == 'Erro':
-            erros = data['retorno'].get('erros', [])
-            if any(erro['erro'] == 'A consulta não retornou registros' for erro in erros):
-                break
-            print(f"Erro na API Tiny: {data['retorno']['erros']}")
-            raise ErroTiny(str(data['retorno']['erros']))
-
-        pedidos_pagina = data['retorno'].get('pedidos', [])
-
-        for item in pedidos_pagina:
-            pedido = item.get('pedido', {})
-            rastreio = pedido.get('codigo_rastreamento', '')
-            situacao = pedido.get('situacao', '').upper()
-
-            # Filtra: apenas pedidos pendentes sem rastreio e com status Aberto
-            if not rastreio and situacao in ["ABERTO", "EM ABERTO"]:
-                pedidos_abertos.append({
-                    "id": pedido.get('id'),
-                    "numero": pedido.get('numero'),
-                    "situacao": pedido.get('situacao'),
-                    "data_pedido": pedido.get('data_pedido', ''),
-                    "nome_cliente": pedido.get('nome', ''),
-                    "valor": pedido.get('valor', 0)
-                })
-
-        num_paginas = int(data['retorno'].get('numero_paginas', 1))
-        if pagina >= num_paginas:
-            break
-        pagina += 1
-        time.sleep(0.5)
+        # Filtra: apenas pedidos pendentes sem rastreio e com status Aberto
+        if not rastreio and situacao in ["ABERTO", "EM ABERTO"]:
+            pedidos_abertos.append({
+                "id": pedido.get('id'),
+                "numero": pedido.get('numero'),
+                "situacao": pedido.get('situacao'),
+                "data_pedido": pedido.get('data_pedido', ''),
+                "nome_cliente": pedido.get('nome', ''),
+                "valor": pedido.get('valor', 0)
+            })
 
     print(f"Encontrados {len(pedidos_abertos)} pedidos pendentes sem rastreio.")
     return pedidos_abertos
@@ -115,15 +96,8 @@ def buscar_pedidos_abertos():
 
 def obter_cep_destino(pedido_id):
     """Obtém o CEP de destino e info de localização via Tiny API"""
-    params = {
-        "token": TOKEN_TINY,
-        "formato": "json",
-        "id": pedido_id
-    }
-
     try:
-        response = requests.get(URL_OBTER_TINY, params=params, timeout=_frete_config.timeout_segundos)
-        data = response.json()
+        data = _cliente_tiny().obter_pedido(pedido_id)
 
         if data['retorno']['status'] == 'OK':
             pedido = data['retorno'].get('pedido', {})
@@ -190,7 +164,6 @@ def processar():
 
         # 3. Para cada pedido, obter CEP e consultar fretes
         pedidos_com_frete = []
-        alertas_motoboy = []  # Pedidos Motoboy/Retirada com prazo > 3 dias (só para alerta)
 
         for i, pedido in enumerate(pedidos):
             print(f"\n[{i+1}/{len(pedidos)}] Pedido #{pedido['numero']}...")
@@ -232,8 +205,8 @@ def processar():
             pedido["servicos"] = servicos
             pedidos_com_frete.append(pedido)
 
-        # 4. Gerar HTML (passa alertas de Motoboy/Retirada separadamente)
-        report_generator.gerar_html(pedidos_com_frete, alertas_extras=alertas_motoboy)
+        # 4. Gerar HTML
+        report_generator.gerar_html(pedidos_com_frete)
 
     except Exception as e:
         import traceback

@@ -55,7 +55,6 @@ ignore = [
 "Arquivos/debug_*.py" = ["F401", "F841", "E722"]
 "Arquivos/find_*.py" = ["F401", "F841", "E722"]
 "Arquivos/list_*.py" = ["F401", "F841", "E722"]
-"Arquivos/test_frete_ignored.py" = ["F401", "F841", "E722"]
 # Testes podem usar asserts ou imports condicionais
 "tests/*" = ["F841"]
 
@@ -73,7 +72,6 @@ omit = [
     "Arquivos/debug_*.py",
     "Arquivos/find_*.py",
     "Arquivos/list_*.py",
-    "Arquivos/test_frete_ignored.py",
 ]
 
 [tool.coverage.report]

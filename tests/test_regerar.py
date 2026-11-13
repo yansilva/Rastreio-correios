@@ -348,7 +348,7 @@ class TestHistoricoEntregasEmProcessar(unittest.TestCase):
 
     @staticmethod
     def _respostas(respostas):
-        def fake(codigo, _token):
+        def fake(codigo, _token, *_):
             valor = respostas.get(codigo)
             if isinstance(valor, Exception):
                 raise valor
@@ -499,7 +499,7 @@ class TestFalhaDeUmRastreioNaConsultaReal(unittest.TestCase):
             )
             respostas = {"AE000000001BR": CorreiosTimeoutError("demorou"), "AE000000002BR": novo}
 
-            def consulta(codigo, _token):
+            def consulta(codigo, _token, *_):
                 valor = respostas[codigo]
                 if isinstance(valor, Exception):
                     raise valor
@@ -524,6 +524,85 @@ class TestFalhaDeUmRastreioNaConsultaReal(unittest.TestCase):
             cache_salvo, _ = carregar_cache(os.path.join(arquivos, "rastreios_cache.json"))
             self.assertEqual(cache_salvo["AE000000001BR"], antigo)
             self.assertEqual(cache_salvo["AE000000002BR"], novo)
+
+
+class TestPedidosIgnorados(unittest.TestCase):
+    """PEDIDOS_IGNORADOS vem do ambiente; o padrão continua sendo o pedido 39192."""
+
+    def test_padrao_ignora_39192(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("PEDIDOS_IGNORADOS", None)
+            self.assertEqual(consulta_correios._pedidos_ignorados(), {"39192"})
+
+    def test_variavel_vazia_nao_ignora_nada(self):
+        with patch.dict(os.environ, {"PEDIDOS_IGNORADOS": ""}):
+            self.assertEqual(consulta_correios._pedidos_ignorados(), set())
+
+    def test_lista_separada_por_virgula(self):
+        with patch.dict(os.environ, {"PEDIDOS_IGNORADOS": " 1, 2 ,,"}):
+            self.assertEqual(consulta_correios._pedidos_ignorados(), {"1", "2"})
+
+    def test_com_variavel_vazia_o_39192_aparece_no_painel(self):
+        agora = datetime.now()
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n39192,Enviado,AE000000105BR\n", encoding="utf-8"
+            )
+            salvar_cache(os.path.join(arquivos, "rastreios_cache.json"), {"AE000000105BR": None}, agora)
+            with (
+                patch.dict(os.environ, {"PEDIDOS_IGNORADOS": ""}),
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                consulta_correios.processar(usar_cache=True)
+            painel = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+        self.assertIn("Pedido Tiny #39192", painel)
+
+
+class TestUmClienteCorreiosPorExecucao(unittest.TestCase):
+    """Uma execução de processar() cria um só CorreiosClient e o reaproveita em todas as consultas."""
+
+    def test_um_cliente_para_token_e_todos_os_rastreios(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n"
+                "6001,Enviado,AE000000101BR\n6002,Enviado,AE000000102BR\n6003,Enviado,AE000000103BR\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios, "CorreiosClient") as cliente_cls,
+                patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+                patch.object(consulta_correios.time, "sleep"),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                cliente_cls.return_value.gerar_token.return_value = "tok"
+                cliente_cls.return_value.consultar_objeto.return_value = None
+                self.assertIsNot(consulta_correios.processar(usar_cache=False), False)
+
+        self.assertEqual(cliente_cls.call_count, 1)
+        self.assertEqual(cliente_cls.return_value.consultar_objeto.call_count, 3)
+
+    def test_regerar_pelo_cache_nao_cria_cliente(self):
+        agora = datetime.now()
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n6004,Enviado,AE000000104BR\n", encoding="utf-8"
+            )
+            salvar_cache(os.path.join(arquivos, "rastreios_cache.json"), {"AE000000104BR": None}, agora)
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios, "CorreiosClient") as cliente_cls,
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                consulta_correios.processar(usar_cache=True)
+        cliente_cls.assert_not_called()
 
 
 class TestEscapeDeDadosExternos(unittest.TestCase):

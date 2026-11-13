@@ -8,3 +8,6 @@
 - 2026-11-12 · `regera_frete.py` (scratchpad da sessão de origem) lia o destino com separador "—", mas a página usa "·" ("Cidade/UF · CEP 00000-000"). Destinos saíam como "—". Versão corrigida em `scratchpad\regera_frete_corrigido.py`. Antes de regerar o frete com esse método, confira `CEP-matches` na página nova.
 - 2026-11-12 · Para ver tabela e cartões com dados no navegador, gere uma página de teste na raiz e apague depois. Não deixe no repositório.
 - 2026-11-12 · Cabeçalho do painel: o nav de 4 abas cabe em 375px (somadas, ~334px). Confira de novo se mudar o texto das abas.
+- 2026-11-13 · Menu de abas: a fonte única é `nav_html(ativa, atrasados=None)` em `Arquivos/correios/navegacao.py`. Não copie `<nav>` em página nova. Atrasados aparece sempre; o número só com valor > 0 e só nas páginas que recebem a contagem (painel, atrasados, entregues e demo; frete não recebe).
+- 2026-11-13 · Nos testes de menu, procure `<a href="..."` e não só `href="..."`: o `href` do `<use>` dos ícones também casa.
+- 2026-11-13 · `frete/report.py` ainda tem o CSS do `.nav-tabs` copiado do painel (a página não carrega `main.css`). Se o menu mudar de estilo, mude nos dois lugares.

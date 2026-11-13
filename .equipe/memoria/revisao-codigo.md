@@ -7,3 +7,5 @@
 - 2026-11-12 · No PowerShell, script Python com aspas duplas passado por here-string pode quebrar o parser; prefira `pytest arquivo::Classe` para rodar um teste sozinho.
 - 2026-11-13 · Quando uma fila ganha vários leitores, conferir se a antiga ainda tem quem leia: fila sem leitor fica cheia e mantém o caminho "cheia" sempre ativo. Teste de corrida: script com 4 threads e `maxsize=2` no scratchpad.
 - 2026-11-13 · O `CorreiosClient.consultar_objeto` embrulha os erros do `requests` em `CorreiosError`, mas a nova tentativa após 401 (client.py:158) chama `requests.get` sem embrulhar: o `except` estreito precisa dos dois.
+- 2026-11-13 · `CorreiosClient.consultar_objeto` só renova o token após um 401 quando recebe `token=None`; com o token explícito, um 401 vira `CorreiosAuthError`. Conferir isso sempre que mexerem em token ou em cliente.
+- 2026-11-13 · Ao trocar `requests.get` direto por `TinyClient`, comparar timeout e novas tentativas: o pior caso de tempo muda (30 s × 3 tentativas contra 15 s × 1).

@@ -39,6 +39,7 @@ from correios.cards import (
 )
 from correios.exceptions import CorreiosAuthError, CorreiosError
 from correios.icons import ICON_SPRITE
+from correios.navegacao import nav_html
 from correios.pagina_entregues import gerar_pagina_entregues
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
@@ -62,15 +63,24 @@ RELATORIO_HTML = "relatorio_rastreio.html"
 RELATORIO_ATRASADOS = "pedidos_atrasados.html"
 
 
-def obter_token():
-    """Obtém token de autenticação nos Correios utilizando o CorreiosClient."""
-    client = CorreiosClient()
+def _pedidos_ignorados() -> set[str]:
+    """Pedidos que ficam fora do painel. Vem de PEDIDOS_IGNORADOS (números separados por vírgula).
+
+    Sem a variável, vale o padrão "39192"; variável vazia não ignora nada.
+    """
+    bruto = os.environ.get("PEDIDOS_IGNORADOS", "39192")
+    return {numero.strip() for numero in bruto.split(",") if numero.strip()}
+
+
+def obter_token(cliente=None):
+    """Obtém token de autenticação nos Correios. Usa o cliente recebido, ou cria um se não houver."""
+    client = cliente or CorreiosClient()
     return client.gerar_token()
 
 
-def consultar_objeto(objeto, token):
-    """Consulta dados de rastreamento de um objeto na API dos Correios."""
-    client = CorreiosClient()
+def consultar_objeto(objeto, token, cliente=None):
+    """Consulta dados de rastreamento de um objeto na API dos Correios. Usa o cliente recebido, se houver."""
+    client = cliente or CorreiosClient()
     return client.consultar_objeto(objeto, token=token)
 
 
@@ -160,7 +170,9 @@ def processar(usar_cache=False):
             return False
 
     try:
-        token = None if usar_cache else obter_token()
+        # Um só cliente por execução: o token e todas as consultas (inclusive a última) usam o mesmo
+        cliente_correios = None if usar_cache else CorreiosClient()
+        token = None if usar_cache else obter_token(cliente_correios)
 
         # Cache das respostas dos Correios, na mesma pasta do script
         caminho_cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), CACHE_ARQUIVO)
@@ -239,12 +251,7 @@ def processar(usar_cache=False):
                 </div>
             </div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação do painel">
-            <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-            {atrasados_link}
-            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-        </nav>
+        {nav_painel}
 
         {dashboard}
 
@@ -328,11 +335,11 @@ def processar(usar_cache=False):
         em_transito_count = 0
         retiradas_count = 0
 
-        PEDIDOS_IGNORADOS = ["39192"]
+        pedidos_ignorados = _pedidos_ignorados()
 
         for venda in vendas:
             pedido = venda.get("Número do Pedido no Tiny")
-            if pedido in PEDIDOS_IGNORADOS:
+            if pedido in pedidos_ignorados:
                 continue
 
             rastreio = venda.get("Código de Rastreio")
@@ -344,7 +351,7 @@ def processar(usar_cache=False):
                 obj_data = objetos_cache.get(str(rastreio))
             else:
                 try:
-                    obj_data = consultar_objeto(rastreio, token)
+                    obj_data = consultar_objeto(rastreio, token, cliente_correios)
                     objetos_cache[str(rastreio)] = obj_data
                 except CorreiosAuthError:
                     # Token recusado: todos os rastreios falhariam; a consulta inteira falha em vez de mostrar dado velho
@@ -485,7 +492,7 @@ def processar(usar_cache=False):
                 if rastreio_saiu in acompanhados_novo:
                     continue
                 try:
-                    bruto = consultar_objeto(rastreio_saiu, token)
+                    bruto = consultar_objeto(rastreio_saiu, token, cliente_correios)
                     objeto_saiu = TrackingService.processar_objeto(rastreio_saiu, bruto)
                     if historico_entregas.registrar_entrega(
                         historico, objeto_saiu, visto.get("pedido", ""), visto.get("cliente", ""), agora
@@ -550,12 +557,6 @@ def processar(usar_cache=False):
         </div>
         """
 
-        # Monta link para página de atrasados
-        if len(atrasados_data) > 0:
-            atrasados_link_html = f'<a href="pedidos_atrasados.html" class="nav-tab atrasados-tab"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados <span class="atrasados-count">{len(atrasados_data)}</span></a>'
-        else:
-            atrasados_link_html = ""
-
         final_html = html_template.format(
             icon_sprite=ICON_SPRITE,
             data_geracao=time.strftime("%d/%m/%Y %H:%M:%S"),
@@ -565,7 +566,7 @@ def processar(usar_cache=False):
             hora_dados=data_dados[11:16],
             dashboard=dashboard_html,
             content="".join(orders_html),
-            atrasados_link=atrasados_link_html,
+            nav_painel=nav_html("painel", len(atrasados_data)),
             versao_cache=_versao_assets(),
             descricoes_status=bloco_descricoes_status(),
             **textos_descricao(),
@@ -711,12 +712,7 @@ def processar(usar_cache=False):
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
             </div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação de atrasados">
-            <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-            <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados ({total_atrasados})</span>
-            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-        </nav>
+        {nav_html('atrasados', total_atrasados)}
 
         <main id="conteudo" tabindex="-1">
         {resumo_html}
@@ -739,7 +735,7 @@ def processar(usar_cache=False):
 
         # Página da aba Entregues (semana atual e anterior), a partir do histórico já salvo
         try:
-            gerar_pagina_entregues(historico, agora, pasta_projeto)
+            gerar_pagina_entregues(historico, agora, pasta_projeto, atrasados=len(atrasados_data))
         except Exception as exc:
             print(f"Aviso: não foi possível gerar a página Entregues ({exc}).")
 

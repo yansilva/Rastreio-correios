@@ -11,6 +11,7 @@ from html import escape
 
 from correios.historico_entregas import _inicio_semana, dias_ate_entrega, entregas_da_semana, resumo
 from correios.icons import ICON_SPRITE
+from correios.navegacao import nav_html
 
 ARQUIVO_ENTREGUES = "entregues_semana.html"
 
@@ -135,8 +136,11 @@ def _secao_html(indice: int, titulo: str, itens: list[dict]) -> str:
         </section>"""
 
 
-def montar_html_entregues(historico: dict, agora: datetime) -> str:
-    """HTML completo da página Entregues, com as semanas atual e anterior. Não faz I/O."""
+def montar_html_entregues(historico: dict, agora: datetime, atrasados: int | None = None) -> str:
+    """HTML completo da página Entregues, com as semanas atual e anterior. Não faz I/O.
+
+    `atrasados` é a contagem de atrasados que o menu mostra; sem ela, a aba aparece sem número.
+    """
     semana_atual = entregas_da_semana(historico, agora, 0)
     semana_anterior = entregas_da_semana(historico, agora, -1)
 
@@ -172,12 +176,7 @@ def montar_html_entregues(historico: dict, agora: datetime) -> str:
                 <div class="meta">Pedidos entregues por semana — Gerado em: {agora:%d/%m/%Y %H:%M}</div>
             </div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação do painel">
-            <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-            <a href="pedidos_atrasados.html" class="nav-tab"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</a>
-            <a href="entregues_semana.html" class="nav-tab active" aria-current="page"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-        </nav>
+        {nav_html('entregues', atrasados)}
 
         <main id="conteudo" tabindex="-1">
             <div class="entregues-seletor" role="group" aria-label="Escolher semana">
@@ -196,9 +195,9 @@ def montar_html_entregues(historico: dict, agora: datetime) -> str:
 </html>"""
 
 
-def gerar_pagina_entregues(historico: dict, agora: datetime, destino: str) -> str:
+def gerar_pagina_entregues(historico: dict, agora: datetime, destino: str, atrasados: int | None = None) -> str:
     """Grava `entregues_semana.html` na pasta `destino` e devolve o caminho do arquivo."""
     caminho = os.path.join(destino, ARQUIVO_ENTREGUES)
     with open(caminho, mode="w", encoding="utf-8") as f:
-        f.write(montar_html_entregues(historico, agora))
+        f.write(montar_html_entregues(historico, agora, atrasados))
     return caminho

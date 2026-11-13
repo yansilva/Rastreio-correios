@@ -27,6 +27,7 @@ from correios.cards import (  # noqa: E402
     zero,
 )
 from correios.icons import ICON_SPRITE  # noqa: E402
+from correios.navegacao import nav_html  # noqa: E402
 
 # Obtém a raiz do projeto
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -327,11 +328,6 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     orders_cards.sort(key=lambda item: (item[0], item[1]))
     orders_cards = [card for _, _, card in orders_cards]
 
-    atrasados_link_html = (
-        '<a href="pedidos_atrasados.html" class="nav-tab atrasados-tab">'
-        '<svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados <span class="atrasados-count">1</span></a>'
-    )
-
     # -------------------------------------------------------------------------
     # 3. HTML Principal: relatorio_rastreio.html
     # -------------------------------------------------------------------------
@@ -369,12 +365,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 </div>
             </div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação do painel">
-            <a href="relatorio_rastreio.html" class="nav-tab active" aria-current="page"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-            {atrasados_link_html}
-            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-        </nav>
+        {nav_html('painel', 1)}
 
         {dashboard_html}
 
@@ -475,12 +466,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao}</div>
             </div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação de atrasados">
-            <a href="relatorio_rastreio.html" class="nav-tab"><svg class="icon icon-bar-chart" aria-hidden="true" focusable="false"><use href="#i-bar-chart"></use></svg> Painel</a>
-            <span class="nav-tab active" aria-current="page"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados (1)</span>
-            <a href="entregues_semana.html" class="nav-tab"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab"><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Opções de Frete</a>
-        </nav>
+        {nav_html('atrasados', 1)}
 
         <div class="summary">
             <div class="summary-card">

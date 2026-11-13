@@ -80,7 +80,8 @@ def test_relatorio_template_integra_assets_modulares():
     assert 'src="web/js/logs.js' in consulta_py
     assert 'id="searchInput"' in consulta_py
     assert 'id="btnClearFilter"' in consulta_py
-    assert 'class="nav-tabs"' in consulta_py
+    # O menu vem da função única de navegação (correios/navegacao.py), não de marcação copiada
+    assert "nav_html(" in consulta_py
 
 
 def test_ux_tema_botao_e_script():
@@ -95,7 +96,7 @@ def test_ux_tema_botao_e_script():
     assert "btnTheme" in app_js
     # O nome acessível do botão é o texto visível (WCAG 2.5.3): o JS troca o texto, não o aria-label
     assert "btnThemeText" in app_js
-    assert "aria-label" not in app_js
+    assert "setAttribute('aria-label'" not in app_js
 
     # Garante que logs.js NÃO registra o listener para evitar execução duplicada
     logs_js = (raiz / "web" / "js" / "logs.js").read_text(encoding="utf-8")

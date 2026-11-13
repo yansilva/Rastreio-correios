@@ -98,17 +98,6 @@ class TestPaginaEntregues(unittest.TestCase):
         self.assertIn('href="pedidos_atrasados.html"', html)
         self.assertIn('href="opcoes_frete.html"', html)
 
-    def test_aba_entregues_no_menu_das_outras_paginas(self):
-        arquivos = [
-            ARQUIVOS_DIR / "consulta_correios.py",
-            ARQUIVOS_DIR / "frete" / "report.py",
-            ARQUIVOS_DIR / "demo_data.py",
-        ]
-        for caminho in arquivos:
-            with self.subTest(arquivo=caminho.name):
-                texto = caminho.read_text(encoding="utf-8")
-                self.assertIn('href="entregues_semana.html"', texto)
-
     def test_gerar_pagina_grava_arquivo_e_devolve_caminho(self):
         with tempfile.TemporaryDirectory() as pasta:
             caminho = gerar_pagina_entregues(_historico(_item("4001", "2026-11-11T10:00:00")), AGORA, pasta)

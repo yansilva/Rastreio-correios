@@ -14,6 +14,7 @@ from collections import Counter
 from typing import Any
 
 from correios.icons import ICON_SPRITE, icone
+from correios.navegacao import nav_html
 
 from .config import FreteConfig
 
@@ -124,13 +125,11 @@ class FreteReportGenerator:
     def gerar_html(
         self,
         pedidos_com_frete: list[dict[str, Any]],
-        alertas_extras: list[str] | None = None,
     ) -> str:
         """Gera e salva a página HTML premium com opções de frete.
 
         Args:
             pedidos_com_frete: Lista de dicts com dados do pedido e servicos (formato legado).
-            alertas_extras: Lista de números de pedidos para alerta extra.
 
         Returns:
             Caminho absoluto do arquivo HTML gerado.
@@ -148,10 +147,6 @@ class FreteReportGenerator:
         minimos_pedidos: list[tuple[float, str]] = []  # (menor preço do pedido, número do pedido)
         total_longos = 0
         pedidos_com_prazo_longo = []
-
-        # Inclui alertas de pedidos Motoboy/Retirada com prazo longo (não exibidos nos cards)
-        if alertas_extras:
-            pedidos_com_prazo_longo.extend(alertas_extras)
 
         # Monta os cards de pedido
         cards_html = ""
@@ -845,11 +840,7 @@ class FreteReportGenerator:
             <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Gerado em {data_geracao}</div>
             <div class="config-info">{icone("package")} Pacote<span class="so-desk"> padrão</span>: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · <span class="so-desk">Origem CEP: </span><span class="so-cel">Origem </span>{_fmt_cep(config.cep_origem)}</div>
         </header>
-        <nav class="nav-tabs" aria-label="Navegação do painel">
-            <a href="relatorio_rastreio.html" class="nav-tab">{icone("bar-chart")} Painel</a>
-            <a href="entregues_semana.html" class="nav-tab">{icone("check-circle")} Entregues</a>
-            <a href="opcoes_frete.html" class="nav-tab active" aria-current="page">{icone("package")} Opções de Frete</a>
-        </nav>
+        {nav_html('frete')}
 
         <div class="summary" id="resumo" aria-live="polite">
             <div class="summary-card">
