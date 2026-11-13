@@ -90,7 +90,7 @@ def formatar_evento_html(evento, selo_cabecalho=""):
         dt_obj = datetime.fromisoformat(dt_iso)
         dt_br = dt_obj.strftime("%d/%m/%Y %H:%M")
     except Exception:
-        dt_br = dt_iso
+        dt_br = escape(str(dt_iso))
 
     desc_upper = desc.upper()
     det_upper = detalhe.upper()
@@ -120,7 +120,8 @@ def formatar_evento_html(evento, selo_cabecalho=""):
     if texto_badge and texto_badge.casefold() != selo_cabecalho.casefold():
         badge = f'<span class="badge {classe_badge}">{texto_badge}</span>'
 
-    detalhe_html = f'<div class="event-detail">{detalhe}</div>' if detalhe else ""
+    # Textos vindos dos Correios saem escapados: "<" e "&" não quebram a página
+    detalhe_html = f'<div class="event-detail">{escape(detalhe)}</div>' if detalhe else ""
 
     return f"""
     <div class="event {status_class}">
@@ -128,7 +129,7 @@ def formatar_evento_html(evento, selo_cabecalho=""):
             <span class="event-date">{dt_br}</span>
             {badge}
         </div>
-        <div class="event-desc">{desc} - <strong>{local}</strong></div>
+        <div class="event-desc">{escape(desc)} - <strong>{escape(local)}</strong></div>
         {detalhe_html}
     </div>
     """
@@ -612,18 +613,19 @@ def processar(usar_cache=False):
 
             status_label = {"em_transito": "Em trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
             td_cliente = f'<td data-label="Cliente">{escape(item.get("cliente", ""))}</td>' if tem_cliente else ""
-            td_status = f'<td data-label="Status" class="col-secundaria">{status_label}</td>' if tem_status else ""
+            td_status = f'<td data-label="Status" class="col-secundaria">{escape(status_label)}</td>' if tem_status else ""
             evento_completo = escape(str(item["ultimo_evento"]), quote=True)
 
+            # Pedido, rastreio, datas e locais vêm do Tiny e dos Correios: todos saem escapados
             rows_html += f"""
             <tr class="{urgencia_class}">
-                <td data-label="Pedido"><strong>#{item["pedido"]}</strong></td>
+                <td data-label="Pedido"><strong>#{escape(str(item["pedido"]))}</strong></td>
                 {td_cliente}
-                <td data-label="Rastreio"><code>{item["rastreio"]}</code></td>
-                <td data-label="Postagem" class="col-secundaria">{item["data_postagem"]}</td>
+                <td data-label="Rastreio"><code>{escape(str(item["rastreio"]))}</code></td>
+                <td data-label="Postagem" class="col-secundaria">{escape(str(item["data_postagem"]))}</td>
                 <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias · {urgencia_rotulo}</span></td>
-                <td data-label="Último Evento" class="col-secundaria" title="{evento_completo}"><span class="evento-texto">{item["ultimo_evento"]}</span></td>
-                <td data-label="Local" class="col-secundaria">{item["ultimo_local"]}</td>
+                <td data-label="Último Evento" class="col-secundaria" title="{evento_completo}"><span class="evento-texto">{escape(str(item["ultimo_evento"]))}</span></td>
+                <td data-label="Local" class="col-secundaria">{escape(str(item["ultimo_local"]))}</td>
                 {td_status}
                 <td data-label="Ações"><button type="button" class="btn-copy" data-copy="{escape(str(item["rastreio"]), quote=True)}" aria-label="Copiar código de rastreio {escape(str(item["rastreio"]), quote=True)}">Copiar rastreio</button></td>
             </tr>

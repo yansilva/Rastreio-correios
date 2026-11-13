@@ -526,6 +526,70 @@ class TestFalhaDeUmRastreioNaConsultaReal(unittest.TestCase):
             self.assertEqual(cache_salvo["AE000000002BR"], novo)
 
 
+class TestEscapeDeDadosExternos(unittest.TestCase):
+    """Texto vindo dos Correios e do Tiny sai escapado no HTML: "<" e "&" não quebram a página."""
+
+    def test_evento_com_html_sai_escapado_no_cartao(self):
+        evento = {
+            "dtHrCriado": "2026-11-12T10:00:00",
+            "descricao": "Objeto <b>& teste</b>",
+            "detalhe": "<script>alert(1)</script>",
+            "unidade": {"endereco": {"cidade": "Rio <X>", "uf": "RJ"}},
+        }
+        html = consulta_correios.formatar_evento_html(evento)
+        self.assertNotIn("<script>", html)
+        self.assertNotIn("<b>& teste", html)
+        self.assertIn("Objeto &lt;b&gt;&amp; teste&lt;/b&gt;", html)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
+        self.assertIn("Rio &lt;X&gt;/RJ", html)
+
+    def test_data_invalida_sai_escapada(self):
+        html = consulta_correios.formatar_evento_html({"dtHrCriado": "<img src=x>", "descricao": "Postado"})
+        self.assertNotIn("<img", html)
+        self.assertIn("&lt;img src=x&gt;", html)
+
+    def test_atrasado_e_painel_com_texto_de_html_saem_escapados(self):
+        agora = datetime.now()
+        postado = (agora - timedelta(days=6)).replace(microsecond=0).isoformat()
+        cache = {
+            "AE000000077BR": {
+                "eventos": [
+                    {
+                        "dtHrCriado": postado,
+                        "descricao": "Objeto <i>postado</i> & cia",
+                        "unidade": {"endereco": {"cidade": "Cidade <A> & Co", "uf": "SP"}},
+                    }
+                ]
+            }
+        }
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio,Cliente\n"
+                "<b>7701</b>,Enviado,AE000000077BR,Ana <i>Lima</i> & Filhos\n",
+                encoding="utf-8",
+            )
+            salvar_cache(os.path.join(arquivos, "rastreios_cache.json"), cache, agora)
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                self.assertIsNot(consulta_correios.processar(usar_cache=True), False)
+            painel = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+            atrasados = Path(pasta, "pedidos_atrasados.html").read_text(encoding="utf-8")
+
+        for html in (painel, atrasados):
+            self.assertNotIn("<i>postado</i>", html)
+            self.assertNotIn("<A>", html)
+            self.assertNotIn("<b>7701</b>", html)
+        self.assertIn("Objeto &lt;i&gt;postado&lt;/i&gt; &amp; cia", atrasados)
+        self.assertIn("Cidade &lt;A&gt; &amp; Co/SP", atrasados)
+        self.assertIn("&lt;b&gt;7701&lt;/b&gt;", atrasados)
+        self.assertIn("Ana &lt;i&gt;Lima&lt;/i&gt; &amp; Filhos", atrasados)
+
+
 class TestErrosNaConsultaRealDeRastreio(unittest.TestCase):
     """Só erro da API dos Correios usa o dado anterior; erro de autenticação e de programação sobem."""
 
