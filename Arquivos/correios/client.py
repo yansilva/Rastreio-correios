@@ -118,23 +118,14 @@ class CorreiosClient:
                 status_code=response.status_code,
             )
 
-    def consultar_objeto(self, objeto: str, token: str | None = None) -> dict[str, Any] | None:
-        """
-        Consulta os eventos de rastreamento de um objeto na API SRO dos Correios.
-        
-        Retorna o dicionário de dados do objeto ou None caso não haja informações.
-        """
-        token_ativo = token or self.gerar_token()
+    def _consultar_com_token(self, url: str, objeto: str, token: str) -> requests.Response:
+        """Uma consulta de rastreio com o token dado, com novas tentativas e erros de rede traduzidos."""
         headers = {
-            "Authorization": f"Bearer {token_ativo}",
+            "Authorization": f"Bearer {token}",
             "Accept": "application/json",
         }
-        url = self.config.url_rastreio.format(objeto=objeto)
-
-        logger.debug("Consultando rastreamento do objeto %s", objeto)
-
         try:
-            response = self._com_tentativas(
+            return self._com_tentativas(
                 lambda: requests.get(
                     url,
                     headers=headers,
@@ -149,13 +140,32 @@ class CorreiosClient:
             logger.error("Erro de conexão ao rastrear objeto %s", objeto)
             raise CorreiosConnectionError(f"Falha de conexão ao rastrear {objeto}: {exc}") from exc
 
-        # Se a sessão expirou (401), tenta renovar uma vez
-        if response.status_code == 401 and token is None:
+    def consultar_objeto(self, objeto: str, token: str | None = None) -> dict[str, Any] | None:
+        """
+        Consulta os eventos de rastreamento de um objeto na API SRO dos Correios.
+        
+        Retorna o dicionário de dados do objeto ou None caso não haja informações.
+        """
+        token_usado = token or self.gerar_token()
+        url = self.config.url_rastreio.format(objeto=objeto)
+
+        logger.debug("Consultando rastreamento do objeto %s", objeto)
+
+        response = self._consultar_com_token(url, objeto, token_usado)
+
+        # Sessão expirou (401): renova o token uma vez e repete. Se o token usado já ficou para trás
+        # (outro rastreio renovou antes), basta usar o token guardado, sem nova autenticação
+        if response.status_code == 401:
             # nosemgrep: python-logger-credential-disclosure, rules.python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
             logger.warning("Sessão expirada ao consultar objeto %s. Renovando autorização...", objeto)  # nosemgrep
-            novo_token = self.gerar_token(forcar_renovacao=True)
-            headers["Authorization"] = f"Bearer {novo_token}"
-            response = requests.get(url, headers=headers, timeout=self.config.timeout_segundos)
+            if self._token and token_usado != self._token:
+                token_usado = self._token
+            else:
+                token_usado = self.gerar_token(forcar_renovacao=True)
+            response = self._consultar_com_token(url, objeto, token_usado)
+            if response.status_code == 401:
+                logger.error("Acesso não autorizado ao rastrear %s mesmo após renovar o token", objeto)
+                raise CorreiosAuthError(f"Acesso negado ao rastrear {objeto} após renovar o token (HTTP 401).")
 
         if response.status_code == 200:
             try:

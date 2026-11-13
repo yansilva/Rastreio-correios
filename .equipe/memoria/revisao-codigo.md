@@ -9,3 +9,4 @@
 - 2026-11-13 · O `CorreiosClient.consultar_objeto` embrulha os erros do `requests` em `CorreiosError`, mas a nova tentativa após 401 (client.py:158) chama `requests.get` sem embrulhar: o `except` estreito precisa dos dois.
 - 2026-11-13 · `CorreiosClient.consultar_objeto` só renova o token após um 401 quando recebe `token=None`; com o token explícito, um 401 vira `CorreiosAuthError`. Conferir isso sempre que mexerem em token ou em cliente.
 - 2026-11-13 · Ao trocar `requests.get` direto por `TinyClient`, comparar timeout e novas tentativas: o pior caso de tempo muda (30 s × 3 tentativas contra 15 s × 1).
+- 2026-11-13 · Renovação de token: além de "renova uma vez", contar as chamadas da rodada inteira depois da renovação. Quem chama pode continuar passando o token velho, e cada item passa a custar 2 requisições. Também testar um cliente novo, sem token guardado. Script: `scratchpad/renovacao_token.py`.

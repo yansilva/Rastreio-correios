@@ -526,6 +526,101 @@ class TestFalhaDeUmRastreioNaConsultaReal(unittest.TestCase):
             self.assertEqual(cache_salvo["AE000000002BR"], novo)
 
 
+class TestRenovacaoDeTokenNaRodada(unittest.TestCase):
+    """Um 401 no meio da rodada renova o token uma vez, sem derrubar os rastreios seguintes."""
+
+    @staticmethod
+    def _resposta(status, json_dados=None):
+        resposta = MagicMock()
+        resposta.status_code = status
+        resposta.json.return_value = json_dados or {}
+        resposta.text = ""
+        return resposta
+
+    def _rodar(self, emitidos, aceito, rastreios=2):
+        """Autenticação emite os tokens da lista em ordem; o servidor de rastreio só aceita `aceito`.
+
+        Devolve (resultado, autenticações, html, tokens usados em cada GET de rastreio).
+        """
+        emitidos = list(emitidos)
+        gets = []
+
+        def fake_post(*_args, **_kwargs):
+            return self._resposta(201, {"token": emitidos.pop(0)})
+
+        def fake_get(_url, headers=None, **_kwargs):
+            gets.append(headers["Authorization"].split()[1])
+            if headers["Authorization"] == f"Bearer {aceito}":
+                return self._resposta(200, {"objetos": [{"eventos": [{"dtHrCriado": "2026-11-10T10:00:00", "descricao": "Objeto postado"}]}]})
+            return self._resposta(401)
+
+        linhas = "".join(f"{7100 + i},Enviado,AE00000011{i}BR\n" for i in range(rastreios))
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n" + linhas,
+                encoding="utf-8",
+            )
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+                patch("correios.client.requests.post", side_effect=fake_post) as post,
+                patch("correios.client.requests.get", side_effect=fake_get),
+                patch.object(consulta_correios.time, "sleep"),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                resultado = consulta_correios.processar(usar_cache=False)
+                html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8") if resultado is not False else ""
+        return resultado, post.call_count, html, gets
+
+    def test_401_renova_uma_vez_e_a_rodada_termina(self):
+        resultado, autenticacoes, html, _gets = self._rodar(["T0", "T1"], aceito="T1")
+        self.assertIs(resultado, True)
+        self.assertEqual(autenticacoes, 2)  # o token inicial e uma única renovação
+        self.assertIn('<span class="order-num">Pedido Tiny #7100</span>', html)
+        self.assertIn('<span class="order-num">Pedido Tiny #7101</span>', html)
+
+    def test_401_depois_da_renovacao_sobe_erro_de_autenticacao(self):
+        # Nenhum token emitido é aceito: a renovação não resolve e a consulta falha
+        resultado, autenticacoes, _html, _gets = self._rodar(["T0", "T1"], aceito="NUNCA")
+        self.assertIs(resultado, False)
+        self.assertEqual(autenticacoes, 2)
+
+    def test_cinco_rastreios_fazem_seis_gets_e_um_aviso(self):
+        """Medida da revisão: depois da renovação, cada rastreio faz uma requisição só (5 rastreios = 6 GETs)."""
+        with self.assertLogs("correios.client", level="WARNING") as logs:
+            resultado, _autenticacoes, _html, gets = self._rodar(["T0", "T1"], aceito="T1", rastreios=5)
+        self.assertIs(resultado, True)
+        self.assertEqual(len(gets), 6)
+        self.assertEqual(sum("Sessão expirada" in linha for linha in logs.output), 1)
+
+    def test_cliente_sem_token_guardado_renova_com_token_externo_expirado(self):
+        """Cliente que nunca gerou token recebe um token externo expirado: renova uma vez e consulta."""
+        from correios.client import CorreiosClient
+        from correios.config import CorreiosConfig
+
+        gets = []
+
+        def fake_get(_url, headers=None, **_kwargs):
+            token = headers["Authorization"].split()[1]
+            gets.append(token)
+            if token == "NOVO":
+                return self._resposta(200, {"objetos": [{"codigo": "AA1BR"}]})
+            return self._resposta(401)
+
+        cliente = CorreiosClient(config=CorreiosConfig(id_correios="1", contrato="2", codigo_acesso="x"))
+        self.assertIsNone(cliente._token)
+        with (
+            patch.object(CorreiosConfig, "credenciais_preenchidas", return_value=True),
+            patch("correios.client.requests.get", side_effect=fake_get),
+            patch("correios.client.requests.post", return_value=self._resposta(201, {"token": "NOVO"})),
+        ):
+            objeto = cliente.consultar_objeto("AA1BR", token="EXPIRADO")
+        self.assertEqual(objeto, {"codigo": "AA1BR"})
+        self.assertEqual(gets, ["EXPIRADO", "NOVO"])
+
+
 class TestPedidosIgnorados(unittest.TestCase):
     """PEDIDOS_IGNORADOS vem do ambiente; o padrão continua sendo o pedido 39192."""
 

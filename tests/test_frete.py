@@ -937,12 +937,19 @@ class TestChamadasTinyDoFrete(unittest.TestCase):
 
     def test_buscar_pedidos_abertos_usa_o_timeout_do_tiny(self):
         import consulta_frete
-        from tiny import TinyConfig
-
         resposta = self._resposta({"retorno": {"status": "OK", "pedidos": [], "numero_paginas": 1}})
         with patch.dict(os.environ, self.TOKEN), patch("tiny.client.requests.get", return_value=resposta) as get, self._silencio():
             consulta_frete.buscar_pedidos_abertos()
-        self.assertEqual(get.call_args.kwargs.get("timeout"), TinyConfig().timeout_segundos)
+        self.assertEqual(get.call_args.kwargs.get("timeout"), consulta_frete._frete_config.timeout_segundos)
+
+    def test_cliente_do_frete_tem_timeout_e_tentativas_limitados(self):
+        import consulta_frete
+
+        with patch.object(consulta_frete, "TinyClient") as cliente_cls:
+            consulta_frete._cliente_tiny()
+        config = cliente_cls.call_args.kwargs["config"]
+        self.assertEqual(config.timeout_segundos, consulta_frete._frete_config.timeout_segundos)
+        self.assertEqual(config.tentativas_conexao, 2)
 
     def test_buscar_pedidos_abertos_filtra_em_aberto_sem_rastreio(self):
         import consulta_frete

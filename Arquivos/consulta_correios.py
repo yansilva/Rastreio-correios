@@ -170,9 +170,11 @@ def processar(usar_cache=False):
             return False
 
     try:
-        # Um só cliente por execução: o token e todas as consultas (inclusive a última) usam o mesmo
+        # Um só cliente por execução. O cliente guarda o token: as consultas não levam token explícito,
+        # usam o guardado e renovam sozinhas se a sessão expirar (inclusive na última consulta)
         cliente_correios = None if usar_cache else CorreiosClient()
-        token = None if usar_cache else obter_token(cliente_correios)
+        if cliente_correios is not None:
+            obter_token(cliente_correios)
 
         # Cache das respostas dos Correios, na mesma pasta do script
         caminho_cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), CACHE_ARQUIVO)
@@ -351,7 +353,7 @@ def processar(usar_cache=False):
                 obj_data = objetos_cache.get(str(rastreio))
             else:
                 try:
-                    obj_data = consultar_objeto(rastreio, token, cliente_correios)
+                    obj_data = consultar_objeto(rastreio, None, cliente_correios)
                     objetos_cache[str(rastreio)] = obj_data
                 except CorreiosAuthError:
                     # Token recusado: todos os rastreios falhariam; a consulta inteira falha em vez de mostrar dado velho
@@ -492,7 +494,7 @@ def processar(usar_cache=False):
                 if rastreio_saiu in acompanhados_novo:
                     continue
                 try:
-                    bruto = consultar_objeto(rastreio_saiu, token, cliente_correios)
+                    bruto = consultar_objeto(rastreio_saiu, None, cliente_correios)
                     objeto_saiu = TrackingService.processar_objeto(rastreio_saiu, bruto)
                     if historico_entregas.registrar_entrega(
                         historico, objeto_saiu, visto.get("pedido", ""), visto.get("cliente", ""), agora

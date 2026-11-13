@@ -31,14 +31,9 @@ from frete import (
     FreteReportGenerator,
     FreteService,
 )
-from tiny import TinyClient, TinyError
+from tiny import TinyClient, TinyConfig, TinyError
 
 # ============== CONFIGURAÇÃO ==============
-
-# Tiny ERP (integração não alterada)
-TOKEN_TINY = os.getenv("TOKEN_TINY", "")
-URL_PESQUISA_TINY = "https://api.tiny.com.br/api2/pedidos.pesquisa.php"
-URL_OBTER_TINY = "https://api.tiny.com.br/api2/pedido.obter.php"
 
 # Configuração de frete (delega para o módulo frete/)
 _frete_config = FreteConfig()
@@ -52,8 +47,12 @@ class ErroTiny(Exception):
 
 
 def _cliente_tiny() -> TinyClient:
-    """Cliente do Tiny do painel (timeout, novas tentativas e token mascarado). Lê TOKEN_TINY do ambiente."""
-    return TinyClient()
+    """Cliente do Tiny para o frete, com o timeout do frete e no máximo 2 tentativas.
+
+    Limita o pior caso por pedido: 2 tentativas × 15 s, em vez de 3 × 30 s do padrão do painel.
+    """
+    config = TinyConfig(timeout_segundos=_frete_config.timeout_segundos, tentativas_conexao=2)
+    return TinyClient(config=config)
 
 
 # ============== FUNÇÕES TINY ==============
