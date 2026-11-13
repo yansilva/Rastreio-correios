@@ -917,6 +917,76 @@ class TestConsultaFreteRetrocompatibilidade(unittest.TestCase):
 # ============== TESTES DE EXCEÇÕES ==============
 
 
+class TestChamadasTinyDoFrete(unittest.TestCase):
+    """Chamadas diretas ao Tiny no consulta_frete: timeout obrigatório e erro não apaga a página."""
+
+    @staticmethod
+    def _resposta(json_dados):
+        resposta = MagicMock()
+        resposta.json.return_value = json_dados
+        return resposta
+
+    def test_buscar_pedidos_abertos_tem_timeout(self):
+        import io
+
+        import consulta_frete
+
+        resposta = self._resposta({"retorno": {"status": "OK", "pedidos": [], "numero_paginas": 1}})
+        with patch.object(consulta_frete.requests, "get", return_value=resposta) as get, patch(
+            "sys.stdout", new_callable=io.StringIO
+        ):
+            consulta_frete.buscar_pedidos_abertos()
+        self.assertEqual(get.call_args.kwargs.get("timeout"), consulta_frete._frete_config.timeout_segundos)
+
+    def test_obter_cep_destino_tem_timeout(self):
+        import io
+
+        import consulta_frete
+
+        resposta = self._resposta({"retorno": {"status": "NOK"}})
+        with patch.object(consulta_frete.requests, "get", return_value=resposta) as get, patch(
+            "sys.stdout", new_callable=io.StringIO
+        ):
+            consulta_frete.obter_cep_destino(123)
+        self.assertEqual(get.call_args.kwargs.get("timeout"), consulta_frete._frete_config.timeout_segundos)
+
+    def test_erro_do_tiny_levanta_excecao(self):
+        import consulta_frete
+
+        erro = {"retorno": {"status": "Erro", "erros": [{"erro": "Token inválido"}]}}
+        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(erro)), patch(
+            "sys.stdout", new_callable=__import__("io").StringIO
+        ):
+            with self.assertRaises(consulta_frete.ErroTiny):
+                consulta_frete.buscar_pedidos_abertos()
+
+    def test_erro_do_tiny_nao_apaga_pagina_de_frete(self):
+        import consulta_frete
+
+        erro = {"retorno": {"status": "Erro", "erros": [{"erro": "Token inválido"}]}}
+        report = MagicMock()
+        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(erro)), patch.object(
+            consulta_frete, "CorreiosClient"
+        ), patch.object(consulta_frete, "FreteClient"), patch.object(consulta_frete, "FreteService"), patch.object(
+            consulta_frete, "FreteReportGenerator", return_value=report
+        ), patch("sys.stdout", new_callable=__import__("io").StringIO):
+            consulta_frete.processar()
+        report.gerar_html.assert_not_called()
+
+    def test_nao_retornou_registros_gera_pagina_vazia(self):
+        import consulta_frete
+
+        vazio = {"retorno": {"status": "Erro", "erros": [{"erro": "A consulta não retornou registros"}]}}
+        report = MagicMock()
+        with patch.object(consulta_frete.requests, "get", return_value=self._resposta(vazio)), patch.object(
+            consulta_frete, "CorreiosClient"
+        ), patch.object(consulta_frete, "FreteClient"), patch.object(consulta_frete, "FreteService"), patch.object(
+            consulta_frete, "FreteReportGenerator", return_value=report
+        ), patch("sys.stdout", new_callable=__import__("io").StringIO):
+            consulta_frete.processar()
+        report.gerar_html.assert_called_once_with([])
+
+
 class TestFreteExceptions(unittest.TestCase):
     """Testes da hierarquia de exceções."""
 

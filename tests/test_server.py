@@ -150,29 +150,34 @@ class TestServerLogger(unittest.TestCase):
         self.assertIn("token=***", limpa)
         self.assertIn("Bearer ***", limpa)
 
-    def test_fila_put_e_get(self):
+    def test_inscricao_recebe_put(self):
         queue = ServerLogQueue(maxsize=10)
+        inscrita = queue.inscrever()
         queue.put("Mensagem de teste")
-        item = queue.get(timeout=0.5)
+        item = inscrita.get(timeout=0.5)
         self.assertEqual(item, "Mensagem de teste")
 
     def test_fila_ignora_mensagens_vazias(self):
+        import queue as fila_mod
+
         queue = ServerLogQueue(maxsize=10)
+        inscrita = queue.inscrever()
         queue.put("   ")
         queue.put("")
-        with self.assertRaises(Exception):
-            queue.get(timeout=0.1)
+        with self.assertRaises(fila_mod.Empty):
+            inscrita.get(timeout=0.1)
 
     def test_stream_to_queue_espelha_saida(self):
         mock_stream = io.StringIO()
         log_queue = ServerLogQueue(maxsize=10)
+        inscrita = log_queue.inscrever()
         stream_wrapper = StreamToQueue(mock_stream, log_queue)
 
         stream_wrapper.write("Log impresso via print\n")
         stream_wrapper.flush()
 
         self.assertIn("Log impresso", mock_stream.getvalue())
-        self.assertEqual(log_queue.get(timeout=0.5), "Log impresso via print")
+        self.assertEqual(inscrita.get(timeout=0.5), "Log impresso via print")
 
     def test_stream_to_queue_tolera_pipe_quebrado_winerror_233(self):
         class BrokenPipeStream:
@@ -187,6 +192,7 @@ class TestServerLogger(unittest.TestCase):
                 raise err
 
         log_queue = ServerLogQueue(maxsize=10)
+        inscrita = log_queue.inscrever()
         stream_wrapper = StreamToQueue(BrokenPipeStream(), log_queue)
 
         # Não deve lançar exceção mesmo com WinError 233
@@ -194,7 +200,7 @@ class TestServerLogger(unittest.TestCase):
         stream_wrapper.flush()
 
         self.assertEqual(written, len("Mensagem durante WinError 233\n"))
-        self.assertEqual(log_queue.get(timeout=0.5), "Mensagem durante WinError 233")
+        self.assertEqual(inscrita.get(timeout=0.5), "Mensagem durante WinError 233")
         self.assertIsNone(stream_wrapper.original_stream)
 
     def test_stream_to_queue_tolera_broken_pipe_error(self):
@@ -206,13 +212,14 @@ class TestServerLogger(unittest.TestCase):
                 raise BrokenPipeError("Broken pipe")
 
         log_queue = ServerLogQueue(maxsize=10)
+        inscrita = log_queue.inscrever()
         stream_wrapper = StreamToQueue(BrokenStream(), log_queue)
 
         written = stream_wrapper.write("Mensagem durante BrokenPipe\n")
         stream_wrapper.flush()
 
         self.assertEqual(written, len("Mensagem durante BrokenPipe\n"))
-        self.assertEqual(log_queue.get(timeout=0.5), "Mensagem durante BrokenPipe")
+        self.assertEqual(inscrita.get(timeout=0.5), "Mensagem durante BrokenPipe")
         self.assertIsNone(stream_wrapper.original_stream)
 
     def test_stream_to_queue_propriedades_stream(self):
@@ -223,6 +230,82 @@ class TestServerLogger(unittest.TestCase):
         self.assertIsInstance(stream_wrapper.encoding, str)
         self.assertIsInstance(stream_wrapper.errors, str)
         self.assertFalse(stream_wrapper.isatty())
+
+
+class TestAssinantesDeLog(unittest.TestCase):
+    """Cada conexão SSE recebe sua própria cópia dos logs (PC e celular veem tudo)."""
+
+    def test_duas_inscricoes_recebem_a_mesma_mensagem(self):
+        fila = ServerLogQueue(maxsize=10)
+        primeira = fila.inscrever()
+        segunda = fila.inscrever()
+        fila.put("linha única")
+        self.assertEqual(primeira.get(timeout=0.5), "linha única")
+        self.assertEqual(segunda.get(timeout=0.5), "linha única")
+
+    def test_put_nunca_levanta_com_threads_concorrentes(self):
+        """Várias threads gravam ao mesmo tempo numa fila pequena: put() não pode levantar exceção."""
+        import threading
+
+        fila = ServerLogQueue(maxsize=2)
+        fila.inscrever()  # assinante que nunca lê (celular dormindo)
+        erros = []
+
+        def produzir():
+            for i in range(5000):
+                try:
+                    fila.put(f"linha {i}")
+                except Exception as exc:  # o teste quer pegar qualquer exceção
+                    erros.append(exc)
+
+        threads = [threading.Thread(target=produzir) for _ in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(erros, [])
+
+    def test_cancelar_para_de_receber(self):
+        import queue as fila_mod
+
+        fila = ServerLogQueue(maxsize=10)
+        inscrita = fila.inscrever()
+        fila.cancelar(inscrita)
+        self.assertEqual(fila.assinantes(), 0)
+        fila.put("depois do cancelamento")
+        with self.assertRaises(fila_mod.Empty):
+            inscrita.get(timeout=0.1)
+
+    def test_assinante_lento_descarta_a_mensagem_mais_antiga(self):
+        fila = ServerLogQueue(maxsize=2)
+        lenta = fila.inscrever()
+        for linha in ("um", "dois", "três"):
+            fila.put(linha)
+        self.assertEqual(lenta.get(timeout=0.5), "dois")
+        self.assertEqual(lenta.get(timeout=0.5), "três")
+
+    def test_sse_se_inscreve_e_cancela_ao_desconectar(self):
+        class Desconectado:
+            def __init__(self):
+                self.assinantes_durante_envio = None
+
+            def write(self, dados):
+                # Os cabeçalhos HTTP passam; só o envio de evento SSE (linha ou heartbeat) falha
+                if dados.startswith((b"data: ", b": keep-alive")):
+                    self.assinantes_durante_envio = fila.assinantes()
+                    raise BrokenPipeError()
+
+            def flush(self):
+                pass
+
+        fila = ServerLogQueue()
+        handler = DummyHandler(b"", "GET", "/logs-stream")
+        handler.log_queue = fila
+        handler.wfile = Desconectado()
+        handler._handle_sse_logs()
+        # Com o SSE aberto havia 1 assinante (o heartbeat falhou nele); ao sair, o assinante é removido
+        self.assertEqual(handler.wfile.assinantes_durante_envio, 1)
+        self.assertEqual(fila.assinantes(), 0)
 
 
 class TestUpdateManager(unittest.TestCase):

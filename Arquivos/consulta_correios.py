@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from html import escape
 
+import requests
 from dotenv import load_dotenv
 
 # Garante que o diretório Arquivos/ esteja no PYTHONPATH
@@ -36,6 +37,7 @@ from correios.cards import (
     textos_descricao,
     zero,
 )
+from correios.exceptions import CorreiosAuthError, CorreiosError
 from correios.icons import ICON_SPRITE
 from correios.pagina_entregues import gerar_pagina_entregues
 
@@ -162,6 +164,8 @@ def processar(usar_cache=False):
         # Cache das respostas dos Correios, na mesma pasta do script
         caminho_cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), CACHE_ARQUIVO)
         objetos_cache = {}
+        objetos_anteriores = {}
+        rastreios_com_dado_anterior = 0
         momento_dados = datetime.now()
         if usar_cache:
             carregado = carregar_cache(caminho_cache)
@@ -169,6 +173,11 @@ def processar(usar_cache=False):
                 print("Erro: não há dados em cache. Clique em Consultar Tiny e Correios primeiro.")
                 return False
             objetos_cache, momento_dados = carregado
+        else:
+            # Dado da consulta anterior de cada rastreio: se a consulta de hoje falhar, o painel usa este
+            carregado_antes = carregar_cache(caminho_cache)
+            if carregado_antes is not None:
+                objetos_anteriores = carregado_antes[0]
         data_dados = momento_dados.strftime("%d/%m/%Y %H:%M:%S")
         if usar_cache:
             print(f"Regerando o relatório com os dados consultados em {data_dados} (sem chamar as APIs).")
@@ -333,8 +342,19 @@ def processar(usar_cache=False):
             if usar_cache:
                 obj_data = objetos_cache.get(str(rastreio))
             else:
-                obj_data = consultar_objeto(rastreio, token)
-                objetos_cache[str(rastreio)] = obj_data
+                try:
+                    obj_data = consultar_objeto(rastreio, token)
+                    objetos_cache[str(rastreio)] = obj_data
+                except CorreiosAuthError:
+                    # Token recusado: todos os rastreios falhariam; a consulta inteira falha em vez de mostrar dado velho
+                    raise
+                except (CorreiosError, requests.RequestException) as exc:
+                    # Falha de um rastreio na API dos Correios não derruba a consulta: usa o dado anterior dele
+                    print(f"Aviso: consulta do rastreio {rastreio} falhou ({exc}). Usando o dado anterior.")
+                    if str(rastreio) in objetos_anteriores:
+                        objetos_cache[str(rastreio)] = objetos_anteriores[str(rastreio)]
+                        rastreios_com_dado_anterior += 1
+                    obj_data = objetos_cache.get(str(rastreio))
 
             # Processamento e classificação com TrackingService
             obj_classificado = TrackingService.processar_objeto(rastreio, obj_data)
@@ -454,6 +474,9 @@ def processar(usar_cache=False):
             orders_html.append((ordem, -dias_atraso, card))
             if not usar_cache:
                 time.sleep(0.2)
+
+        if rastreios_com_dado_anterior:
+            print(f"Aviso: {rastreios_com_dado_anterior} rastreio(s) usaram o dado da consulta anterior.")
 
         if not usar_cache:
             # Pedido que saiu do Tiny (entregue, por isso fora do CSV) recebe uma última consulta, uma vez só

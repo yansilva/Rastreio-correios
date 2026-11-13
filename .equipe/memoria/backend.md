@@ -5,4 +5,9 @@
 - 2026-11-12 · Padrão do projeto: o ruff (isort) exige que um import novo do pacote `correios` entre no bloco `from correios import (...)` em ordem alfabética, e não como linha separada.
 - 2026-11-12 · Padrão do projeto: `processar()` trata exceções com `print` (ex.: "Aviso: ..."), não com `logging`. Mantenha o estilo.
 - 2026-11-12 · Correção pedida pelo coordenador (QA bloqueante): validar cada entrada de dados lidos do JSON, e não só a raiz. `carregar()` descarta entrada sem data válida e registra aviso; `podar` e `entregas_da_semana` também ignoram entrada incompleta, para não derrubar `processar()`.
+- 2026-11-13 · Padrão do projeto: lote que consulta item a item (rastreios, pedidos) não pode deixar uma falha derrubar o resto. Trate a falha por item, use o dado anterior e siga, como em `processar()`.
+- 2026-11-13 · Erro meu num teste: um `write` falso que procura "keep-alive" também pegava o cabeçalho `Connection: keep-alive`. Em teste de SSE, identifique o evento pelo início da linha (`data: ` ou `: keep-alive`), e não por uma palavra qualquer.
+- 2026-11-13 · Correção pedida pelo QA: `ServerLogQueue` não tem mais fila padrão nem `get()`. Quem quer ler os logs se inscreve com `inscrever()` antes de gravar, e `put()` nunca levanta exceção: a cópia para as filas acontece dentro da trava.
+- 2026-11-13 · Padrão de teste: para provar uma corrida, rode o cenário com várias threads e conte as exceções; um teste de uma thread não pega isso.
+- 2026-11-13 · Correção pedida pela revisão: em `processar()`, só erro da API dos Correios (`CorreiosError`, `requests.RequestException`) usa o dado anterior. `CorreiosAuthError` sobe (token recusado derrubaria todos os rastreios), e erro de programação não é engolido.
 - 2026-11-12 · Correção pedida pelo coordenador: o `processar()` não tem `try/except ImportError` para módulos do próprio projeto; import direto. Falha ao gerar uma página secundária vira aviso com `print`, e não devolve False.

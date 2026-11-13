@@ -6,3 +6,5 @@
 - 2026-11-12 · Ao testar a cópia do texto no navegador embutido, o clique real (ref) funciona. O JavaScript sem foco cai no aviso "Copie manualmente".
 - 2026-11-12 · Em 1280px o navegador embutido tem barra de rolagem de ~15px: `innerWidth` dá 1280, mas a área visível é 1265 (`clientWidth`). Meça overflow contra `document.documentElement.clientWidth`, não contra `innerWidth`.
 - 2026-11-12 · Overflow medido com `getBoundingClientRect` dentro de containers com `overflow-x: auto` (ex.: `.filter-pills.tem-rolagem`) não é overflow da página. Confira `scrollWidth` do documento antes de reprovar.
+- 2026-11-13 · Para testar concorrência em fila, rode várias threads com `put` numa fila cheia (`maxsize` pequeno). Um teste de uma thread só não mostra `queue.Full`.
+- 2026-11-13 · Scripts de QA com `print` de texto em português quebram no console do Windows (cp1252). Use `ascii()` ou escreva em arquivo UTF-8.

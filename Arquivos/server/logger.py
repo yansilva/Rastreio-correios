@@ -2,6 +2,7 @@
 import logging
 import queue
 import re
+import threading
 from typing import Any
 
 logger = logging.getLogger("rastreio.server")
@@ -32,29 +33,62 @@ def sanitize_log_message(message: str) -> str:
 
 
 class ServerLogQueue:
-    """Gerencia a fila em memória de mensagens para streaming via Server-Sent Events (SSE)."""
+    """Mensagens do servidor para o streaming SSE.
+
+    Cada conexão SSE se inscreve com `inscrever()` e recebe uma cópia de cada mensagem: com duas abas
+    abertas (PC e celular), as duas veem todas as linhas. `put()` nunca levanta exceção, nem com várias
+    threads gravando ao mesmo tempo, porque a cópia para as filas é feita inteira dentro da trava.
+    """
 
     def __init__(self, maxsize: int = 1000):
-        self._queue: queue.Queue = queue.Queue(maxsize=maxsize)
+        self._maxsize = maxsize
+        self._assinantes: list[queue.Queue] = []
+        self._trava = threading.Lock()
+
+    def inscrever(self) -> queue.Queue:
+        """Cria uma fila para uma conexão SSE, que recebe as mensagens a partir de agora."""
+        inscrita: queue.Queue = queue.Queue(maxsize=self._maxsize)
+        with self._trava:
+            self._assinantes.append(inscrita)
+        return inscrita
+
+    def cancelar(self, inscrita: queue.Queue) -> None:
+        """Remove a fila de uma conexão encerrada; não recebe mais mensagens."""
+        with self._trava:
+            if inscrita in self._assinantes:
+                self._assinantes.remove(inscrita)
+
+    def assinantes(self) -> int:
+        """Quantas conexões SSE estão inscritas agora."""
+        with self._trava:
+            return len(self._assinantes)
 
     def put(self, message: str) -> None:
-        """Adiciona mensagem à fila se não for vazia."""
+        """Copia a mensagem para cada assinante, se não for vazia. Não levanta exceção."""
         text = str(message).strip()
-        if text:
-            clean = sanitize_log_message(text)
-            try:
-                self._queue.put_nowait(clean)
-            except queue.Full:
-                # Descarta mensagens antigas se a fila estiver lotada
-                try:
-                    self._queue.get_nowait()
-                except queue.Empty:
-                    pass
-                self._queue.put_nowait(clean)
+        if not text:
+            return
+        clean = sanitize_log_message(text)
+        with self._trava:
+            for fila in self._assinantes:
+                _colocar_descartando_antiga(fila, clean)
 
-    def get(self, timeout: float | None = 1.0) -> str:
-        """Obtém mensagem da fila ou levanta queue.Empty."""
-        return self._queue.get(timeout=timeout)
+
+def _colocar_descartando_antiga(fila: queue.Queue, mensagem: str) -> None:
+    """Coloca na fila; se estiver cheia, descarta a mensagem mais antiga. Nunca levanta exceção."""
+    try:
+        fila.put_nowait(mensagem)
+        return
+    except queue.Full:
+        pass
+    try:
+        fila.get_nowait()
+    except queue.Empty:
+        pass
+    try:
+        fila.put_nowait(mensagem)
+    except queue.Full:
+        pass
 
 
 class StreamToQueue:

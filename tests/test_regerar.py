@@ -472,6 +472,98 @@ class TestHistoricoEntregasEmProcessar(unittest.TestCase):
             self.assertEqual(set(dados["acompanhados"]), {"AE222BR"})
 
 
+class TestFalhaDeUmRastreioNaConsultaReal(unittest.TestCase):
+    """Uma falha da API dos Correios num rastreio não derruba a consulta inteira."""
+
+    def test_falha_de_um_rastreio_mantem_dado_anterior_e_segue(self):
+        from correios.exceptions import CorreiosTimeoutError
+
+        agora = datetime.now()
+        antigo = {"eventos": [{"dtHrCriado": (agora - timedelta(days=2)).replace(microsecond=0).isoformat(),
+                               "descricao": "Objeto postado ANTIGO"}]}
+        novo = {"eventos": [{"dtHrCriado": (agora - timedelta(days=1)).replace(microsecond=0).isoformat(),
+                             "descricao": "Objeto postado NOVO"}]}
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n"
+                "5001,Enviado,AE000000001BR\n"
+                "5002,Enviado,AE000000002BR\n",
+                encoding="utf-8",
+            )
+            salvar_cache(
+                os.path.join(arquivos, "rastreios_cache.json"),
+                {"AE000000001BR": antigo},
+                agora - timedelta(hours=1),
+            )
+            respostas = {"AE000000001BR": CorreiosTimeoutError("demorou"), "AE000000002BR": novo}
+
+            def consulta(codigo, _token):
+                valor = respostas[codigo]
+                if isinstance(valor, Exception):
+                    raise valor
+                return valor
+
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios, "obter_token", return_value="tok"),
+                patch.object(consulta_correios, "consultar_objeto", side_effect=consulta),
+                patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+                patch.object(consulta_correios.time, "sleep"),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                resultado = consulta_correios.processar(usar_cache=False)
+
+            self.assertIs(resultado, True)
+            html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+            self.assertIn('<span class="order-num">Pedido Tiny #5001</span>', html)
+            self.assertIn('<span class="order-num">Pedido Tiny #5002</span>', html)
+            self.assertIn("Objeto postado ANTIGO", html)
+            self.assertIn("Objeto postado NOVO", html)
+            cache_salvo, _ = carregar_cache(os.path.join(arquivos, "rastreios_cache.json"))
+            self.assertEqual(cache_salvo["AE000000001BR"], antigo)
+            self.assertEqual(cache_salvo["AE000000002BR"], novo)
+
+
+class TestErrosNaConsultaRealDeRastreio(unittest.TestCase):
+    """Só erro da API dos Correios usa o dado anterior; erro de autenticação e de programação sobem."""
+
+    def _rodar_com(self, excecao):
+        from correios.exceptions import CorreiosAuthError  # noqa: F401
+
+        agora = datetime.now()
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n5101,Enviado,AE000000011BR\n",
+                encoding="utf-8",
+            )
+            salvar_cache(
+                os.path.join(arquivos, "rastreios_cache.json"),
+                {"AE000000011BR": {"eventos": [{"dtHrCriado": agora.replace(microsecond=0).isoformat(), "descricao": "Objeto postado"}]}},
+                agora - timedelta(hours=1),
+            )
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch.object(consulta_correios, "obter_token", return_value="tok"),
+                patch.object(consulta_correios, "consultar_objeto", side_effect=excecao),
+                patch.object(consulta_correios.CorreiosConfig, "credenciais_preenchidas", return_value=True),
+                patch.object(consulta_correios.time, "sleep"),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                return consulta_correios.processar(usar_cache=False)
+
+    def test_erro_de_autenticacao_faz_processar_falhar(self):
+        from correios.exceptions import CorreiosAuthError
+
+        self.assertIs(self._rodar_com(CorreiosAuthError("token recusado")), False)
+
+    def test_erro_de_programacao_nao_e_engolido(self):
+        self.assertIs(self._rodar_com(TypeError("bug de programação")), False)
+
+
 class TestUpdateManagerRegenerate(unittest.TestCase):
     def setUp(self):
         self.config = ServerConfig(cooldown_seconds=10, auto_update_interval=100)

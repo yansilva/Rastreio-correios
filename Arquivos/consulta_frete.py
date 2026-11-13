@@ -46,6 +46,11 @@ DIAS_ATRAS = _frete_config.dias_atras
 
 logger = logging.getLogger("consulta_frete")
 
+
+class ErroTiny(Exception):
+    """A API do Tiny respondeu erro (que não seja 'nenhum registro'): a lista de pedidos não é confiável."""
+
+
 # ============== FUNÇÕES TINY (não alteradas) ==============
 
 
@@ -70,16 +75,15 @@ def buscar_pedidos_abertos():
             "sort": "DESC"
         }
 
-        response = requests.get(URL_PESQUISA_TINY, params=params)
+        response = requests.get(URL_PESQUISA_TINY, params=params, timeout=_frete_config.timeout_segundos)
         data = response.json()
 
         if data['retorno']['status'] == 'Erro':
             erros = data['retorno'].get('erros', [])
             if any(erro['erro'] == 'A consulta não retornou registros' for erro in erros):
                 break
-            else:
-                print(f"Erro na API Tiny: {data['retorno']['erros']}")
-                break
+            print(f"Erro na API Tiny: {data['retorno']['erros']}")
+            raise ErroTiny(str(data['retorno']['erros']))
 
         pedidos_pagina = data['retorno'].get('pedidos', [])
 
@@ -118,7 +122,7 @@ def obter_cep_destino(pedido_id):
     }
 
     try:
-        response = requests.get(URL_OBTER_TINY, params=params)
+        response = requests.get(URL_OBTER_TINY, params=params, timeout=_frete_config.timeout_segundos)
         data = response.json()
 
         if data['retorno']['status'] == 'OK':
@@ -171,7 +175,13 @@ def processar():
         correios_client.gerar_token()
 
         # 2. Buscar pedidos em aberto no Tiny
-        pedidos = buscar_pedidos_abertos()
+        try:
+            pedidos = buscar_pedidos_abertos()
+        except ErroTiny as e:
+            # Erro do Tiny: a página anterior continua valendo; não se gera uma página vazia no lugar dela
+            logger.error("Erro na API Tiny; página de frete anterior mantida: %s", e)
+            print("Página de frete anterior mantida (erro na API Tiny).")
+            return
 
         if not pedidos:
             print("Nenhum pedido em aberto encontrado.")

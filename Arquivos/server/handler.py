@@ -130,10 +130,12 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Connection", "keep-alive")
         self.end_headers()
 
+        # Cada conexão tem a sua fila: todas as abertas recebem todas as linhas de log
+        minha_fila = self.log_queue.inscrever()
         try:
             while True:
                 try:
-                    message = self.log_queue.get(timeout=1.0)
+                    message = minha_fila.get(timeout=1.0)
                     line = f"data: {message}\n\n".encode()
                     self.wfile.write(line)
                     self.wfile.flush()
@@ -145,6 +147,8 @@ class RastreioRequestHandler(http.server.SimpleHTTPRequestHandler):
             pass
         except Exception as exc:
             logger.debug(f"Conexão SSE encerrada: {exc}")
+        finally:
+            self.log_queue.cancelar(minha_fila)
 
     def _handle_proxima_atualizacao(self) -> None:
         """Retorna JSON com remaining e next_time."""
