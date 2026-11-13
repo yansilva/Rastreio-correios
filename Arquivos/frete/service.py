@@ -7,7 +7,7 @@ import time
 
 from .client import FreteClient
 from .config import FreteConfig
-from .exceptions import FreteError, FreteServicoIndisponivelError
+from .exceptions import FreteAPIError, FreteError, FreteServicoIndisponivelError
 from .models import OpcaoFrete
 
 logger = logging.getLogger("frete.service")
@@ -54,10 +54,18 @@ class FreteService:
         # --- Prazo ---
         prazo_dias = None
         msg_prazo = None
+        prazo_erro = None
 
         try:
             dados_prazo = self.client.obter_prazo(cep_destino, codigo)
+            if not isinstance(dados_prazo, dict):
+                raise FreteAPIError(f"Resposta de prazo inesperada (tipo {type(dados_prazo).__name__})")
             prazo_dias = OpcaoFrete.parse_prazo(dados_prazo.get("prazoEntrega"))
+            if prazo_dias is None:
+                # Resposta chegou, mas sem prazo utilizável: guarda os campos recebidos para diagnóstico
+                campos = ", ".join(sorted(dados_prazo)) or "nenhum"
+                prazo_erro = f"Resposta sem prazoEntrega válido (campos recebidos: {campos})"
+                logger.info("Prazo sem valor para serviço %s, CEP %s: %s", codigo, cep_destino, prazo_erro)
 
             # Mensagem de observação do prazo (vários campos possíveis)
             msg_prazo = (
@@ -67,10 +75,12 @@ class FreteService:
                 or dados_prazo.get("observacao")
                 or dados_prazo.get("txMsgObs")
             )
-        except FreteServicoIndisponivelError:
+        except FreteServicoIndisponivelError as exc:
             logger.info("Prazo indisponível para serviço %s, CEP %s", codigo, cep_destino)
+            prazo_erro = str(exc)
         except FreteError as exc:
             logger.warning("Não foi possível obter prazo para serviço %s: %s", codigo, exc)
+            prazo_erro = str(exc)
 
         return OpcaoFrete(
             codigo=codigo,
@@ -79,6 +89,7 @@ class FreteService:
             preco=preco,
             prazo_dias=prazo_dias,
             msg_prazo=msg_prazo,
+            prazo_erro=prazo_erro,
             erro=None,
         )
 

@@ -8,3 +8,4 @@
 - 2026-11-12 · Overflow medido com `getBoundingClientRect` dentro de containers com `overflow-x: auto` (ex.: `.filter-pills.tem-rolagem`) não é overflow da página. Confira `scrollWidth` do documento antes de reprovar.
 - 2026-11-13 · Para testar concorrência em fila, rode várias threads com `put` numa fila cheia (`maxsize` pequeno). Um teste de uma thread só não mostra `queue.Full`.
 - 2026-11-13 · Scripts de QA com `print` de texto em português quebram no console do Windows (cp1252). Use `ascii()` ou escreva em arquivo UTF-8.
+- 2026-11-13 · Para saber se um título encosta num botão, meça o texto com `Range.getClientRects()` do nó de texto e compare com o `getBoundingClientRect` do botão. Não estime a largura do título pela captura reduzida: a estimativa errou em dezenas de pixels.

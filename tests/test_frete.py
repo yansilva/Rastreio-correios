@@ -247,6 +247,25 @@ class TestFreteClient(unittest.TestCase):
         self.assertEqual(kwargs["params"]["cepDestino"], "01001000")
         self.assertEqual(kwargs["timeout"], 15.0)
 
+    @patch("frete.client.requests.get")
+    def test_trecho_do_corpo_sem_quebra_sem_token_e_limitado(self, mock_get):
+        from frete.exceptions import FreteServicoIndisponivelError
+
+        corpo = 'erro\ncom quebra {"token":"SEGREDO123","authorization":"Bearer ABC.def-9"} ' + "x" * 400
+        resposta = MagicMock()
+        resposta.status_code = 400
+        resposta.text = corpo
+        mock_get.return_value = resposta
+
+        with self.assertRaises(FreteServicoIndisponivelError) as ctx:
+            self._criar_client().obter_prazo("01001000", "03220")
+        mensagem = str(ctx.exception)
+        self.assertNotIn("\n", mensagem)
+        self.assertNotIn("SEGREDO123", mensagem)
+        self.assertNotIn("ABC.def-9", mensagem)
+        self.assertIn("***", mensagem)
+        self.assertLessEqual(mensagem.count("x"), 200)
+
     @patch("requests.get")
     def test_obter_prazo_sucesso(self, mock_get):
         """Valida consulta de prazo com resposta válida."""
@@ -406,6 +425,90 @@ class TestFreteService(unittest.TestCase):
         for opcao in opcoes:
             self.assertFalse(opcao.disponivel)
             self.assertIsNotNone(opcao.erro)
+
+    def test_prazo_sem_campo_prazoEntrega_registra_o_motivo(self):
+        """Resposta 200 sem prazoEntrega: o prazo fica vazio e o motivo (campos recebidos) fica registrado."""
+        service, mock_client = self._criar_service_com_mock()
+        mock_client.obter_preco.return_value = {"pcFinal": "50,00"}
+        mock_client.obter_prazo.return_value = {"prazoEntregaDias": 3, "msgPrazo": "x"}
+
+        opcoes = service.consultar_opcoes("01001000", intervalo_segundos=0)
+        disponiveis = [o for o in opcoes if o.disponivel]
+        self.assertTrue(disponiveis)
+        for opcao in disponiveis:
+            self.assertIsNone(opcao.prazo_dias)
+            self.assertIn("prazoEntrega", opcao.prazo_erro)
+            self.assertIn("prazoEntregaDias", opcao.prazo_erro)
+
+    def test_prazo_com_erro_http_registra_o_status(self):
+        from frete.exceptions import FreteAPIError
+
+        service, mock_client = self._criar_service_com_mock()
+        mock_client.obter_preco.return_value = {"pcFinal": "50,00"}
+        mock_client.obter_prazo.side_effect = FreteAPIError("Limite de requisições excedido (HTTP 429)", status_code=429)
+
+        opcoes = service.consultar_opcoes("01001000", intervalo_segundos=0)
+        for opcao in [o for o in opcoes if o.disponivel]:
+            self.assertIsNone(opcao.prazo_dias)
+            self.assertIn("429", opcao.prazo_erro)
+
+    def test_prazo_ok_nao_tem_motivo(self):
+        service, mock_client = self._criar_service_com_mock()
+        mock_client.obter_preco.return_value = {"pcFinal": "50,00"}
+        mock_client.obter_prazo.return_value = {"prazoEntrega": 4}
+
+        opcoes = service.consultar_opcoes("01001000", intervalo_segundos=0)
+        for opcao in [o for o in opcoes if o.disponivel]:
+            self.assertEqual(opcao.prazo_dias, 4)
+            self.assertIsNone(opcao.prazo_erro)
+
+    @patch("frete.client.requests.get")
+    def test_prazo_400_chega_ao_prazo_erro_com_a_causa(self, mock_get):
+        """Ponta a ponta: o corpo do 400 dos Correios aparece no motivo do prazo (sem preço quebrado)."""
+
+        def fake_get(url, headers=None, params=None, timeout=None):
+            resposta = MagicMock()
+            if "prazo" in url:
+                resposta.status_code = 400
+                resposta.text = '{"msgs":["Serviço sem contrato"]}'
+            else:
+                resposta.status_code = 200
+                resposta.json.return_value = {"pcFinal": "50,00"}
+            return resposta
+
+        mock_get.side_effect = fake_get
+        correios = MagicMock()
+        correios.gerar_token.return_value = "tok"
+        config = FreteConfig(cep_origem="05617010")
+        service = FreteService(client=FreteClient(correios_client=correios, config=config), config=config)
+
+        opcoes = service.consultar_opcoes("01001000", intervalo_segundos=0)
+        disponiveis = [o for o in opcoes if o.disponivel]
+        self.assertTrue(disponiveis)
+        for opcao in disponiveis:
+            self.assertIsNone(opcao.prazo_dias)
+            self.assertIn("Serviço sem contrato", opcao.prazo_erro)
+
+    def test_prazo_sem_campo_prazoEntrega_gera_log_info(self):
+        service, mock_client = self._criar_service_com_mock()
+        mock_client.obter_preco.return_value = {"pcFinal": "50,00"}
+        mock_client.obter_prazo.return_value = {"prazoEntregaDias": 3}
+        with self.assertLogs("frete.service", level="INFO") as logs:
+            service.consultar_opcoes("01001000", intervalo_segundos=0)
+        self.assertTrue(any("prazoEntregaDias" in linha for linha in logs.output))
+
+    def test_resposta_de_prazo_que_nao_e_dict_nao_derruba_a_consulta(self):
+        service, mock_client = self._criar_service_com_mock()
+        mock_client.obter_preco.return_value = {"pcFinal": "50,00"}
+        mock_client.obter_prazo.return_value = [1, 2, 3]
+        opcoes = service.consultar_opcoes("01001000", intervalo_segundos=0)
+        for opcao in [o for o in opcoes if o.disponivel]:
+            self.assertIsNone(opcao.prazo_dias)
+            self.assertIn("list", opcao.prazo_erro)
+
+    def test_to_dict_expoe_o_motivo_do_prazo(self):
+        d = OpcaoFrete(codigo="03220", nome="SEDEX", disponivel=True, prazo_erro="HTTP 429").to_dict()
+        self.assertEqual(d["prazo_erro"], "HTTP 429")
 
     def test_consultar_opcoes_prazo_indisponivel(self):
         """Valida que preço disponível mas prazo indisponível ainda retorna opção."""
@@ -752,12 +855,19 @@ class TestFreteReportGenerator(unittest.TestCase):
         })
         self.assertIn('class="servico-card disponivel barato"', html)
         self.assertEqual(html.count("servico-card disponivel barato"), 1)
-        self.assertIn(".servico-card.disponivel.barato { border-left: 3px solid var(--color-primary);", html)
+        # Sem borda lateral de 3px: o selo "Mais barato" já basta (side-tab evitado)
+        self.assertNotIn("border-left: 3px solid", html)
         self.assertNotIn("var(--color-success", html)
+
+    def test_prazo_vazio_mostra_prazo_indisponivel(self):
+        from frete.report import _fmt_prazo
+        self.assertEqual(_fmt_prazo(None), "Prazo indisponível")
+        self.assertEqual(_fmt_prazo(0), "Prazo indisponível")
+        self.assertEqual(_fmt_prazo(1), "1 dia útil")
 
     def test_servicos_em_duas_colunas_no_celular_continuam(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
-        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", html)
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))", html)
 
     def test_selo_de_situacao_so_quando_difere_do_lote(self):
         generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))
@@ -847,7 +957,7 @@ class TestFreteReportGenerator(unittest.TestCase):
     def test_celular_360px_servicos_em_duas_colunas(self):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
         self.assertIn("@media (min-width: 360px) and (max-width: 640px)", html)
-        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", html)
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))", html)
         # Abaixo de 360px volta para uma coluna, num bloco posterior ao de 2 colunas (vence na cascata)
         bloco_1col = html.index("@media (max-width: 359px)")
         self.assertIn("grid-template-columns: 1fr;", html[bloco_1col:bloco_1col + 120])

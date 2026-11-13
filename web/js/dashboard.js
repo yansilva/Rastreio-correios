@@ -278,11 +278,11 @@ function atualizarTabela() {
         ver.title = 'Ver cartão';
         ver.setAttribute('aria-label', isNaN(l.pedido) ? 'Ver cartão' : 'Ver cartão do pedido #' + l.pedido);
         var icone = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        icone.setAttribute('class', 'icon icon-package');
+        icone.setAttribute('class', 'icon icon-card');
         icone.setAttribute('aria-hidden', 'true');
         icone.setAttribute('focusable', 'false');
         var simbolo = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-        simbolo.setAttribute('href', '#i-package');
+        simbolo.setAttribute('href', '#i-card');
         icone.appendChild(simbolo);
         ver.appendChild(icone);
         ver.addEventListener('click', function() { verCartao(l.card); });

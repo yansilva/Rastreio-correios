@@ -56,6 +56,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 
     versao_cache = int(time.time())
     data_geracao = time.strftime("%d/%m/%Y %H:%M:%S")
+    data_curta = time.strftime("%d/%m %H:%M")
 
     # -------------------------------------------------------------------------
     # 1. Dashboard de Resumo
@@ -359,7 +360,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
-                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Modo Demonstração<span class="meta-longo"> (Portfólio)</span> · Gerado em {data_geracao}</span>
+                    <span class="meta-dados" title="Relatório gerado em {data_geracao}">Modo Demonstração<span class="meta-longo"> (Portfólio)</span> · Dados de {data_curta}</span>
                     <span class="meta-sep" aria-hidden="true">·</span>
                     <span id="next-check"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> <span class="meta-longo">Próxima verificação automática em </span><span class="meta-curto">próxima em </span><strong id="countdown-timer">45:00</strong></span>
                 </div>
@@ -463,7 +464,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
-                <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao}</div>
+                <div class="meta">Pedidos com mais de 3 dias em trânsito · Dados de {data_curta}</div>
             </div>
         </header>
         {nav_html('atrasados', 1)}

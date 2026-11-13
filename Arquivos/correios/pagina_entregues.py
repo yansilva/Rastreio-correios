@@ -87,9 +87,9 @@ def _linhas_html(itens: list[dict]) -> str:
                     <tr role="row">
                         <td role="cell" data-label="Pedido"><strong>#{escape(item["pedido"])}</strong></td>
                         <td role="cell" data-label="Cliente">{_texto(item.get("cliente"))}</td>
-                        <td role="cell" data-label="Rastreio"><code>{rastreio}</code> <button type="button" class="btn-copy" data-copy="{rastreio}" aria-label="Copiar código de rastreio {rastreio}">Copiar rastreio</button></td>
-                        <td role="cell" data-label="Cidade">{_texto(item.get("cidade"))}</td>
-                        <td role="cell" data-label="Postado em">{_fmt_data(item.get("postado_em"))}</td>
+                        <td role="cell" data-label="Rastreio"><span class="entregues-rastreio">{rastreio}</span><button type="button" class="btn-copy" data-copy="{rastreio}" aria-label="Copiar código de rastreio {rastreio}">Copiar rastreio</button></td>
+                        <td role="cell" data-label="Cidade" class="col-secundaria">{_texto(item.get("cidade"))}</td>
+                        <td role="cell" data-label="Postado em" class="col-secundaria">{_fmt_data(item.get("postado_em"))}</td>
                         <td role="cell" data-label="Entregue em">{_fmt_data(item.get("entregue_em"))}</td>
                         <td role="cell" data-label="Dias">{_celula_dias(item)}</td>
                     </tr>"""
@@ -120,8 +120,8 @@ def _secao_html(indice: int, titulo: str, itens: list[dict]) -> str:
                             <th role="columnheader" scope="col">Pedido</th>
                             <th role="columnheader" scope="col">Cliente</th>
                             <th role="columnheader" scope="col">Rastreio</th>
-                            <th role="columnheader" scope="col">Cidade</th>
-                            <th role="columnheader" scope="col">Postado em</th>
+                            <th role="columnheader" scope="col" class="col-secundaria">Cidade</th>
+                            <th role="columnheader" scope="col" class="col-secundaria">Postado em</th>
                             <th role="columnheader" scope="col">Entregue em</th>
                             <th role="columnheader" scope="col">Dias</th>
                         </tr>
@@ -173,7 +173,7 @@ def montar_html_entregues(historico: dict, agora: datetime, atrasados: int | Non
             </div>
             <div class="header-main">
                 <h1><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</h1>
-                <div class="meta">Pedidos entregues por semana — Gerado em: {agora:%d/%m/%Y %H:%M}</div>
+                <div class="meta">Pedidos entregues por semana · Dados de {agora:%d/%m %H:%M}</div>
             </div>
         </header>
         {nav_html('entregues', atrasados)}

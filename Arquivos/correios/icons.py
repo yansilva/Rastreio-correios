@@ -19,6 +19,7 @@ ICONES: dict[str, str] = {
     "search": '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     "map-pin": '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     "alert-triangle": '<path d="M12 3.5L2.5 20h19L12 3.5z"/><path d="M12 10v4M12 17h.01"/>',
+    "card": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
 }
 
 

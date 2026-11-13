@@ -38,7 +38,7 @@ _ICONE_RAPIDO = (
 def _fmt_prazo(prazo: Any) -> str:
     """Prazo em dias úteis, com plural correto ('1 dia útil', 'N dias úteis')."""
     if not prazo:
-        return "—"
+        return "Prazo indisponível"
     return f"{prazo} dia útil" if prazo == 1 else f"{prazo} dias úteis"
 
 
@@ -136,7 +136,7 @@ class FreteReportGenerator:
         """
         config = self.config
 
-        data_geracao = time.strftime('%d/%m/%Y %H:%M:%S')
+        data_curta = time.strftime('%d/%m %H:%M')
         total_pedidos = len(pedidos_com_frete)
         # Situação repetida em todo o lote não precisa de selo em cada cartão
         situacao_comum = (
@@ -396,7 +396,7 @@ class FreteReportGenerator:
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin: 18px 0 0 0;
+            margin: 18px 0 16px 0;
             flex-wrap: wrap;
         }}
         .nav-tab {{
@@ -590,7 +590,7 @@ class FreteReportGenerator:
         .num-neutral {{ color: var(--color-text-main); }}
         .summary-link {{ color: inherit; text-decoration: underline; text-decoration-color: var(--color-border-strong); text-underline-offset: 3px; }}
         .summary-link:hover {{ color: var(--color-link); }}
-        .summary-link:focus-visible {{ outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: 4px; }}
+        .summary-link:focus-visible {{ outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: var(--radius-sm); }}
 
         /* Pedido Cards */
         .pedido-card {{
@@ -707,11 +707,11 @@ class FreteReportGenerator:
         }}
         .servico-msg-prazo {{
             font-size: 0.8125rem;
-            color: var(--color-warning-text);
+            color: var(--color-text-muted);
             margin-top: 8px;
             padding: 6px 10px;
-            background: var(--color-warning-bg);
-            border: 1px solid var(--color-warning-border);
+            background: var(--color-surface-hover);
+            border: 1px solid var(--color-border);
             border-radius: var(--radius-sm);
             text-align: left;
             word-break: break-word;
@@ -755,7 +755,7 @@ class FreteReportGenerator:
             /* Nav igual à do painel (lote A): faixa de 44px, uma linha, fixa ao rolar, fundo sólido */
             .nav-tabs {{
                 position: sticky; top: 0; z-index: 20;
-                flex-wrap: nowrap; gap: 6px; margin: 10px 0 14px 0; padding: 0;
+                flex-wrap: nowrap; gap: 6px; margin: 10px 0 16px 0; padding: 0;
                 background: var(--color-surface);
             }}
             .nav-tab {{ flex: 1 1 auto; justify-content: center; min-height: 44px; min-width: 0; padding: 0 10px; font-size: 0.8125rem; white-space: nowrap; }}
@@ -773,8 +773,9 @@ class FreteReportGenerator:
                 margin-bottom: 12px;
             }}
             /* Tema só com ícone no celular (rótulo continua no aria-label): o título não cruza o botão */
-            .btn-theme {{ width: 44px; padding: 0; justify-content: center; }}
-            .btn-theme span {{ display: none; }}
+            .btn-theme {{ width: 44px; padding: 0; justify-content: center; position: relative; }}
+            /* Só o ícone aparece; o rótulo visível fica fora da tela (sr-only), para o nome acessível continuar sendo "Claro"/"Escuro" (WCAG 4.1.2) */
+            [data-theme] .btn-theme span {{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }}
             .search-input {{ min-height: 44px; padding: 10px 14px 10px 44px; }}
             .search-icon {{ left: 14px; }}
             .filter-group {{ flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; }}
@@ -792,8 +793,10 @@ class FreteReportGenerator:
         }}
         /* Celular a partir de 360px: serviços lado a lado (2 colunas); abaixo disso, uma coluna */
         @media (min-width: 360px) and (max-width: 640px) {{
-            .servicos-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+            .servicos-grid {{ grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }}
             .servico-card {{ min-width: 0; }}
+            /* Serviço com aviso ocupa a linha inteira: o aviso não fica numa coluna estreita */
+            .servico-card:has(.servico-msg-prazo) {{ grid-column: 1 / -1; }}
         }}
         /* Abaixo de 360px: uma coluna */
         @media (max-width: 359px) {{
@@ -814,8 +817,7 @@ class FreteReportGenerator:
                 border-radius: var(--radius-sm);
             }}
             /* Mais barato: realce sutil na borda esquerda, na cor de destaque (sem verde) */
-            .servico-card.disponivel.barato {{ border-left: 3px solid var(--color-primary); padding-left: 12px; }}
-            .servico-nome {{ margin: 0; font-size: 0.9375rem; }}
+            .servico-nome {{ margin: 0; font-size: 0.875rem; }}
             .servico-preco {{ margin: 0; font-size: 1.25rem; line-height: 1.3; }}
             .servico-prazo {{ white-space: nowrap; }}
             .servico-selos {{ grid-column: 4; grid-row: 1; justify-content: flex-end; flex-wrap: nowrap; margin: 0; }}
@@ -837,7 +839,7 @@ class FreteReportGenerator:
                 </button>
             </div>
             <h1>{icone("package")} Opções de Frete Correios</h1>
-            <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Gerado em {data_geracao}</div>
+            <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Dados de {data_curta}</div>
             <div class="config-info">{icone("package")} Pacote<span class="so-desk"> padrão</span>: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · <span class="so-desk">Origem CEP: </span><span class="so-cel">Origem </span>{_fmt_cep(config.cep_origem)}</div>
         </header>
         {nav_html('frete')}

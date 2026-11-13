@@ -273,7 +273,8 @@ def test_tabela_tem_layout_fixo_e_acoes_empilhadas_no_desktop():
     assert "ver.className = 'btn-ver-cartao';" in dash_js
     assert "ver.title = 'Ver cartão';" in dash_js
     assert "'Ver cartão do pedido #' + l.pedido" in dash_js
-    assert "#i-package" in dash_js
+    assert "#i-card" in dash_js
+    assert "#i-package" not in dash_js
     # O botão não herda a classe de cópia (estilo e alvo próprios)
     assert "ver.classList.add('btn-copy')" not in dash_js
     assert "botaoDeLinha('Ver cartão'" not in dash_js

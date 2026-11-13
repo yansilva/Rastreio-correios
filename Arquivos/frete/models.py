@@ -47,6 +47,7 @@ class OpcaoFrete:
     prazo_dias: int | None = None
     msg_prazo: str | None = None
     erro: str | None = None
+    prazo_erro: str | None = None  # Motivo de o prazo ter ficado vazio (diagnóstico; não aparece no texto)
 
     @property
     def preco_formatado(self) -> str | None:
@@ -67,6 +68,7 @@ class OpcaoFrete:
             "preco_fmt": self.preco_formatado,
             "prazo": self.prazo_dias,
             "msg_prazo": self.msg_prazo,
+            "prazo_erro": self.prazo_erro,
             "erro": self.erro,
         }
 

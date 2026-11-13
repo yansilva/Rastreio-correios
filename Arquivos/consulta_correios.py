@@ -586,7 +586,7 @@ def processar(usar_cache=False):
         # ===== GERA PÁGINA DE PEDIDOS ATRASADOS =====
         atrasados_data.sort(key=lambda x: x["dias_transito"], reverse=True)
 
-        data_geracao_atrasados = time.strftime("%d/%m/%Y %H:%M:%S")
+        data_curta_atrasados = time.strftime("%d/%m %H:%M")
         total_atrasados = len(atrasados_data)
 
         # Calcula contagens por urgência
@@ -711,7 +711,7 @@ def processar(usar_cache=False):
             </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
-                <div class="meta">Pedidos com mais de 3 dias em trânsito — Gerado em: {data_geracao_atrasados}</div>
+                <div class="meta">Pedidos com mais de 3 dias em trânsito · Dados de {data_curta_atrasados}</div>
             </div>
         </header>
         {nav_html('atrasados', total_atrasados)}

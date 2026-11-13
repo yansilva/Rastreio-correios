@@ -4,6 +4,7 @@ Responsabilidade exclusiva: comunicação HTTP.
 NÃO monta HTML, NÃO escolhe melhor opção, NÃO gera relatório.
 """
 import logging
+import re
 from typing import Any
 
 import requests
@@ -18,6 +19,28 @@ from .exceptions import (
 )
 
 logger = logging.getLogger("frete.client")
+
+# Valores que parecem credencial no corpo de um erro: mascarados antes de qualquer mensagem
+_CREDENCIAIS_NO_CORPO = re.compile(
+    r'(?i)(token|bearer|authorization|senha|password|secret|api_key|apikey)("?\s*[:=]\s*"?|\s+)[^\s",}]+'
+)
+
+
+_BEARER_NO_CORPO = re.compile(r'(?i)bearer\s+[^\s",}]+')
+
+
+def _trecho_do_corpo(response: Any, limite: int = 200) -> str:
+    """Trecho curto da resposta de erro para diagnóstico: uma linha, sem credenciais, até `limite` caracteres."""
+    texto = " ".join(str(getattr(response, "text", "") or "").split())
+    texto = _BEARER_NO_CORPO.sub("Bearer ***", texto)
+    texto = _CREDENCIAIS_NO_CORPO.sub(lambda m: f"{m.group(1)}{m.group(2)}***", texto)
+    return texto[:limite]
+
+
+def _com_corpo(mensagem: str, response: Any) -> str:
+    """Acrescenta o trecho do corpo à mensagem de erro, quando houver corpo."""
+    trecho = _trecho_do_corpo(response)
+    return f"{mensagem}: {trecho}" if trecho else mensagem
 
 
 class FreteClient:
@@ -68,7 +91,7 @@ class FreteClient:
         if response.status_code in (400, 422):
             logger.info("Serviço indisponível para rota (HTTP %d): %s", response.status_code, url)
             raise FreteServicoIndisponivelError(
-                f"Serviço indisponível para esta rota (HTTP {response.status_code})"
+                _com_corpo(f"Serviço indisponível para esta rota (HTTP {response.status_code})", response)
             )
 
         # Token expirado — tenta renovar uma vez
@@ -85,18 +108,18 @@ class FreteClient:
 
         # Erros HTTP genéricos
         if response.status_code == 403:
-            raise FreteAPIError("Acesso negado à API de frete (HTTP 403)", status_code=403)
+            raise FreteAPIError(_com_corpo("Acesso negado à API de frete (HTTP 403)", response), status_code=403)
         if response.status_code == 429:
-            raise FreteAPIError("Limite de requisições excedido (HTTP 429)", status_code=429)
+            raise FreteAPIError(_com_corpo("Limite de requisições excedido (HTTP 429)", response), status_code=429)
         if response.status_code >= 500:
             raise FreteAPIError(
-                f"Erro interno na API dos Correios (HTTP {response.status_code})",
+                _com_corpo(f"Erro interno na API dos Correios (HTTP {response.status_code})", response),
                 status_code=response.status_code,
                 detalhes=response.text[:500],
             )
         if response.status_code != 200:
             raise FreteAPIError(
-                f"Resposta inesperada da API de frete (HTTP {response.status_code})",
+                _com_corpo(f"Resposta inesperada da API de frete (HTTP {response.status_code})", response),
                 status_code=response.status_code,
                 detalhes=response.text[:500],
             )

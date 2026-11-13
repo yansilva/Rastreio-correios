@@ -1214,18 +1214,14 @@ h1 .icon {
 
 /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
 .header-tools {
-    position: absolute;
-    top: 0;
-    right: 0;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* Entre 641 e 1099px o cabeçalho não cabe ao lado do título: as ferramentas sobem para uma linha acima dele */
-@media (min-width: 641px) and (max-width: 1099px) {
+/* Do celular ao desktop, as ferramentas ficam numa linha acima do título: ao lado dele, o botão "Claro" colava no título entre 1100 e 1280px */
+@media (min-width: 641px) {
     .header-tools {
-        position: static;
         justify-content: flex-end;
         margin-bottom: 8px;
     }
@@ -1453,7 +1449,7 @@ h1 .icon {
 
     .dash-card {
         padding: 6px 8px;
-        justify-content: center;
+        justify-content: flex-start;
         text-align: center;
     }
 
@@ -1464,6 +1460,7 @@ h1 .icon {
     .dash-info {
         flex-direction: column;
         align-items: center;
+        align-self: flex-start;
         gap: 0;
         min-width: 0;
     }
@@ -1473,7 +1470,8 @@ h1 .icon {
         letter-spacing: 0;
         text-transform: none;
         margin-top: 0;
-        overflow-wrap: anywhere;
+        overflow-wrap: normal;
+        hyphens: none;
     }
 
     /* Faixa de ação: título pequeno e os dois botões lado a lado */
@@ -2019,7 +2017,12 @@ main.orders-list {
     }
 
     .summary-card {
-        padding: 6px 2px;
+        padding: 6px 8px;
+    }
+
+    /* Entregues tem 3 cartões de resumo: três colunas, sem a quarta vazia */
+    .summary:has(> .summary-card:nth-child(3):last-child) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .summary-number {
@@ -2031,13 +2034,43 @@ main.orders-list {
         font-size: 0.75rem;
         letter-spacing: 0;
         text-transform: none;
-        overflow-wrap: anywhere;
+        overflow-wrap: normal;
+        hyphens: none;
     }
 
     /* Cartão do pedido no celular: só Pedido, Cliente, Rastreio, Dias e Ações */
     .table-wrapper .col-secundaria {
         display: none;
     }
+
+    /* Entregues: Cidade e Postado em saem da tela, mas continuam na árvore de acessibilidade (leitor de tela lê a linha inteira) */
+    .entregues-painel .table-wrapper .col-secundaria {
+        display: block;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+
+/* Página Entregues, desktop: datas e dias numa linha; código e botão com 8px entre eles; rastreio na fonte do texto */
+@media (min-width: 641px) {
+    .entregues-painel td[data-label="Postado em"],
+    .entregues-painel td[data-label="Entregue em"],
+    .entregues-painel td[data-label="Dias"] {
+        white-space: nowrap;
+    }
+}
+
+.entregues-painel td[data-label="Rastreio"] .btn-copy {
+    margin-left: 8px;
+}
+
+.entregues-rastreio {
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Lote C */
