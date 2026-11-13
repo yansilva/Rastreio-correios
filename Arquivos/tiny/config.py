@@ -20,7 +20,8 @@ class TinyConfig:
     formato: str = "json"
     timeout_segundos: float = 30.0
     delay_paginacao_segundos: float = 0.5
-    dias_atras_padrao: int = 30
+    # 60 dias: um pacote postado há mais de 30 dias e ainda em trânsito precisa continuar no painel
+    dias_atras_padrao: int = 60
     # Quedas de conexão (reset, SSL EOF) costumam ser passageiras: tenta de novo antes de desistir
     tentativas_conexao: int = 3
     espera_entre_tentativas: float = 2.0

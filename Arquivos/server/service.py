@@ -20,21 +20,27 @@ class UpdateManager:
         log_queue: ServerLogQueue,
         runner_fn: Callable[[], Any] | None = None,
         regenerator_fn: Callable[[], Any] | None = None,
+        relogio: Callable[[], float] = time.time,
+        dormir: Callable[[float], None] = time.sleep,
     ):
         self.config = config
         self.log_queue = log_queue
         self.runner_fn = runner_fn or self._default_runner
         self.regenerator_fn = regenerator_fn or self._default_regenerator
+        # Relógio e espera são injetáveis para os testes do agendamento
+        self._agora = relogio
+        self._dormir = dormir
         self.last_update_time: float = 0.0
-        self.next_update_time: float = time.time() + self.config.auto_update_interval
+        self.next_update_time: float = self._agora() + self.config.auto_update_interval
         self._is_updating: bool = False
         self._lock = threading.Lock()
         self._auto_thread: threading.Thread | None = None
+        self._worker_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
     def remaining_cooldown(self) -> int:
         """Retorna os segundos restantes de cooldown (0 se livre)."""
-        time_passed = time.time() - self.last_update_time
+        time_passed = self._agora() - self.last_update_time
         if time_passed < self.config.cooldown_seconds:
             return max(0, int(self.config.cooldown_seconds - time_passed))
         return 0
@@ -45,7 +51,7 @@ class UpdateManager:
 
     def get_proxima_atualizacao_info(self) -> dict[str, Any]:
         """Retorna dados estruturados sobre a próxima atualização automática."""
-        remaining = max(0, int(self.next_update_time - time.time()))
+        remaining = max(0, int(self.next_update_time - self._agora()))
         if self.next_update_time > 0:
             next_time_str = datetime.fromtimestamp(self.next_update_time).strftime("%H:%M")
         else:
@@ -78,9 +84,8 @@ class UpdateManager:
             try:
                 self.log_queue.put(f"🚀 INICIANDO PROCESSO: {motivo}")
                 self.runner_fn()
-                now = time.time()
-                self.last_update_time = now
-                self.next_update_time = now + self.config.auto_update_interval
+                # Só o sucesso conta para o cooldown
+                self.last_update_time = self._agora()
                 self.log_queue.put("✅ PROCESSO FINALIZADO COM SUCESSO")
                 logger.info("Atualização concluída com sucesso.")
             except Exception as exc:
@@ -88,11 +93,13 @@ class UpdateManager:
                 logger.error(erro_msg)
                 self.log_queue.put(f"❌ [ERRO] {erro_msg}")
             finally:
+                # Sucesso ou falha, o próximo horário automático fica um intervalo depois
+                self.next_update_time = self._agora() + self.config.auto_update_interval
                 with self._lock:
                     self._is_updating = False
 
-        thread = threading.Thread(target=_worker, daemon=True)
-        thread.start()
+        self._worker_thread = threading.Thread(target=_worker, daemon=True)
+        self._worker_thread.start()
         return True
 
     def regenerate(self) -> tuple[bool, str]:
@@ -129,22 +136,28 @@ class UpdateManager:
                 f"Atualização automática agendada a cada {self.config.auto_update_interval // 60} minutos."
             )
             while not self._stop_event.is_set():
-                # Dorme em passos curtos para permitir interrupção rápida
-                sleep_start = time.time()
-                while (
-                    time.time() - sleep_start < self.config.auto_update_interval
-                    and not self._stop_event.is_set()
-                ):
-                    time.sleep(1.0)
+                # Espera até o horário agendado. Relê next_update_time a cada 1 s: uma consulta manual pode empurrá-lo
+                while not self._stop_event.is_set() and self._agora() < self.next_update_time:
+                    self._dormir(1.0)
 
                 if self._stop_event.is_set():
                     break
 
                 logger.info("Disparando ciclo de atualização automática...")
-                self.trigger_update(motivo="AUTOMÁTICA (INTERVALO)")
+                self._disparar_automatica()
 
         self._auto_thread = threading.Thread(target=_loop, daemon=True)
         self._auto_thread.start()
+
+    def _disparar_automatica(self) -> None:
+        """Dispara uma atualização automática e espera ela terminar (o worker reagenda o próximo horário)."""
+        if not self.trigger_update(motivo="AUTOMÁTICA (INTERVALO)"):
+            # Não pôde disparar agora (cooldown ou atualização em andamento): tenta de novo daqui a 1 s
+            self._dormir(1.0)
+            return
+        thread = self._worker_thread
+        while thread is not None and thread.is_alive() and not self._stop_event.is_set():
+            thread.join(timeout=1.0)
 
     def stop(self) -> None:
         """Sinaliza parada do loop de atualização."""

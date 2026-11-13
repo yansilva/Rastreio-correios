@@ -245,6 +245,23 @@ class TestTinyOrderService(unittest.TestCase):
         self.assertEqual(sem_nome.cliente, "")
 
 
+class TestPeriodoDeBuscaDoTiny(unittest.TestCase):
+    """Pedido postado há mais de 30 dias e ainda em trânsito não pode sair da busca."""
+
+    def test_padrao_cobre_60_dias(self):
+        self.assertEqual(TinyConfig(token="x").dias_atras_padrao, 60)
+
+    @patch("tiny.client.TinyClient.pesquisar_todos_pedidos", return_value=[])
+    def test_busca_pede_o_periodo_de_60_dias(self, mock_pesquisa):
+        from datetime import datetime, timedelta
+
+        TinyOrderService(config=TinyConfig(token="x")).buscar_pedidos_recentes()
+        data_inicial, data_final = mock_pesquisa.call_args.args
+        hoje = datetime.now()
+        self.assertEqual(data_final, hoje.strftime("%d/%m/%Y"))
+        self.assertEqual(data_inicial, (hoje - timedelta(days=60)).strftime("%d/%m/%Y"))
+
+
 class TestTinyRetrocompatibilidade(unittest.TestCase):
     """Testes de compatibilidade da fachada Arquivos/tiny_rastreio.py."""
 

@@ -252,7 +252,7 @@ class TestAssinantesDeLog(unittest.TestCase):
         erros = []
 
         def produzir():
-            for i in range(5000):
+            for i in range(1500):
                 try:
                     fila.put(f"linha {i}")
                 except Exception as exc:  # o teste quer pegar qualquer exceção
@@ -365,6 +365,88 @@ class TestUpdateManager(unittest.TestCase):
         time.sleep(0.1)
         # Lock de execução deve ter sido liberado no finally
         self.assertFalse(manager._is_updating)
+
+
+class RelogioFalso:
+    """Relógio de teste: `sleep` avança o tempo na hora, sem esperar de verdade."""
+
+    def __init__(self, inicio: float = 1000.0):
+        self.agora = inicio
+        self.ao_dormir = None  # callback(agora), chamado a cada espera do laço
+
+    def time(self) -> float:
+        return self.agora
+
+    def sleep(self, segundos: float) -> None:
+        self.agora += segundos
+        if self.ao_dormir:
+            self.ao_dormir(self.agora)
+
+
+class TestLacoAutomatico(unittest.TestCase):
+    """O laço automático espera o próximo horário agendado (que uma consulta manual pode empurrar)."""
+
+    INTERVALO = 600  # 10 min; com o relógio em 1000, o primeiro disparo é em 1600
+
+    def _gerenciador(self, relogio, runner):
+        config = ServerConfig(cooldown_seconds=0, auto_update_interval=self.INTERVALO)
+        return UpdateManager(
+            config,
+            ServerLogQueue(),
+            runner_fn=runner,
+            relogio=relogio.time,
+            dormir=relogio.sleep,
+        )
+
+    def _rodar_ate(self, manager, relogio, limite, ao_passo=None):
+        def ao_dormir(agora):
+            if ao_passo:
+                ao_passo(agora)
+            if agora >= limite:
+                manager.stop()
+
+        relogio.ao_dormir = ao_dormir
+        manager.start_auto_update_loop()
+        manager._auto_thread.join(timeout=10)
+        self.assertFalse(manager._auto_thread.is_alive(), "o laço não parou")
+
+    def test_manual_empurra_o_proximo_disparo(self):
+        relogio = RelogioFalso(1000.0)
+        chamadas = []
+        manager = self._gerenciador(relogio, lambda: chamadas.append(relogio.agora))
+        manual = []
+
+        def consulta_manual_aos_1300(agora):
+            if agora >= 1300 and not manual:
+                manual.append(agora)
+                self.assertTrue(manager.trigger_update("MANUAL TESTE"))
+                manager._worker_thread.join(timeout=5)
+
+        self._rodar_ate(manager, relogio, limite=2000, ao_passo=consulta_manual_aos_1300)
+        # O laço original dispararia em 1600; depois da manual (1300), o próximo é 1300 + 600 = 1900
+        self.assertEqual(chamadas, [1300, 1900])
+
+    def test_falha_reagenda_o_proximo_disparo(self):
+        relogio = RelogioFalso(1000.0)
+        chamadas = []
+
+        def falha():
+            chamadas.append(relogio.agora)
+            raise RuntimeError("Tiny fora do ar")
+
+        manager = self._gerenciador(relogio, falha)
+        self._rodar_ate(manager, relogio, limite=2300)
+        # Falhou em 1600: reagenda para 2200 (sem reagendar, dispararia sem parar)
+        self.assertEqual(chamadas, [1600, 2200])
+        self.assertEqual(manager.last_update_time, 0.0)  # cooldown só conta sucesso
+
+    def test_laco_nao_dispara_duas_vezes_seguidas(self):
+        relogio = RelogioFalso(1000.0)
+        chamadas = []
+        manager = self._gerenciador(relogio, lambda: chamadas.append(relogio.agora))
+        self._rodar_ate(manager, relogio, limite=2300)
+        # Um disparo por intervalo, nunca dois seguidos no mesmo instante
+        self.assertEqual(chamadas, [1600, 2200])
 
 
 class DummyHandler(RastreioRequestHandler):

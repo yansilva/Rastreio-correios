@@ -26,7 +26,7 @@ class TinyOrderService:
         return self._client
 
     def buscar_pedidos_recentes(self, dias_atras: int | None = None) -> list[PedidoTiny]:
-        """Busca os pedidos expedidos no intervalo de dias informado (padrão 30 dias)."""
+        """Busca os pedidos expedidos no intervalo de dias informado (padrão 60 dias)."""
         dias = dias_atras if dias_atras is not None else self.config.dias_atras_padrao
         data_final = datetime.now().strftime("%d/%m/%Y")
         data_inicial = (datetime.now() - timedelta(days=dias)).strftime("%d/%m/%Y")
