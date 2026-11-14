@@ -621,6 +621,36 @@ class TestRenovacaoDeTokenNaRodada(unittest.TestCase):
         self.assertEqual(gets, ["EXPIRADO", "NOVO"])
 
 
+class TestDadosDeMesmaHora(unittest.TestCase):
+    """Painel, Atrasados e Entregues mostram a hora dos DADOS consultados, não a hora da geração."""
+
+    def test_as_tres_paginas_mostram_a_hora_dos_dados(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivos = os.path.join(pasta, "Arquivos")
+            os.makedirs(arquivos)
+            Path(arquivos, "rastreios_tiny.csv").write_text(
+                "Número do Pedido no Tiny,Situação,Código de Rastreio\n8001,Enviado,AE000000801BR\n", encoding="utf-8"
+            )
+            postado = "2026-10-10T10:00:00"  # há mais de 3 dias: entra em Atrasados
+            salvar_cache(
+                os.path.join(arquivos, "rastreios_cache.json"),
+                {"AE000000801BR": {"eventos": [{"dtHrCriado": postado, "descricao": "Objeto postado"}]}},
+                datetime(2026, 10, 14, 23, 30, 0),
+            )
+            with (
+                patch.object(consulta_correios, "__file__", os.path.join(arquivos, "consulta_correios.py")),
+                patch("sys.stdout", new_callable=io.StringIO),
+            ):
+                self.assertIsNot(consulta_correios.processar(usar_cache=True), False)
+            painel = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
+            atrasados = Path(pasta, "pedidos_atrasados.html").read_text(encoding="utf-8")
+            entregues = Path(pasta, "entregues_semana.html").read_text(encoding="utf-8")
+
+        self.assertIn("14/10 23:30</time>", painel)
+        self.assertIn("Dados de 14/10 23:30", atrasados)
+        self.assertIn("Dados de 14/10 23:30", entregues)
+
+
 class TestPedidosIgnorados(unittest.TestCase):
     """PEDIDOS_IGNORADOS vem do ambiente; o padrão continua sendo o pedido 39192."""
 

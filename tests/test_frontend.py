@@ -360,10 +360,10 @@ def test_consulta_no_cabecalho_e_flutuante_so_no_celular():
     template = (raiz / "Arquivos" / "consulta_correios.py").read_text(encoding="utf-8")
 
     inicio_tools = template.index('<div class="header-tools">')
-    fim_tools = template.index('<div class="header-main">')
     posicao_botao = template.index('id="btnUpdate"')
     assert template.count('id="btnUpdate"') == 1
-    assert inicio_tools < posicao_botao < fim_tools, "botão de consulta fora do cabeçalho"
+    # Ordem do Tab: título → abas → ferramentas (o bloco vem depois da navegação)
+    assert template.index("{nav_painel}") < inicio_tools < posicao_botao, "ferramentas fora da ordem título → abas → ferramentas"
     assert "floating-actions" not in template
     assert "floating-actions" not in comp_css
 

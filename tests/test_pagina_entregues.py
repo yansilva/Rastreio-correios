@@ -51,9 +51,21 @@ def _tabela_atual(html):
     return html[inicio : html.index("</tbody>", inicio)]
 
 
+class TestMaisDemoradoSemQuebra(unittest.TestCase):
+    """O rótulo "Mais demorado · X dias" não pode quebrar com o "·" no início da linha."""
+
+    def test_rotulo_e_dias_ficam_juntos_sem_quebra(self):
+        # Postado 09/11 12:24, entregue 11/11 10:00: exatamente 1,9 dias
+        historico = _historico(_item("9001", "2026-11-11T10:00:00", postado_em="2026-11-09T12:24:00"))
+        html = montar_html_entregues(historico, AGORA, dados_em=AGORA)
+        self.assertIn("Mais demorado&nbsp;·&nbsp;1,9&nbsp;dias", html)
+        self.assertNotIn("Mais demorado · ", html)
+        self.assertIn("1,9&nbsp;dias</td>", html)
+
+
 class TestPaginaEntregues(unittest.TestCase):
     def test_pagina_tem_duas_semanas_e_seletor(self):
-        html = montar_html_entregues(_historico(_item("42934", "2026-11-11T10:15:00")), AGORA)
+        html = montar_html_entregues(_historico(_item("42934", "2026-11-11T10:15:00")), AGORA, dados_em=AGORA)
         self.assertIn("Esta semana (09/11–15/11)", html)
         self.assertIn("Semana anterior", html)
         self.assertIn('aria-pressed="true"', html)
@@ -63,7 +75,7 @@ class TestPaginaEntregues(unittest.TestCase):
         self.assertIn('src="web/js/entregues.js', html)
 
     def test_semana_vazia_sem_zeros(self):
-        html = montar_html_entregues(_historico(), AGORA)
+        html = montar_html_entregues(_historico(), AGORA, dados_em=AGORA)
         self.assertIn("Nenhuma entrega nesta semana", html)
         self.assertNotIn(">0<", html)
         self.assertNotIn("Média de dias", html)
@@ -74,13 +86,13 @@ class TestPaginaEntregues(unittest.TestCase):
             _item("1002", "2026-11-11T09:00:00"),
             _item("1003", "2026-11-10T09:00:00"),
         )
-        tabela = _tabela_atual(montar_html_entregues(historico, AGORA))
+        tabela = _tabela_atual(montar_html_entregues(historico, AGORA, dados_em=AGORA))
         self.assertLess(tabela.index("#1002"), tabela.index("#1003"))
         self.assertLess(tabela.index("#1003"), tabela.index("#1001"))
 
     def test_dias_sem_postagem_mostra_traco(self):
         historico = _historico(_item("2001", "2026-11-11T10:00:00", postado_em=None))
-        html = montar_html_entregues(historico, AGORA)
+        html = montar_html_entregues(historico, AGORA, dados_em=AGORA)
         tabela = _tabela_atual(html)
         self.assertIn('data-label="Dias">—</td>', tabela)
         # Sem postagem, a média também fica de fora: o cartão mostra traço
@@ -88,11 +100,11 @@ class TestPaginaEntregues(unittest.TestCase):
 
     def test_dias_acima_de_sete_recebem_tom_de_aviso(self):
         historico = _historico(_item("3001", "2026-11-12T08:00:00", postado_em="2026-11-02T08:00:00"))
-        tabela = _tabela_atual(montar_html_entregues(historico, AGORA))
+        tabela = _tabela_atual(montar_html_entregues(historico, AGORA, dados_em=AGORA))
         self.assertIn('class="dias-badge urgencia-baixa"', tabela)
 
     def test_aba_entregues_no_menu_da_propria_pagina(self):
-        html = montar_html_entregues(_historico(), AGORA)
+        html = montar_html_entregues(_historico(), AGORA, dados_em=AGORA)
         self.assertIn('href="entregues_semana.html" class="nav-tab active" aria-current="page"', html)
         self.assertIn('href="relatorio_rastreio.html"', html)
         self.assertIn('href="pedidos_atrasados.html"', html)
@@ -100,7 +112,7 @@ class TestPaginaEntregues(unittest.TestCase):
 
     def test_gerar_pagina_grava_arquivo_e_devolve_caminho(self):
         with tempfile.TemporaryDirectory() as pasta:
-            caminho = gerar_pagina_entregues(_historico(_item("4001", "2026-11-11T10:00:00")), AGORA, pasta)
+            caminho = gerar_pagina_entregues(_historico(_item("4001", "2026-11-11T10:00:00")), AGORA, pasta, dados_em=AGORA)
             self.assertTrue(caminho.endswith("entregues_semana.html"))
             with open(caminho, encoding="utf-8") as f:
                 self.assertIn("#4001", f.read())
@@ -109,7 +121,7 @@ class TestPaginaEntregues(unittest.TestCase):
         item = _item("5001", "2026-11-11T10:00:00", cliente='<script>alert("x")</script>', cidade='Vila "Nova"/SP')
         item["rastreio"] = 'AE"5001<b>BR'
         historico = {"versao": 1, "acompanhados": {}, "entregas": {item["rastreio"]: item}}
-        html = montar_html_entregues(historico, AGORA)
+        html = montar_html_entregues(historico, AGORA, dados_em=AGORA)
         self.assertNotIn("<script>alert", html)
         self.assertIn("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;", html)
         self.assertIn("Vila &quot;Nova&quot;/SP", html)
@@ -118,13 +130,13 @@ class TestPaginaEntregues(unittest.TestCase):
 
     def test_anuncio_da_troca_de_semana(self):
         historico = _historico(_item("6001", "2026-11-11T10:00:00"), _item("6002", "2026-11-10T10:00:00"))
-        html = montar_html_entregues(historico, AGORA)
+        html = montar_html_entregues(historico, AGORA, dados_em=AGORA)
         self.assertIn('data-anuncio="Esta semana: 2 entregas"', html)
         self.assertIn('data-anuncio="Semana anterior: nenhuma entrega"', html)
         self.assertIn('id="entregues-anuncio" class="sr-only" role="status" aria-live="polite"', html)
 
     def test_tabela_com_papeis_explicitos(self):
-        html = montar_html_entregues(_historico(_item("7001", "2026-11-11T10:00:00")), AGORA)
+        html = montar_html_entregues(_historico(_item("7001", "2026-11-11T10:00:00")), AGORA, dados_em=AGORA)
         self.assertIn('<table role="table">', html)
         self.assertIn('<tr role="row">', html)
         self.assertIn('<th role="columnheader" scope="col">Pedido</th>', html)
@@ -132,7 +144,7 @@ class TestPaginaEntregues(unittest.TestCase):
 
     def test_botao_de_tema_sem_aria_label(self):
         # O nome acessível é o texto visível ("Escuro"/"Claro"), como pede o WCAG 2.5.3
-        html = montar_html_entregues(_historico(), AGORA)
+        html = montar_html_entregues(_historico(), AGORA, dados_em=AGORA)
         self.assertIn('<button id="btnTheme" class="btn-theme">', html)
         self.assertIn('<span id="btnThemeText">Escuro</span>', html)
 

@@ -558,6 +558,13 @@
     border: 1px solid var(--color-warning-border);
 }
 
+/* Laranja de urgência "Alto" (5–6 dias): mesma cor da tabela de Atrasados (.urgencia-media) */
+.badge-orange {
+    background: var(--color-high-bg);
+    color: var(--color-high-text);
+    border: 1px solid var(--color-high-bg);
+}
+
 .badge-green {
     background: var(--color-success-bg);
     color: var(--color-success-text);
@@ -1474,10 +1481,14 @@ h1 .icon {
         hyphens: none;
     }
 
-    /* Faixa de ação: título pequeno e os dois botões lado a lado */
+    /* Faixa de ação: o título sai da tela (sr-only) e fica só a linha de chips, de 44px; o leitor de tela continua lendo "Precisam de ação" */
     .action-strip-title {
-        flex-basis: 100%;
-        font-size: 0.75rem;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
     }
 
     /* Chip cabe no próprio texto: o zerado não ocupa metade da faixa e "Aguardando retirada" não quebra */
@@ -1491,7 +1502,7 @@ h1 .icon {
 
     .action-strip {
         gap: 4px 8px;
-        padding: 6px 12px;
+        padding: 0 12px;
         margin-bottom: 8px;
     }
 
@@ -2314,5 +2325,123 @@ main.orders-list {
     .entregues-seletor button {
         flex: 1 1 0;
         min-height: 44px;
+    }
+}
+
+/* Lote A (14ª crítica): tabela de Entregues no desktop, cartão no celular e ferramentas na linha das abas */
+
+/* Desktop (≥641px): colunas em porcentagem, sem estourar em 1024; nomes longos em até 2 linhas */
+@media (min-width: 641px) {
+    .entregues-painel table {
+        table-layout: fixed;
+    }
+
+    .entregues-painel th,
+    .entregues-painel td {
+        padding: 14px 10px;
+    }
+
+    .entregues-painel thead th:nth-child(1) { width: 8%; }
+    .entregues-painel thead th:nth-child(2) { width: 21%; }
+    .entregues-painel thead th:nth-child(3) { width: 25%; }
+    .entregues-painel thead th:nth-child(4) { width: 9%; }
+    .entregues-painel thead th:nth-child(5) { width: 14%; }
+    .entregues-painel thead th:nth-child(6) { width: 14%; }
+    .entregues-painel thead th:nth-child(7) { width: 9%; }
+
+    .entregues-nome {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+}
+
+/* Celular (≤640px): Pedido e Cliente lado a lado; Entregue em e Dias lado a lado; rastreio na linha inteira */
+@media (max-width: 640px) {
+    .entregues-painel tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px 12px;
+    }
+
+    .entregues-painel td[data-label="Rastreio"] {
+        grid-column: 1 / -1;
+    }
+
+    .entregues-painel td[data-label="Dias"] {
+        white-space: nowrap;
+    }
+
+    .entregues-nome {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+}
+
+/* Ordem do cabeçalho: as ferramentas são o último bloco do HTML depois da navegação, para o Tab seguir
+   título → abas → ferramentas. Visualmente:
+   - celular (≤640px): ferramentas absolutas no canto superior direito (regra acima);
+   - 641 a 1099px: numa linha abaixo das abas, à direita (grid de três linhas: título, abas, ferramentas);
+   - a partir de 1100px: na linha das abas, à direita (grid de duas linhas). */
+@media (min-width: 641px) and (max-width: 1099px) {
+    /* Título, abas e, numa linha abaixo delas, à direita, as ferramentas: a ordem visual é a do DOM (Tab) */
+    .container {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .container > header {
+        grid-row: 1;
+        grid-column: 1;
+        margin-bottom: 0;
+    }
+
+    .container > .nav-tabs {
+        grid-row: 2;
+        grid-column: 1;
+        margin: 18px 0 0 0;
+    }
+
+    .container > .header-tools {
+        grid-row: 3;
+        grid-column: 1;
+        justify-self: end;
+        position: static;
+        margin: 10px 0 24px 0;
+    }
+}
+
+@media (min-width: 1100px) {
+    .container {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .container > header {
+        grid-row: 1;
+        grid-column: 1;
+        margin-bottom: 0;
+    }
+
+    .container > .nav-tabs {
+        grid-row: 2;
+        grid-column: 1;
+        justify-self: start;
+        width: calc(100% - 400px);
+        margin: 18px 0 32px 0;
+    }
+
+    .container > .header-tools {
+        grid-row: 2;
+        grid-column: 1;
+        justify-self: end;
+        align-self: center;
+        position: static;
+        margin: 18px 0 32px 0;
     }
 }

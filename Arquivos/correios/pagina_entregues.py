@@ -47,7 +47,8 @@ def _celula_dias(item: dict) -> str:
     dias = dias_ate_entrega(item)
     if dias is None:
         return "—"
-    texto = f"{_fmt_dias(dias)} dias"
+    # Espaço não separável: "1,9 dias" não quebra no celular
+    texto = f"{_fmt_dias(dias)}&nbsp;dias"
     if dias > LIMITE_DIAS_AVISO:
         return f'<span class="dias-badge urgencia-baixa">{texto}</span>'
     return texto
@@ -61,7 +62,8 @@ def _resumo_html(itens: list[dict]) -> str:
         numero_mais, rotulo_mais = "—", "Mais demorado"
     else:
         numero_mais = f"#{escape(mais['pedido'])}"
-        rotulo_mais = f"Mais demorado · {_fmt_dias(dias_ate_entrega(mais))} dias"
+        # Espaços não separáveis: o "·" não fica no início da linha quando o rótulo quebra
+        rotulo_mais = f"Mais demorado&nbsp;·&nbsp;{_fmt_dias(dias_ate_entrega(mais))}&nbsp;dias"
     return f"""
             <div class="summary">
                 <div class="summary-card">
@@ -86,7 +88,7 @@ def _linhas_html(itens: list[dict]) -> str:
         linhas += f"""
                     <tr role="row">
                         <td role="cell" data-label="Pedido"><strong>#{escape(item["pedido"])}</strong></td>
-                        <td role="cell" data-label="Cliente">{_texto(item.get("cliente"))}</td>
+                        <td role="cell" data-label="Cliente"><span class="entregues-nome" title="{escape(item.get("cliente") or "", quote=True)}">{_texto(item.get("cliente"))}</span></td>
                         <td role="cell" data-label="Rastreio"><span class="entregues-rastreio">{rastreio}</span><button type="button" class="btn-copy" data-copy="{rastreio}" aria-label="Copiar código de rastreio {rastreio}">Copiar rastreio</button></td>
                         <td role="cell" data-label="Cidade" class="col-secundaria">{_texto(item.get("cidade"))}</td>
                         <td role="cell" data-label="Postado em" class="col-secundaria">{_fmt_data(item.get("postado_em"))}</td>
@@ -136,9 +138,12 @@ def _secao_html(indice: int, titulo: str, itens: list[dict]) -> str:
         </section>"""
 
 
-def montar_html_entregues(historico: dict, agora: datetime, atrasados: int | None = None) -> str:
+def montar_html_entregues(
+    historico: dict, agora: datetime, *, dados_em: datetime, atrasados: int | None = None
+) -> str:
     """HTML completo da página Entregues, com as semanas atual e anterior. Não faz I/O.
 
+    `agora` define as semanas; `dados_em` é a hora dos dados consultados (a mesma do painel) e aparece em "Dados de".
     `atrasados` é a contagem de atrasados que o menu mostra; sem ela, a aba aparece sem número.
     """
     semana_atual = entregas_da_semana(historico, agora, 0)
@@ -166,17 +171,17 @@ def montar_html_entregues(historico: dict, agora: datetime, atrasados: int | Non
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div class="container">
         <header>
-            <div class="header-tools">
+            <div class="header-main">
+                <h1><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</h1>
+                <div class="meta">Pedidos entregues por semana · Dados de {dados_em:%d/%m %H:%M}</div>
+            </div>
+        </header>
+        {nav_html('entregues', atrasados)}
+<div class="header-tools">
                 <button id="btnTheme" class="btn-theme">
             <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
         </button>
             </div>
-            <div class="header-main">
-                <h1><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</h1>
-                <div class="meta">Pedidos entregues por semana · Dados de {agora:%d/%m %H:%M}</div>
-            </div>
-        </header>
-        {nav_html('entregues', atrasados)}
 
         <main id="conteudo" tabindex="-1">
             <div class="entregues-seletor" role="group" aria-label="Escolher semana">
@@ -195,9 +200,11 @@ def montar_html_entregues(historico: dict, agora: datetime, atrasados: int | Non
 </html>"""
 
 
-def gerar_pagina_entregues(historico: dict, agora: datetime, destino: str, atrasados: int | None = None) -> str:
+def gerar_pagina_entregues(
+    historico: dict, agora: datetime, destino: str, *, dados_em: datetime, atrasados: int | None = None
+) -> str:
     """Grava `entregues_semana.html` na pasta `destino` e devolve o caminho do arquivo."""
     caminho = os.path.join(destino, ARQUIVO_ENTREGUES)
     with open(caminho, mode="w", encoding="utf-8") as f:
-        f.write(montar_html_entregues(historico, agora, atrasados))
+        f.write(montar_html_entregues(historico, agora, dados_em=dados_em, atrasados=atrasados))
     return caminho

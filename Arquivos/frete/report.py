@@ -88,6 +88,15 @@ def _linha_indisponiveis(indisponiveis: list[tuple[str, str]], todos: bool) -> s
     return f"{rotulo}: {partes}"
 
 
+def _ordem_servicos(servicos: dict[str, Any], codigos: list[str]) -> list[str]:
+    """Códigos de um pedido na ordem de exibição: disponíveis do mais barato ao mais caro, depois os indisponíveis."""
+    disponiveis = [c for c in codigos if servicos.get(c, {}).get("disponivel")]
+    com_preco = [c for c in disponiveis if isinstance(servicos[c].get("preco"), (int, float))]
+    sem_preco = [c for c in disponiveis if c not in com_preco]
+    indisponiveis = [c for c in codigos if c not in disponiveis]
+    return sorted(com_preco, key=lambda c: servicos[c]["preco"]) + sem_preco + indisponiveis
+
+
 def _destaques(servicos: dict[str, Any], codigos: list[str]) -> tuple[str | None, str | None]:
     """Código do serviço mais barato e do mais rápido: um único serviço para cada selo.
 
@@ -148,6 +157,13 @@ class FreteReportGenerator:
         total_longos = 0
         pedidos_com_prazo_longo = []
 
+        # Prazo vazio em todos os serviços do lote: um aviso só no resumo, em vez de repetir em cada cartão
+        disponiveis_lote = [i for p in pedidos_com_frete for i in p.get("servicos", {}).values() if i.get("disponivel")]
+        sem_prazo_no_lote = bool(disponiveis_lote) and not any(i.get("prazo") for i in disponiveis_lote)
+        aviso_prazos_html = (
+            '<p class="prazos-aviso">Prazos indisponíveis nesta consulta</p>' if sem_prazo_no_lote else ""
+        )
+
         # Monta os cards de pedido
         cards_html = ""
         for pedido in pedidos_com_frete:
@@ -165,13 +181,16 @@ class FreteReportGenerator:
             indisponiveis: list[tuple[str, str]] = []
             precos_pedido: list[float] = []
             prazo_longo = False
-            for cod in config.servicos.keys():
+            for cod in _ordem_servicos(servicos_pedido, list(config.servicos.keys())):
                 nome = config.servicos[cod]
                 info = servicos_pedido.get(cod, {"disponivel": False})
 
                 if info["disponivel"]:
                     preco_display = info.get("preco_fmt") or "—"
                     prazo_display = _fmt_prazo(info.get("prazo"))
+                    prazo_html = "" if sem_prazo_no_lote else (
+                        f'<div class="servico-prazo">{icone("clock")} {prazo_display}</div>'
+                    )
                     if isinstance(info.get("preco"), (int, float)):
                         precos_pedido.append(float(info["preco"]))
                     if info.get("prazo") and info["prazo"] > 3:
@@ -195,7 +214,7 @@ class FreteReportGenerator:
                 <div class="servico-card disponivel{' barato' if cod == cod_barato else ''}">
                     <div class="servico-nome">{nome}</div>
                     <div class="servico-preco">{preco_display}</div>
-                    <div class="servico-prazo">{icone("clock")} {prazo_display}</div>{msg_prazo_html}{selos_html}
+                    {prazo_html}{msg_prazo_html}{selos_html}
                 </div>"""
                 else:
                     indisponiveis.append((nome, _motivo_indisponivel(info)))
@@ -335,7 +354,7 @@ class FreteReportGenerator:
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
         }}
-        .container {{ max-width: 1040px; margin: 0 auto; }}
+        .container {{ max-width: 1040px; margin: 0 auto; position: relative; }}
         .skip-link {{
             position: absolute;
             left: 12px;
@@ -433,8 +452,23 @@ class FreteReportGenerator:
         }}
         .nav-tab.active:hover {{ color: var(--color-text-main); border-color: var(--color-border); }}
 
-        /* Ferramentas do cabeçalho: o tema fica no topo, fora do conteúdo */
+        /* Ferramentas do cabeçalho: no celular, o tema fica no canto superior direito (absoluto em .container) */
         .header-tools {{ position: absolute; top: 0; right: 0; }}
+        /* Mesmo cabeçalho das outras páginas (ver components.css): a ordem do Tab é título → abas → ferramentas.
+           De 641 a 1099px, o tema fica numa linha abaixo das abas, à direita; a partir de 1100px, na linha das abas.
+           A margem de baixo do header desta página é 30px (as outras, 18px): a navegação usa 30px no topo */
+        @media (min-width: 641px) and (max-width: 1099px) {{
+            .container {{ display: grid; grid-template-columns: minmax(0, 1fr); }}
+            .container > header {{ grid-row: 1; grid-column: 1; margin-bottom: 0; }}
+            .container > .nav-tabs {{ grid-row: 2; grid-column: 1; margin: 30px 0 0 0; }}
+            .container > .header-tools {{ grid-row: 3; grid-column: 1; justify-self: end; position: static; display: flex; margin: 10px 0 16px 0; }}
+        }}
+        @media (min-width: 1100px) {{
+            .container {{ display: grid; grid-template-columns: minmax(0, 1fr); }}
+            .container > header {{ grid-row: 1; grid-column: 1; margin-bottom: 0; }}
+            .container > .nav-tabs {{ grid-row: 2; grid-column: 1; justify-self: start; width: calc(100% - 400px); margin: 30px 0 16px 0; }}
+            .container > .header-tools {{ grid-row: 2; grid-column: 1; justify-self: end; align-self: center; position: static; display: flex; margin: 30px 0 16px 0; }}
+        }}
         .btn-theme, .btn-limpar {{
             background: var(--color-surface);
             color: var(--color-text-main);
@@ -700,6 +734,7 @@ class FreteReportGenerator:
         }}
         /* Selo com ícone: etiqueta = mais barato, raio = mais rápido (cor do texto, sem verde) */
         .servico-selo .icon {{ width: 0.95em; height: 0.95em; vertical-align: 0; }}
+        .prazos-aviso {{ margin: -12px 0 14px; font-size: 0.875rem; color: var(--color-text-muted); }}
         .servico-prazo {{
             font-size: 0.875rem;
             color: var(--color-text-muted);
@@ -832,17 +867,17 @@ class FreteReportGenerator:
     <a class="skip-link" href="#conteudo">Pular para os pedidos</a>
     <div class="container">
         <header>
-            <div class="header-tools">
-                <button type="button" class="btn-theme" onclick="toggleTheme()">
-                    {icone("moon")}{icone("sun")}
-                    <span class="tema-escuro">Escuro</span><span class="tema-claro">Claro</span>
-                </button>
-            </div>
             <h1>{icone("package")} Opções de Frete Correios</h1>
             <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Dados de {data_curta}</div>
             <div class="config-info">{icone("package")} Pacote<span class="so-desk"> padrão</span>: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · <span class="so-desk">Origem CEP: </span><span class="so-cel">Origem </span>{_fmt_cep(config.cep_origem)}</div>
         </header>
         {nav_html('frete')}
+<div class="header-tools">
+                <button type="button" class="btn-theme" onclick="toggleTheme()">
+                    {icone("moon")}{icone("sun")}
+                    <span class="tema-escuro">Escuro</span><span class="tema-claro">Claro</span>
+                </button>
+            </div>
 
         <div class="summary" id="resumo" aria-live="polite">
             <div class="summary-card">
@@ -859,6 +894,7 @@ class FreteReportGenerator:
             </div>
         </div>
 
+        {aviso_prazos_html}
         <div class="filter-bar">
             <div class="search-wrapper">
                 <span class="search-icon" aria-hidden="true">{icone("search")}</span>

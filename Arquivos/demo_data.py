@@ -348,15 +348,6 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 
     <div class="container">
         <header>
-            <div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
-                    <div id="spinner" class="spinner"></div>
-                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
-                </button>
-            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
@@ -367,6 +358,15 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             </div>
         </header>
         {nav_html('painel', 1)}
+<div class="header-tools">
+                <button id="btnTheme" class="btn-theme">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
+                    <div id="spinner" class="spinner"></div>
+                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
+                </button>
+            </div>
 
         {dashboard_html}
 
@@ -457,17 +457,17 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
     {ICON_SPRITE}
     <div class="container">
         <header>
-            <div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito · Dados de {data_curta}</div>
             </div>
         </header>
         {nav_html('atrasados', 1)}
+<div class="header-tools">
+                <button id="btnTheme" class="btn-theme">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
 
         <div class="summary">
             <div class="summary-card">

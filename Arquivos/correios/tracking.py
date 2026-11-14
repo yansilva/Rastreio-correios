@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from .cards import urgencia_atraso
 from .models import EventoRastreio, ObjetoRastreio, PedidoAtrasado
 
 logger = logging.getLogger("correios.tracking")
@@ -109,15 +110,8 @@ class TrackingService:
             return None
 
         # Classifica nível de urgência
-        if dias_transito >= 7:
-            urgencia_label = "CRÍTICO"
-            urgencia_class = "urgencia-alta"
-        elif dias_transito >= 5:
-            urgencia_label = "ALTO"
-            urgencia_class = "urgencia-media"
-        else:
-            urgencia_label = "ATENÇÃO"
-            urgencia_class = "urgencia-baixa"
+        urgencia_class, rotulo = urgencia_atraso(dias_transito)
+        urgencia_label = rotulo.upper()
 
         return PedidoAtrasado(
             pedido=numero_pedido,

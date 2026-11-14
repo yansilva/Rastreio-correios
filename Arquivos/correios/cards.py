@@ -100,6 +100,23 @@ ROTULO_SELO = {
 }
 
 
+def urgencia_atraso(dias: int) -> tuple[str, str]:
+    """Escala única de urgência de um atraso: (classe de urgência, rótulo).
+
+    Usada pelo selo do painel, pela tabela de Atrasados e pelo relatório: 3–4 dias é atenção
+    (âmbar), 5–6 é alto (laranja), 7 ou mais é crítico (vermelho).
+    """
+    if dias >= 7:
+        return "urgencia-alta", "Crítico"
+    if dias >= 5:
+        return "urgencia-media", "Alto"
+    return "urgencia-baixa", "Atenção"
+
+
+# Classe de badge de cada nível de urgência (mesma cor da tabela de Atrasados)
+BADGE_URGENCIA = {"urgencia-alta": "badge-red", "urgencia-media": "badge-orange", "urgencia-baixa": "badge-yellow"}
+
+
 def selo_status(
     categoria: str, *, retirada: bool = False, atrasado: bool = False, dias_atraso: int = 0
 ) -> tuple[str, str]:
@@ -107,7 +124,10 @@ def selo_status(
     chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
     texto, classe = ROTULO_SELO[chave]
     if chave == "atrasado":
-        texto = f"{texto} · {dias_atraso} dias"
+        classe_urgencia, rotulo_urgencia = urgencia_atraso(dias_atraso)
+        # O nível vai em texto, não só na cor (WCAG 1.4.1)
+        texto = f"{texto} · {dias_atraso} dias · {rotulo_urgencia}"
+        classe = BADGE_URGENCIA[classe_urgencia]
     return texto, classe
 
 

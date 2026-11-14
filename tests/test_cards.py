@@ -66,7 +66,7 @@ class TestSeloStatus(unittest.TestCase):
     def test_atrasado_mostra_dias(self):
         self.assertEqual(
             selo_status("em_transito", atrasado=True, dias_atraso=6),
-            ("Atrasado · 6 dias", "badge-red"),
+            ("Atrasado · 6 dias · Alto", "badge-orange"),
         )
 
     def test_em_transito_e_nao_enviado(self):
@@ -312,9 +312,12 @@ class TestRotuloSeloPorChave(unittest.TestCase):
                         )
                         self.assertIn(chave, DESCRICAO_STATUS)
                         rotulo, classe_esperada = ROTULO_SELO[chave]
+                        if chave == "atrasado":
+                            # Com 4 dias a classe segue a escala de urgência (âmbar), não a do ROTULO_SELO
+                            classe_esperada = "badge-yellow"
                         self.assertEqual(classe, classe_esperada)
                         if chave == "atrasado":
-                            self.assertEqual(texto, "Atrasado · 4 dias")
+                            self.assertEqual(texto, "Atrasado · 4 dias · Atenção")
                         else:
                             self.assertEqual(texto, rotulo)
 

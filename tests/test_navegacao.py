@@ -83,7 +83,7 @@ class TestPaginasGeradasComOMesmoMenu(unittest.TestCase):
         self.assertEqual(_normalizar(nav), _normalizar(nav_html("painel")))
 
     def test_entregues(self):
-        self._verificar(montar_html_entregues({"entregas": {}}, AGORA, atrasados=3), "entregues")
+        self._verificar(montar_html_entregues({"entregas": {}}, AGORA, dados_em=AGORA, atrasados=3), "entregues")
 
     def test_frete(self):
         generator = FreteReportGenerator(config=FreteConfig(cep_origem="05617010"))

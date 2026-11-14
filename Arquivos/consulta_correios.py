@@ -35,6 +35,7 @@ from correios.cards import (
     status_tokens,
     texto_idade,
     textos_descricao,
+    urgencia_atraso,
     zero,
 )
 from correios.exceptions import CorreiosAuthError, CorreiosError
@@ -235,15 +236,6 @@ def processar(usar_cache=False):
 
     <div class="container">
         <header>
-            <div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
-                    <div id="spinner" class="spinner"></div>
-                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
-                </button>
-            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-package" aria-hidden="true" focusable="false"><use href="#i-package"></use></svg> Status de Entregas</h1>
                 <div class="meta">
@@ -254,6 +246,15 @@ def processar(usar_cache=False):
             </div>
         </header>
         {nav_painel}
+<div class="header-tools">
+                <button id="btnTheme" class="btn-theme">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
+                    <div id="spinner" class="spinner"></div>
+                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
+                </button>
+            </div>
 
         {dashboard}
 
@@ -586,13 +587,15 @@ def processar(usar_cache=False):
         # ===== GERA PÁGINA DE PEDIDOS ATRASADOS =====
         atrasados_data.sort(key=lambda x: x["dias_transito"], reverse=True)
 
-        data_curta_atrasados = time.strftime("%d/%m %H:%M")
+        # "Dados de" mostra a hora dos dados consultados, a mesma do painel (não a hora desta geração)
+        data_curta_atrasados = momento_dados.strftime("%d/%m %H:%M")
         total_atrasados = len(atrasados_data)
 
         # Calcula contagens por urgência
-        criticos = len([x for x in atrasados_data if x["dias_transito"] >= 7])
-        altos = len([x for x in atrasados_data if 5 <= x["dias_transito"] < 7])
-        atencao = len([x for x in atrasados_data if x["dias_transito"] < 5])
+        niveis = [urgencia_atraso(x["dias_transito"])[1] for x in atrasados_data]
+        criticos = niveis.count("Crítico")
+        altos = niveis.count("Alto")
+        atencao = niveis.count("Atenção")
 
         # A coluna Cliente só aparece quando o CSV do Tiny trouxe o nome (campo novo, vazio em CSVs antigos)
         tem_cliente = any(x.get("cliente") for x in atrasados_data)
@@ -604,15 +607,7 @@ def processar(usar_cache=False):
         for item in atrasados_data:
             dias = item["dias_transito"]
             # A cor de urgência vai no badge de dias; o rótulo (Crítico, Alto, Atenção) fica no próprio texto
-            if dias >= 7:
-                urgencia_class = "urgencia-alta"
-                urgencia_rotulo = "Crítico"
-            elif dias >= 5:
-                urgencia_class = "urgencia-media"
-                urgencia_rotulo = "Alto"
-            else:
-                urgencia_class = "urgencia-baixa"
-                urgencia_rotulo = "Atenção"
+            urgencia_class, urgencia_rotulo = urgencia_atraso(dias)
 
             status_label = {"em_transito": "Em trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
             td_cliente = f'<td data-label="Cliente">{escape(item.get("cliente", ""))}</td>' if tem_cliente else ""
@@ -704,17 +699,17 @@ def processar(usar_cache=False):
     <a class="skip-link" href="#conteudo">Pular para os pedidos</a>
     <div class="container">
         <header>
-            <div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-            </div>
             <div class="header-main">
                 <h1><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Pedidos Atrasados</h1>
                 <div class="meta">Pedidos com mais de 3 dias em trânsito · Dados de {data_curta_atrasados}</div>
             </div>
         </header>
         {nav_html('atrasados', total_atrasados)}
+<div class="header-tools">
+                <button id="btnTheme" class="btn-theme">
+            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
+        </button>
+            </div>
 
         <main id="conteudo" tabindex="-1">
         {resumo_html}
@@ -737,7 +732,7 @@ def processar(usar_cache=False):
 
         # Página da aba Entregues (semana atual e anterior), a partir do histórico já salvo
         try:
-            gerar_pagina_entregues(historico, agora, pasta_projeto, atrasados=len(atrasados_data))
+            gerar_pagina_entregues(historico, agora, pasta_projeto, dados_em=momento_dados, atrasados=len(atrasados_data))
         except Exception as exc:
             print(f"Aviso: não foi possível gerar a página Entregues ({exc}).")
 

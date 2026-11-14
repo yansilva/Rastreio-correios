@@ -721,11 +721,13 @@ class TestFreteReportGenerator(unittest.TestCase):
         self.assertEqual(html.count("Mais barato</span>"), 1)
         self.assertEqual(html.count("Mais rápido</span>"), 1)
         cards = self._cards(html)
-        self.assertIn("Mais barato", cards[0])            # SEDEX (R$ 20,00)
+        # Ordem por preço: SEDEX (R$ 20,00), SEDEX 12 (R$ 25,00), SEDEX 10 (R$ 30,00)
+        self.assertIn("Mais barato", cards[0])
         self.assertNotIn("Mais rápido", cards[0])
-        self.assertNotIn("Mais barato", cards[1])         # SEDEX 10 (R$ 30,00): nenhum selo
-        self.assertNotIn("Mais rápido", cards[1])
-        self.assertIn("Mais rápido", cards[2])            # SEDEX 12 (R$ 25,00): o mais rápido e mais barato entre os de 1 dia
+        self.assertNotIn("Mais barato", cards[1])
+        self.assertIn("Mais rápido", cards[1])            # SEDEX 12: o mais rápido e mais barato entre os de 1 dia
+        self.assertNotIn("Mais barato", cards[2])         # SEDEX 10 (R$ 30,00): nenhum selo
+        self.assertNotIn("Mais rápido", cards[2])
 
     def test_empate_no_preco_desempata_pelo_prazo(self):
         html = self._renderizar({
@@ -838,14 +840,15 @@ class TestFreteReportGenerator(unittest.TestCase):
         import re
         html = self._renderizar({"03220": self._servico(20.0, 2), "03158": self._servico(30.0, 3)})
         # Acima de 640px: uma linha por serviço, em coluna, na largura do cartão (sem a grade de 280px)
-        bloco = re.search(r"@media \(min-width: 641px\) \{(.*?)\n        \}", html, re.S)
-        self.assertIsNotNone(bloco)
-        self.assertIn(".servicos-grid { display: flex; flex-direction: column;", bloco.group(1))
-        self.assertIn("grid-template-columns: minmax(0, 1fr) 120px 150px minmax(0, 1.4fr);", bloco.group(1))
-        self.assertIn("min-height: 44px;", bloco.group(1))
+        # Há mais de um bloco de 641px (cabeçalho e serviços): a regra dos serviços está em um deles
+        blocos = "".join(re.findall(r"@media \(min-width: 641px\) \{(.*?)\n        \}", html, re.S))
+        self.assertTrue(blocos)
+        self.assertIn(".servicos-grid { display: flex; flex-direction: column;", blocos)
+        self.assertIn("grid-template-columns: minmax(0, 1fr) 120px 150px minmax(0, 1.4fr);", blocos)
+        self.assertIn("min-height: 44px;", blocos)
         self.assertNotIn("280px", html)
         # Colunas: serviço, preço, prazo e selos (à direita)
-        self.assertIn(".servico-selos { grid-column: 4; grid-row: 1; justify-content: flex-end;", bloco.group(1))
+        self.assertIn(".servico-selos { grid-column: 4; grid-row: 1; justify-content: flex-end;", blocos)
 
     def test_mais_barato_tem_realce_de_linha(self):
         html = self._renderizar({
