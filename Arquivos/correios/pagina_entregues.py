@@ -11,7 +11,7 @@ from html import escape
 
 from correios.historico_entregas import _inicio_semana, dias_ate_entrega, entregas_da_semana, resumo
 from correios.icons import ICON_SPRITE
-from correios.navegacao import nav_html
+from correios.navegacao import ferramentas_html, nav_html
 
 ARQUIVO_ENTREGUES = "entregues_semana.html"
 
@@ -89,7 +89,7 @@ def _linhas_html(itens: list[dict]) -> str:
                     <tr role="row">
                         <td role="cell" data-label="Pedido"><strong>#{escape(item["pedido"])}</strong></td>
                         <td role="cell" data-label="Cliente"><span class="entregues-nome" title="{escape(item.get("cliente") or "", quote=True)}">{_texto(item.get("cliente"))}</span></td>
-                        <td role="cell" data-label="Rastreio"><span class="entregues-rastreio">{rastreio}</span><button type="button" class="btn-copy" data-copy="{rastreio}" aria-label="Copiar código de rastreio {rastreio}">Copiar rastreio</button></td>
+                        <td role="cell" data-label="Rastreio"><span class="entregues-rastreio">{rastreio}</span><button type="button" class="btn-copy" data-copy="{rastreio}" aria-label="Copiar rastreio {rastreio}">Copiar rastreio</button></td>
                         <td role="cell" data-label="Cidade" class="col-secundaria">{_texto(item.get("cidade"))}</td>
                         <td role="cell" data-label="Postado em" class="col-secundaria">{_fmt_data(item.get("postado_em"))}</td>
                         <td role="cell" data-label="Entregue em">{_fmt_data(item.get("entregue_em"))}</td>
@@ -177,11 +177,7 @@ def montar_html_entregues(
             </div>
         </header>
         {nav_html('entregues', atrasados)}
-<div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-            </div>
+{ferramentas_html(False)}
 
         <main id="conteudo" tabindex="-1">
             <div class="entregues-seletor" role="group" aria-label="Escolher semana">

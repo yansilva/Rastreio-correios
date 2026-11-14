@@ -142,6 +142,12 @@ class TestPaginaEntregues(unittest.TestCase):
         self.assertIn('<th role="columnheader" scope="col">Pedido</th>', html)
         self.assertIn('<td role="cell" data-label="Pedido">', html)
 
+    def test_botao_copiar_tem_o_mesmo_nome_do_painel(self):
+        # WCAG 2.5.3 (Label in Name): o nome acessível começa com o texto visível "Copiar rastreio"
+        html = montar_html_entregues(_historico(_item("7002", "2026-11-11T10:00:00")), AGORA, dados_em=AGORA)
+        self.assertIn('aria-label="Copiar rastreio AE7002BR"', html)
+        self.assertNotIn("Copiar código de rastreio", html)
+
     def test_botao_de_tema_sem_aria_label(self):
         # O nome acessível é o texto visível ("Escuro"/"Claro"), como pede o WCAG 2.5.3
         html = montar_html_entregues(_historico(), AGORA, dados_em=AGORA)

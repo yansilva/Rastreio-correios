@@ -18,6 +18,9 @@
 - 2026-11-13 · Rótulo do tema que o leitor de tela precisa ouvir: não use `display:none` nem `aria-label`; use sr-only (clip + 1px). Quem esconde só o visível mantém o nome.
 - 2026-11-13 · Sr-only com clip deixa `getBoundingClientRect().width` maior que 1px quando uma regra mais tardia de `td` no celular define largura. O clip continua escondendo; para medir se está oculto, confira `clip` e `position`, não só a largura.
 - 2026-11-13 · `scroll-padding-bottom` em `html` e espaço no fim da lista já existem no celular (96px e 80px). Antes de propor um valor novo, leia o CSS.
+- 2026-11-14 · Botão "Copiar rastreio" tem de começar com o texto visível no aria-label, em todas as páginas (controle por voz fala "Copiar rastreio"). Use "Copiar rastreio {rastreio}", igual ao painel.
+- 2026-11-14 · Ao extrair um bloco copiado para função, mexa no teste que lia o marcado no arquivo antigo (test_frontend lia `consulta_correios.py`). O contrato mudou; atualize a asserção para a função, sem afrouxar o requisito.
+- 2026-11-14 · Blocos copiados: troque por substituição com contagem exata (assert count == N antes de trocar). Evita pegar o bloco errado quando há dois na mesma página (painel e atrasados).
 - 2026-11-13 · Ordem do Tab nas ferramentas: o Tab segue o DOM, e `order`/`grid` do CSS não mudam isso. Por isso o bloco `header-tools` vem logo depois da navegação. Abaixo de 1100px, as ferramentas aparecem acima do título mas o Tab as alcança depois das abas (ordem lógica, decisão do coordenador).
 - 2026-11-13 · Grid com itens de linha explícita (`grid-row`) precisa de `grid-column` explícita também; senão o item vai para uma coluna automática ao lado e a página quebra em duas colunas. Pegou no painel e no frete.
 - 2026-11-13 · Ferramentas do cabeçalho na linha das abas: a 1024px as abas quebram em duas linhas (a área do nav fica com ~584px e o menu precisa de mais). Por isso a regra começa em 1100px; abaixo disso, empilhadas. Não baixe a fonte para forçar.

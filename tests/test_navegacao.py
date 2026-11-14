@@ -75,6 +75,49 @@ class TestMenuUnico(unittest.TestCase):
             nav_html("inexistente")
 
 
+class TestFerramentasDoCabecalho(unittest.TestCase):
+    """O bloco de botões do cabeçalho (tema e, no painel, consulta) sai de uma função só."""
+
+    def test_com_consulta_tem_tema_e_consulta(self):
+        from correios.navegacao import ferramentas_html
+        bloco = ferramentas_html(True)
+        self.assertIn('<div class="header-tools">', bloco)
+        self.assertIn('id="btnTheme" class="btn-theme"', bloco)
+        self.assertIn('id="btnThemeText">Escuro</span>', bloco)
+        self.assertIn('id="btnUpdate"', bloco)
+        self.assertIn('aria-label="Consultar Tiny e Correios"', bloco)
+
+    def test_sem_consulta_so_tem_o_tema(self):
+        from correios.navegacao import ferramentas_html
+        bloco = ferramentas_html(False)
+        self.assertIn('id="btnTheme"', bloco)
+        self.assertNotIn("btnUpdate", bloco)
+        self.assertNotIn("Consultar", bloco)
+
+    def test_paginas_geradas_usam_o_mesmo_bloco(self):
+        from correios.navegacao import ferramentas_html
+        # Entregues e a demo (painel e atrasados) renderizam o bloco pela mesma função
+        html_entregues = montar_html_entregues({"entregas": {}}, AGORA, dados_em=AGORA)
+        self.assertIn(ferramentas_html(False), html_entregues)
+        with tempfile.TemporaryDirectory() as pasta:
+            caminhos = gerar_dados_demonstracao(pasta)
+            painel = Path(caminhos["relatorio"]).read_text(encoding="utf-8")
+            atrasados = Path(caminhos["atrasados"]).read_text(encoding="utf-8")
+        self.assertIn(ferramentas_html(True), painel)
+        self.assertIn(ferramentas_html(False), atrasados)
+        # O botão de consulta só existe no painel
+        self.assertNotIn("btnUpdate", atrasados)
+        self.assertNotIn("btnUpdate", html_entregues)
+
+    def test_nao_ha_copia_do_bloco_fora_da_funcao(self):
+        # As páginas de estilo painel não escrevem o bloco à mão; o frete tem o seu (outro botão de tema)
+        raiz = Path(__file__).resolve().parent.parent / "Arquivos"
+        arquivos = [raiz / "consulta_correios.py", raiz / "demo_data.py", raiz / "correios" / "pagina_entregues.py"]
+        for caminho in arquivos:
+            with self.subTest(arquivo=caminho.name):
+                self.assertNotIn('<div class="header-tools">', caminho.read_text(encoding="utf-8"))
+
+
 class TestPaginasGeradasComOMesmoMenu(unittest.TestCase):
     def _verificar(self, html: str, ativa: str):
         nav = _nav_da_pagina(html)

@@ -18,6 +18,32 @@ ABAS = (
 CHAVES = tuple(chave for chave, *_ in ABAS)
 
 
+def ferramentas_html(com_consulta: bool) -> str:
+    """Bloco de botões do cabeçalho: tema e, quando `com_consulta`, o de consulta (só no painel).
+
+    Vem logo depois da navegação no HTML (ordem do Tab: título, abas, ferramentas).
+    """
+    tema = (
+        '<div class="header-tools">\n'
+        '                <button id="btnTheme" class="btn-theme">\n'
+        '            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg>'
+        '<svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg>'
+        '<span id="btnThemeText">Escuro</span>\n'
+        "        </button>\n"
+    )
+    if not com_consulta:
+        return tema + "            </div>"
+    consulta = (
+        '                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" '
+        'title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">\n'
+        '                    <div id="spinner" class="spinner"></div>\n'
+        '                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg>'
+        '<span id="btnUpdateText">Consultar Tiny e Correios</span>\n'
+        "                </button>\n"
+    )
+    return tema + consulta + "            </div>"
+
+
 def nav_html(ativa: str, atrasados: int | None = None) -> str:
     """Devolve o `<nav>` completo, com a aba `ativa` marcada como página atual.
 

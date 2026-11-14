@@ -102,8 +102,10 @@ def test_ux_tema_botao_e_script():
     logs_js = (raiz / "web" / "js" / "logs.js").read_text(encoding="utf-8")
     assert "btnTheme" not in logs_js
 
-    # Template possui botão com id e classe; sem aria-label, para o nome ser o texto visível
-    assert 'id="btnTheme" class="btn-theme">' in consulta_py
+    # O botão de tema vem de ferramentas_html (correios/navegacao.py); sem aria-label, para o nome ser o texto visível
+    navegacao_py = (raiz / "Arquivos" / "correios" / "navegacao.py").read_text(encoding="utf-8")
+    assert 'id="btnTheme" class="btn-theme"' in navegacao_py
+    assert 'aria-label="Alternar tema' not in navegacao_py
     assert 'aria-label="Alternar tema' not in consulta_py
 
 
@@ -358,12 +360,13 @@ def test_consulta_no_cabecalho_e_flutuante_so_no_celular():
     raiz = Path(__file__).resolve().parent.parent
     comp_css = (raiz / "web" / "css" / "components.css").read_text(encoding="utf-8")
     template = (raiz / "Arquivos" / "consulta_correios.py").read_text(encoding="utf-8")
+    navegacao_py = (raiz / "Arquivos" / "correios" / "navegacao.py").read_text(encoding="utf-8")
 
-    inicio_tools = template.index('<div class="header-tools">')
-    posicao_botao = template.index('id="btnUpdate"')
-    assert template.count('id="btnUpdate"') == 1
+    # O botão de consulta vem de ferramentas_html(True), e só ele tem id="btnUpdate" (no módulo de navegação)
+    assert navegacao_py.count('id="btnUpdate"') == 1
+    assert "ferramentas=ferramentas_html(True)" in template
     # Ordem do Tab: título → abas → ferramentas (o bloco vem depois da navegação)
-    assert template.index("{nav_painel}") < inicio_tools < posicao_botao, "ferramentas fora da ordem título → abas → ferramentas"
+    assert template.index("{nav_painel}") < template.index("{ferramentas}"), "ferramentas fora da ordem título → abas → ferramentas"
     assert "floating-actions" not in template
     assert "floating-actions" not in comp_css
 

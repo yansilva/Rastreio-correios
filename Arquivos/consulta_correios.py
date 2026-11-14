@@ -40,7 +40,7 @@ from correios.cards import (
 )
 from correios.exceptions import CorreiosAuthError, CorreiosError
 from correios.icons import ICON_SPRITE
-from correios.navegacao import nav_html
+from correios.navegacao import ferramentas_html, nav_html
 from correios.pagina_entregues import gerar_pagina_entregues
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
@@ -246,15 +246,7 @@ def processar(usar_cache=False):
             </div>
         </header>
         {nav_painel}
-<div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-                <button id="btnUpdate" class="btn-action btn-update" aria-label="Consultar Tiny e Correios" title="Consulta o Tiny e os Correios agora (pode levar alguns minutos)">
-                    <div id="spinner" class="spinner"></div>
-                    <svg class="icon icon-refresh" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg><span id="btnUpdateText">Consultar Tiny e Correios</span>
-                </button>
-            </div>
+{ferramentas}
 
         {dashboard}
 
@@ -570,6 +562,7 @@ def processar(usar_cache=False):
             dashboard=dashboard_html,
             content="".join(orders_html),
             nav_painel=nav_html("painel", len(atrasados_data)),
+            ferramentas=ferramentas_html(True),
             versao_cache=_versao_assets(),
             descricoes_status=bloco_descricoes_status(),
             **textos_descricao(),
@@ -705,11 +698,7 @@ def processar(usar_cache=False):
             </div>
         </header>
         {nav_html('atrasados', total_atrasados)}
-<div class="header-tools">
-                <button id="btnTheme" class="btn-theme">
-            <svg class="icon icon-sun" aria-hidden="true" focusable="false"><use href="#i-sun"></use></svg><svg class="icon icon-moon" aria-hidden="true" focusable="false"><use href="#i-moon"></use></svg><span id="btnThemeText">Escuro</span>
-        </button>
-            </div>
+{ferramentas_html(False)}
 
         <main id="conteudo" tabindex="-1">
         {resumo_html}
