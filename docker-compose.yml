@@ -1,0 +1,52 @@
+# Painel de rastreio no Docker (uso local, neste PC).
+#   Subir:    docker compose up -d --build
+#   Parar:    docker compose down
+#   Logs:     docker compose logs -f painel
+#
+# A pasta do projeto entra no container (bind mount em /app). Assim as páginas e os dados
+# (Arquivos/rastreios_cache.json, rastreios_tiny.csv, entregas_historico.json) continuam na pasta.
+# .git, .equipe e .env entram como somente leitura: o container não altera esses arquivos.
+services:
+  painel:
+    build: .
+    image: rastreio-correios:local
+    container_name: rastreio-painel
+    restart: unless-stopped
+    ports:
+      # IPv4 explícito. Sem o "0.0.0.0:" o Docker Desktop também escuta em [::]:8000, e um IPv6 global
+      # do Wi-Fi chegaria ao container. Com o Docker, o IP de origem vira o gateway 172.x (privado),
+      # então a checagem de IP do servidor não barra quem chega por IPv6.
+      #
+      # Acesso do celular pelo Wi-Fi: "0.0.0.0:8000:8000" (este arquivo).
+      # Só este PC: troque por "127.0.0.1:8000:8000".
+      # A porta do PC precisa ser 8000: o servidor recusa o cabeçalho Host com outra porta.
+      - "0.0.0.0:8000:8000"
+    environment:
+      TZ: America/Sao_Paulo
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8000"
+      ABRIR_NAVEGADOR: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - .:/app
+      - ./.git:/app/.git:ro
+      - ./.equipe:/app/.equipe:ro
+      - ./.env:/app/.env:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # Consulta /api/status com Host: localhost:8000 (passa na checagem de Host). Não chama /atualizar.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u; r = u.Request('http://127.0.0.1:8000/api/status', headers={'Host': 'localhost:8000'}); u.urlopen(r, timeout=5)"
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

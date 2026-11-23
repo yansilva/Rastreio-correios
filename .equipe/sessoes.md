@@ -11,4 +11,6 @@ Só o coordenador escreve aqui. Uma linha por especialista. Definições dos age
 | acessibilidade | haiku | local_0eb0f973-482c-4e92-b44a-86613e79bb30 | 2026-11-12 | — |
 | revisao-codigo | opus | local_2cf277ae-dfb4-497f-ba56-d4acf9f0c1f5 | 2026-11-12 | — |
 
-Sem sessão fixa (abrir só se precisar): seguranca, debugging, documentacao, integracoes, performance, git, produto, arquiteto, dados, devops, conteudo.
+| devops | haiku | local_d4140cde-b68a-47c7-911c-bf2841a86539 | 2026-11-23 | 2026-11-23 · Docker neste PC (Dockerfile, compose, README) |
+
+Sem sessão fixa (abrir só se precisar): seguranca, debugging, documentacao, integracoes, performance, git, produto, arquiteto, dados, conteudo.

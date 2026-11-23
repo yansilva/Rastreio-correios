@@ -29,6 +29,7 @@ class ServerConfig:
     html_file: str = "relatorio_rastreio.html"
     cooldown_seconds: int = 150  # 2.5 minutos
     auto_update_interval: int = 2700  # 45 minutos em segundos
+    abrir_navegador: bool = True  # Docker desliga: não há navegador dentro do container (ABRIR_NAVEGADOR=0)
     allowed_extensions: set[str] = field(
         default_factory=lambda: {
             ".html",
@@ -57,8 +58,10 @@ class ServerConfig:
         except ValueError:
             port = 8000
 
+        abrir = os.environ.get("ABRIR_NAVEGADOR", "1").strip().lower() not in ("0", "false", "no", "off")
+
         resolved_base = base_dir or Path(__file__).resolve().parent.parent.parent
-        return cls(host=host, port=port, base_dir=resolved_base)
+        return cls(host=host, port=port, base_dir=resolved_base, abrir_navegador=abrir)
 
     @property
     def url(self) -> str:

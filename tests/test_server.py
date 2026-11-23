@@ -73,6 +73,16 @@ class TestServerConfig(unittest.TestCase):
             cfg = ServerConfig.from_env()
             self.assertEqual(cfg.port, 8000)
 
+    def test_abrir_navegador_padrao_e_ligado(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("ABRIR_NAVEGADOR", None)
+            self.assertTrue(ServerConfig.from_env().abrir_navegador)
+
+    def test_abrir_navegador_desligado_por_env(self):
+        for valor in ("0", "false", "no", "off", " OFF "):
+            with self.subTest(valor=valor), patch.dict(os.environ, {"ABRIR_NAVEGADOR": valor}):
+                self.assertFalse(ServerConfig.from_env().abrir_navegador)
+
 
 class TestServerSecurity(unittest.TestCase):
     """Testes de segurança, resolução de arquivos e anti-path traversal."""

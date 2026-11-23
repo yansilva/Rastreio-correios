@@ -1,0 +1,40 @@
+# Controle de versão e editor
+**/.git
+**/.github
+**/.gitignore
+**/.idea
+**/.vscode
+
+# Ambientes virtuais e caches Python
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/.coverage
+**/htmlcov
+
+# Segredos: o .env não entra na imagem (ele é lido do bind mount, somente leitura, em tempo de execução)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Artefatos de desenvolvimento, documentação e agentes (não rodam no painel)
+graphify-out
+tests
+docs
+.equipe
+.impeccable
+**/*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+**/*.bat
+Arquivos/ABRIR_PAINEL.sh
+
+# Dados e páginas geradas: nome de cliente e endereço não entram na imagem (o bind mount entrega os atuais)
+/*.html
+/*.js
+**/*.csv
+**/*.json

@@ -142,6 +142,9 @@ PEDIDOS_IGNORADOS=39192
 # Servidor (Opcional - padrão: 127.0.0.1:8000)
 SERVER_HOST=127.0.0.1
 SERVER_PORT=8000
+
+# Abre o navegador ao iniciar (padrão 1; use 0 para não abrir). O Docker já define 0.
+# ABRIR_NAVEGADOR=1
 ```
 
 ---
@@ -157,6 +160,32 @@ python run.py
 - **Linux/macOS:** Execute `./Arquivos/ABRIR_PAINEL.sh`.
 
 O painel será aberto automaticamente no navegador em `http://localhost:8000`.
+
+### Rodar com Docker
+Alternativa ao `ABRIR_PAINEL.bat`: o painel roda num container, reinicia sozinho e fica acessível no PC e no celular pelo Wi-Fi. Requer o Docker Desktop aberto e o `.env` preenchido na pasta do projeto.
+
+Na pasta do projeto:
+```powershell
+docker compose up -d --build
+```
+
+- **Acesso:** `http://localhost:8000` no PC e `http://IP-do-PC:8000` no celular (o IP aparece no `ipconfig`).
+- **Parar:** `docker compose down`. **Logs:** `docker compose logs -f painel`.
+- **Só este PC:** em `docker-compose.yml`, troque `"0.0.0.0:8000:8000"` por `"127.0.0.1:8000:8000"`. Com isso, o celular não alcança o painel.
+- **Por que a porta precisa do IP:** o servidor só aceita cliente de rede local (`ip_na_rede_local`) e confere o cabeçalho Host. Com Docker, o IP de origem que o servidor vê é sempre o gateway da rede do Docker (ex.: `172.20.0.1`), e não o IP do celular. Assim, a checagem de IP não separa um aparelho do outro. O que limita o acesso é a porta publicada: `0.0.0.0:8000` escuta só no IPv4 da rede (Wi-Fi e cabo) e `127.0.0.1` só neste PC. Sem o `0.0.0.0:` o Docker também publica em IPv6 (`[::]:8000`), e o IPv6 global do Wi-Fi chega ao painel sem a checagem de IP fazer efeito.
+- **Porta 8000 obrigatória no PC:** o servidor recusa um cabeçalho Host com outra porta. Por isso, publicar em outra porta do PC (ex.: `8010:8000`) não funciona no painel.
+- **Segurança do container:** sistema de arquivos só de leitura (`read_only`), exceto a pasta do projeto e `/tmp`; sem capacidades do Linux (`cap_drop: ALL`); `no-new-privileges`. `.git`, `.equipe` e `.env` entram como somente leitura.
+- **Reinício:** `restart: unless-stopped`. Para voltar após reiniciar o PC, o Docker Desktop precisa abrir sozinho (Configurações do Docker Desktop, "Start Docker Desktop when you log in").
+- **Dados:** a pasta do projeto entra no container (`.:/app`). O `.env`, as páginas HTML e `Arquivos/rastreios_cache.json`, `Arquivos/rastreios_tiny.csv` e `Arquivos/entregas_historico.json` continuam na pasta, como antes. O `.env` não entra na imagem (`**/.env` no `.dockerignore`) e, no container, é somente leitura.
+- **Fuso:** `TZ=America/Sao_Paulo` (a imagem traz `tzdata`). Datas e "Dados de" saem no horário de Brasília.
+- **Navegador:** não abre dentro do container (`ABRIR_NAVEGADOR=0`). Fora do Docker, o comportamento não muda.
+- **Um de cada vez:** não rode o container e o `ABRIR_PAINEL.bat` (ou `ABRIR_PAINEL_CELULAR.bat`) juntos; os dois disputam a porta 8000.
+- **IP no log:** no Docker, o log mostra o IP interno do gateway (172.x), e não o IP do aparelho. Por isso a checagem de IP privado não restringe nada no Docker. A proteção fica com a porta publicada só em IPv4 (`0.0.0.0`, ou `127.0.0.1` para só o PC) e com o firewall do Windows, que é responsabilidade do usuário.
+
+### Voltar para o `.bat`
+1. No PowerShell, na pasta do projeto: `docker compose down`.
+2. Confira que a porta 8000 ficou livre.
+3. Só então abra `ABRIR_PAINEL.bat` (só este PC) ou `ABRIR_PAINEL_CELULAR.bat` (celular pelo Wi-Fi).
 
 ### Execução dos Módulos Individuais via CLI
 1. **Buscar pedidos no Tiny ERP:**

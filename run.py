@@ -20,4 +20,4 @@ from server import ServerConfig, iniciar_servidor
 
 if __name__ == "__main__":
     config = ServerConfig.from_env(base_dir=BASE_DIR)
-    iniciar_servidor(config=config, abrir_browser=True)
+    iniciar_servidor(config=config, abrir_browser=config.abrir_navegador)
