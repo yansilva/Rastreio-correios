@@ -3,6 +3,8 @@ import unicodedata
 from datetime import datetime
 from html import escape
 
+from .icons import icone
+
 # Ordem em que os pedidos aparecem: o que pede ação do operador vem primeiro e os casos encerrados vão ao fim
 # Dias com só a etiqueta nos Correios antes de avisar que o pedido "enviado" no Tiny não foi postado
 DIAS_SEM_POSTAGEM = 2
@@ -29,6 +31,7 @@ DESCRICAO_STATUS = {
     "nao_enviado": "Pedido ainda não foi postado.",
     "entregue": "Objeto entregue ao destinatário.",
     "devolvido": "Objeto voltou ao remetente.",
+    "com_aviso": "Pedido com aviso dos Correios que ainda não foi entregue.",
 }
 
 
@@ -173,6 +176,14 @@ def bloco_descricoes_status() -> str:
     return f'<div class="sr-only" aria-hidden="true">{itens}</div>'
 
 
+def data_curta(dt_iso: str) -> str:
+    """Dia e mês de uma data ISO, como '22/11' ('' quando a data não é válida)."""
+    try:
+        return datetime.fromisoformat(dt_iso).strftime("%d/%m")
+    except (TypeError, ValueError):
+        return ""
+
+
 def dias_desde(dt_iso: str, agora: datetime | None = None) -> int | None:
     """Dias corridos desde uma data ISO (None quando a data não é válida)."""
     try:
@@ -199,27 +210,36 @@ def zero(numero: int) -> str:
     return " is-zero" if numero == 0 else ""
 
 
-def faixa_acao(atrasados: int, retiradas: int) -> str:
+def faixa_acao(atrasados: int, retiradas: int, avisos: int = 0) -> str:
     """Faixa 'Precisam de ação': botões de filtro, ou uma linha calma quando não há nada a fazer."""
-    if atrasados == 0 and retiradas == 0:
+    if atrasados == 0 and retiradas == 0 and avisos == 0:
         return (
             '<section class="action-strip action-strip-ok" aria-label="Pedidos que precisam de ação">'
             '<svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg>'
             "<span>Nada atrasado nem aguardando retirada</span></section>"
         )
 
-    def chip(filtro: str, icone: str, titulo: str, numero: int, rotulo: str) -> str:
+    def chip(filtro: str, icone: str, titulo: str, numero: int, rotulo: str, curto: str = "") -> str:
+        # Com rótulo curto, o longo fica num trecho que o CSS esconde no celular (sr-only): o leitor de tela lê o nome completo
+        if curto:
+            texto = (
+                f'<span class="rotulo-longo">{rotulo}</span>'
+                f'<span class="rotulo-curto" aria-hidden="true">{curto}</span>'
+            )
+        else:
+            texto = rotulo
         return (
             f'<button type="button" class="action-chip{zero(numero)}" data-filter="{filtro}" title="{titulo}">'
             f'<svg class="icon icon-{icone}" aria-hidden="true" focusable="false"><use href="#i-{icone}"></use></svg>'
-            f"<strong>{numero}</strong> {rotulo}</button>"
+            f"<strong>{numero}</strong> {texto}</button>"
         )
 
     return (
         '<section class="action-strip" aria-label="Pedidos que precisam de ação">'
         '<span class="action-strip-title">Precisam de ação</span>'
         + chip("atrasado", "clock", DESCRICAO_STATUS["atrasado"], atrasados, "Atrasados")
-        + chip("aguardando_retirada", "building", DESCRICAO_STATUS["aguardando_retirada"], retiradas, "Aguardando retirada")
+        + chip("aguardando_retirada", "building", DESCRICAO_STATUS["aguardando_retirada"], retiradas, "Aguardando retirada", "Retirada")
+        + (chip("com_aviso", "info", DESCRICAO_STATUS["com_aviso"], avisos, "Com aviso", "Aviso") if avisos > 0 else "")
         + "</section>"
     )
 
@@ -243,6 +263,8 @@ def montar_card_pedido(
     numero_txt: str = "",
     chave_descricao: str = "",
     mostrar_situacao_tiny: bool = True,
+    aviso: str = "",
+    aviso_data: str = "",
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido.
 
@@ -272,6 +294,15 @@ def montar_card_pedido(
         if mostrar_situacao_tiny
         else ""
     )
+    # Contrato do aviso (brief do designer, "Contrato de dados"): parágrafo logo depois do .order-header
+    aviso_html = ""
+    if aviso:
+        data_html = f'<time class="order-aviso-data">{escape(aviso_data)}</time>' if aviso_data else ""
+        aviso_html = (
+            f'<p class="order-aviso">{icone("info")}'
+            f'<strong>Aviso dos Correios</strong> <span class="order-aviso-texto">{escape(aviso)}</span>'
+            f"{data_html}</p>"
+        )
     copiar_html = (
         f'<button type="button" class="btn-copy" data-copy="{escape(rastreio, quote=True)}" '
         f'aria-label="Copiar rastreio {escape(rastreio, quote=True)}">Copiar rastreio</button>'
@@ -287,7 +318,8 @@ def montar_card_pedido(
         titulo_html = "".join(partes_titulo)
     else:
         titulo_html = escape(titulo)
-    atributos = f'data-status="{tokens}"'
+    tokens_status = f"{tokens} com_aviso" if aviso else tokens
+    atributos = f'data-status="{tokens_status}"'
     if rastreio:
         atributos += f' data-rastreio="{escape(rastreio, quote=True)}"'
     if cliente:
@@ -296,6 +328,8 @@ def montar_card_pedido(
         atributos += f' data-pedido="{escape(numero, quote=True)}"'
     if idade_dias is not None:
         atributos += f' data-idade="{idade_dias}"'
+    if aviso:
+        atributos += ' data-aviso="1"'
 
     historico = ""
     if len(eventos_html) > 1:
@@ -317,6 +351,7 @@ def montar_card_pedido(
                         {copiar_html}
                     </div>
                 </div>
+                {aviso_html}
                 <div class="events-container">
                     {eventos_html[0] if eventos_html else ""}
                     {historico}

@@ -165,6 +165,24 @@
     background: var(--color-primary-light);
 }
 
+/* Aviso dos Correios: família roxa, nunca âmbar nem vermelho (é informação, não alarme) */
+.action-chip[data-filter="com_aviso"] {
+    background: var(--color-purple-bg);
+    border-color: var(--color-purple-border);
+    color: var(--color-purple-text);
+}
+
+.action-chip[data-filter="com_aviso"] .icon,
+.action-chip[data-filter="com_aviso"] strong {
+    color: var(--color-purple-text);
+}
+
+.action-chip[data-filter="com_aviso"]:hover,
+.action-chip[data-filter="com_aviso"].active {
+    background: var(--color-purple-bg);
+    border-color: var(--color-purple-text);
+}
+
 .dash-label {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
@@ -456,6 +474,50 @@
 .order-tiny-status {
     font-size: 0.875rem;
     color: var(--color-text-muted);
+}
+
+/* Aviso dos Correios: linha própria, família roxa. Só cor dos tokens, então o tema escuro vem sozinho */
+.order-aviso {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2px 8px;
+    margin: 8px 12px 0;
+    padding: 8px 12px;
+    border: 1px solid var(--color-purple-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-purple-bg);
+    color: var(--color-purple-text);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.order-aviso .icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    color: inherit;
+}
+
+.order-aviso strong {
+    flex: 0 0 auto;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Texto inteiro: divide a linha com o rótulo quando cabe; se não cabe, desce e fica alinhado ao ícone */
+.order-aviso-texto {
+    flex: 1 1 200px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.order-aviso-data {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* Histórico recolhido: o último evento fica visível, o restante abre sob demanda */
@@ -1565,6 +1627,37 @@ h1 .icon {
     }
 }
 
+/* Faixa de ação no celular: os três chips numa linha só (360px). Rótulo curto visível; o longo fica
+   só para o leitor de tela (mesmo padrão do resumo do frete). Sem rolagem escondida. */
+@media (max-width: 640px) {
+    .action-strip .rotulo-longo {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .action-strip .rotulo-curto {
+        display: inline;
+    }
+
+    .action-strip {
+        column-gap: 6px;
+    }
+
+    .action-strip .action-chip {
+        gap: 4px;
+        padding: 6px 8px;
+    }
+}
+
+/* Desktop: o rótulo curto não aparece */
+.rotulo-curto {
+    display: none;
+}
+
 /* Opções como popover ancorado ao botão: abre sobre a lista, sem empurrá-la */
 @media (min-width: 641px) {
     .options-menu {
@@ -1623,6 +1716,16 @@ h1 .icon {
 .orders-list.is-compact .event-detail,
 .orders-list.is-compact .event::before {
     display: none;
+}
+
+/* Compacta: a linha do aviso some; o selo "Aviso" no cabeçalho diz que existe e o title traz o texto */
+.orders-list.is-compact .order-aviso {
+    display: none;
+}
+
+/* Selo "Aviso" na Tabela: afastado do selo de status */
+.orders-table .badge-aviso {
+    margin-left: 6px;
 }
 
 /* Visão em tabela: cabeçalhos ordenáveis e ações por linha */
@@ -2605,6 +2708,11 @@ thead th {
     padding: 16px;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
+}
+
+/* hidden precisa vencer o display:grid acima: sem isso, o estado vazio fica na tela depois de filtrar ou limpar a busca */
+.empty-state[hidden] {
+    display: none;
 }
 
 .empty-state .emoji {

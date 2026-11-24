@@ -24,6 +24,7 @@ from correios.cards import (
     PRIORIDADE_STATUS,
     bloco_descricoes_status,
     chave_selo,
+    data_curta,
     dias_desde,
     divergencia_tiny,
     esta_encerrado,
@@ -267,6 +268,7 @@ def processar(usar_cache=False):
                     <button type="button" class="filter-pill" data-filter="em_transito" title="{texto_em_transito}" aria-describedby="desc-status-em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
                     <button type="button" class="filter-pill" data-filter="atrasado" title="{texto_atrasado}" aria-describedby="desc-status-atrasado"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
                     <button type="button" class="filter-pill" data-filter="aguardando_retirada" title="{texto_aguardando_retirada}" aria-describedby="desc-status-aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
+                    <button type="button" class="filter-pill" data-filter="com_aviso" title="{texto_com_aviso}" aria-describedby="desc-status-com_aviso"><svg class="icon icon-info" aria-hidden="true" focusable="false"><use href="#i-info"></use></svg> Com aviso</button>
                     <button type="button" class="filter-pill" data-filter="entregue" title="{texto_entregue}" aria-describedby="desc-status-entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>
                     <button type="button" class="filter-pill" data-filter="nao_enviado" title="{texto_nao_enviado}" aria-describedby="desc-status-nao_enviado"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg> Não enviados</button>
                     <button type="button" class="filter-pill" data-filter="devolvido" title="{texto_devolvido}" aria-describedby="desc-status-devolvido"><svg class="icon icon-undo" aria-hidden="true" focusable="false"><use href="#i-undo"></use></svg> Devolvidos</button>
@@ -280,7 +282,7 @@ def processar(usar_cache=False):
                     <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
                 </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
-                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> {texto_atrasado} <strong>Aguardando retirada:</strong> {texto_aguardando_retirada}</p></details>
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> {texto_atrasado} <strong>Aguardando retirada:</strong> {texto_aguardando_retirada} <strong>Com aviso:</strong> {texto_com_aviso}</p></details>
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -330,6 +332,7 @@ def processar(usar_cache=False):
         nao_enviados_count = 0
         em_transito_count = 0
         retiradas_count = 0
+        avisos_count = 0
 
         pedidos_ignorados = _pedidos_ignorados()
 
@@ -393,6 +396,11 @@ def processar(usar_cache=False):
             else:
                 nao_enviados_count += 1
 
+            # Aviso dos Correios (não muda o status): só conta quem ainda está no painel
+            aviso = TrackingService.aviso_do_objeto(obj_classificado)
+            if aviso:
+                avisos_count += 1
+
             # Verificação de atraso com TrackingService
             atraso = TrackingService.verificar_atraso(obj_classificado, pedido, situacao_tiny)
             if atraso:
@@ -407,6 +415,7 @@ def processar(usar_cache=False):
                         "ultimo_evento": atraso.ultimo_evento,
                         "ultimo_local": atraso.ultimo_local,
                         "status": atraso.status,
+                        "aviso": aviso,
                     }
                 )
 
@@ -470,6 +479,8 @@ def processar(usar_cache=False):
                 divergencia=divergencia,
                 rastreio=str(rastreio or ""),
                 cliente=cliente,
+                aviso=aviso,
+                aviso_data=data_curta(obj_classificado.aviso_data) if aviso else "",
             )
             ordem = (
                 PRIORIDADE_STATUS["sem_postagem"]
@@ -520,7 +531,7 @@ def processar(usar_cache=False):
 
         # Monta o dashboard de resumo
         dashboard_html = f"""
-        {faixa_acao(len(atrasados_data), retiradas_count)}
+        {faixa_acao(len(atrasados_data), retiradas_count, avisos_count)}
         <div class="dashboard">
             <div class="dash-card{zero(nao_enviados_count)}">
                 <div class="dash-icon dash-icon-slate"><svg class="icon icon-inbox" aria-hidden="true" focusable="false"><use href="#i-inbox"></use></svg></div>
@@ -610,14 +621,19 @@ def processar(usar_cache=False):
             evento_completo = escape(str(item["ultimo_evento"]), quote=True)
 
             # Pedido, rastreio, datas e locais vêm do Tiny e dos Correios: todos saem escapados
+            # Mesmo contrato do cartão: data-aviso="1" na linha e .order-aviso-texto na célula do evento
+            attr_aviso = ' data-aviso="1"' if item.get("aviso") else ""
+            aviso_html = (
+                f'<span class="order-aviso-texto">{escape(item["aviso"])}</span>' if item.get("aviso") else ""
+            )
             rows_html += f"""
-            <tr class="{urgencia_class}">
+            <tr class="{urgencia_class}"{attr_aviso}>
                 <td data-label="Pedido"><strong>#{escape(str(item["pedido"]))}</strong></td>
                 {td_cliente}
                 <td data-label="Rastreio"><code>{escape(str(item["rastreio"]))}</code></td>
                 <td data-label="Postagem" class="col-secundaria">{escape(str(item["data_postagem"]))}</td>
                 <td data-label="Dias"><span class="dias-badge {urgencia_class}">{dias} dias · {urgencia_rotulo}</span></td>
-                <td data-label="Último Evento" class="col-secundaria" title="{evento_completo}"><span class="evento-texto">{escape(str(item["ultimo_evento"]))}</span></td>
+                <td data-label="Último Evento" class="col-secundaria" title="{evento_completo}"><span class="evento-texto">{escape(str(item["ultimo_evento"]))}</span>{aviso_html}</td>
                 <td data-label="Local" class="col-secundaria">{escape(str(item["ultimo_local"]))}</td>
                 {td_status}
                 <td data-label="Ações"><button type="button" class="btn-copy" data-copy="{escape(str(item["rastreio"]), quote=True)}" aria-label="Copiar código de rastreio {escape(str(item["rastreio"]), quote=True)}">Copiar rastreio</button></td>

@@ -1,5 +1,6 @@
 """Serviço de normalização, classificação de status e regras de atraso de encomendas."""
 import logging
+import re
 from datetime import datetime
 from typing import Any
 
@@ -7,6 +8,26 @@ from .cards import urgencia_atraso
 from .models import EventoRastreio, ObjetoRastreio, PedidoAtrasado
 
 logger = logging.getLogger("correios.tracking")
+
+# Aviso dos Correios sobre prazo: não é status, então não decide retirada
+_AVISO_DE_PRAZO = "PODE LEVAR MAIS TEMPO"
+# Textos reais de retirada na agência
+_RETIRADA_REAL = re.compile(r"AGUARDANDO RETIRADA|PARA RETIRADA")
+
+# Eventos que avisam sem mudar o status. Lista explícita, vinda do cache atual:
+# - "Sua entrega ou retirada nos Correios pode levar mais tempo do que o previsto"
+# - "Inconsistências no endereçamento do objeto." (diz que pode haver atraso ou devolução)
+# "Favor desconsiderar a informação anterior" ficou de fora: sozinho não informa nada (decisão do coordenador)
+AVISOS_CORREIOS = (
+    "PODE LEVAR MAIS TEMPO",
+    "INCONSISTÊNCIAS NO ENDEREÇAMENTO",
+)
+
+
+def eh_aviso(descricao: str) -> bool:
+    """True quando o evento é um dos avisos conhecidos dos Correios (não é status)."""
+    texto = descricao.upper()
+    return any(trecho in texto for trecho in AVISOS_CORREIOS)
 
 
 class TrackingService:
@@ -24,6 +45,7 @@ class TrackingService:
             return objeto
 
         eventos_raw = dados_brutos.get("eventos", [])
+        retirada_decidida: bool | None = None
         for i, ev_data in enumerate(eventos_raw):
             evento = EventoRastreio.de_dicionario(ev_data)
             objeto.eventos.append(evento)
@@ -36,9 +58,15 @@ class TrackingService:
                 objeto.ultimo_evento_desc = evento.descricao
                 objeto.ultimo_local = evento.local
 
-            # Detecta aguardando retirada
-            if "RETIRADA" in desc_upper or "RETIRADA" in det_upper:
-                objeto.is_retirada = True
+            # Retirada vale só pelo evento de status mais recente: avisos de prazo não contam,
+            # e uma transferência ou saída para entrega depois da retirada a desfaz
+            if _AVISO_DE_PRAZO not in desc_upper and retirada_decidida is None:
+                retirada_decidida = bool(_RETIRADA_REAL.search(desc_upper) or _RETIRADA_REAL.search(det_upper))
+
+            # Aviso mais recente (a lista vem do mais novo para o mais antigo)
+            if not objeto.aviso_texto and eh_aviso(evento.descricao):
+                objeto.aviso_texto = evento.descricao
+                objeto.aviso_data = evento.dt_hr_criado
 
             # Detecta devolução ao remetente
             if "REMETENTE" in desc_upper or "DEVOLVIDO" in desc_upper or "DEVOLUÇÃO" in desc_upper:
@@ -66,6 +94,8 @@ class TrackingService:
                         objeto.data_postagem_dt = datetime.fromisoformat(evento.dt_hr_criado)
                     except Exception:
                         pass
+
+        objeto.is_retirada = bool(retirada_decidida)
 
         # Determina a categoria principal do status
         if objeto.is_devolvido:
@@ -125,6 +155,13 @@ class TrackingService:
             ultimo_local=objeto.ultimo_local,
             status=objeto.status_categoria,
         )
+
+    @staticmethod
+    def aviso_do_objeto(objeto: ObjetoRastreio) -> str:
+        """Texto do aviso mais recente, enquanto o objeto está em andamento ('' se entregue ou devolvido)."""
+        if objeto.status_categoria in ("entregue", "devolvido"):
+            return ""
+        return objeto.aviso_texto
 
     @staticmethod
     def deve_ocultar_card(objeto: ObjetoRastreio, data_referencia: datetime | None = None) -> bool:

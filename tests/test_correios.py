@@ -291,6 +291,44 @@ class TestTrackingService(unittest.TestCase):
         self.assertTrue(obj.is_postado)
         self.assertEqual(obj.status_categoria, "em_transito")
 
+    def test_aviso_de_atraso_nao_e_retirada_pedido_43312(self):
+        """Eventos reais do pedido 43312: o aviso 'pode levar mais tempo' não é retirada."""
+        dados = {
+            "eventos": [
+                {"descricao": "Objeto em transferência - por favor aguarde", "dtHrCriado": "2026-11-24T12:12:00"},
+                {"descricao": "Sua entrega ou retirada nos Correios pode levar mais tempo do que o previsto", "dtHrCriado": "2026-11-24T12:09:00"},
+                {"descricao": "Objeto em transferência", "dtHrCriado": "2026-11-24T08:56:00"},
+                {"descricao": "Objeto em transferência", "dtHrCriado": "2026-11-23T18:00:00"},
+                {"descricao": "Objeto postado", "dtHrCriado": "2026-11-23T10:00:00"},
+                {"descricao": "Etiqueta emitida", "dtHrCriado": "2026-11-23T09:00:00"},
+            ]
+        }
+        obj = TrackingService.processar_objeto("AE192204124BR", dados)
+        self.assertFalse(obj.is_retirada)
+        self.assertEqual(obj.status_categoria, "em_transito")
+
+    def test_retirada_com_aviso_depois_continua_retirada(self):
+        dados = {
+            "eventos": [
+                {"descricao": "Sua entrega ou retirada nos Correios pode levar mais tempo do que o previsto", "dtHrCriado": "2026-09-10T09:00:00"},
+                {"descricao": "Objeto aguardando retirada no endereço indicado", "dtHrCriado": "2026-09-09T11:00:00"},
+                {"descricao": "Objeto postado", "dtHrCriado": "2026-09-06T09:00:00"},
+            ]
+        }
+        obj = TrackingService.processar_objeto("AE000000011BR", dados)
+        self.assertTrue(obj.is_retirada)
+
+    def test_transferencia_depois_da_retirada_deixa_de_ser_retirada(self):
+        dados = {
+            "eventos": [
+                {"descricao": "Objeto saiu para entrega ao destinatário", "dtHrCriado": "2026-09-10T08:00:00"},
+                {"descricao": "Objeto aguardando retirada no endereço indicado", "dtHrCriado": "2026-09-09T11:00:00"},
+                {"descricao": "Objeto postado", "dtHrCriado": "2026-09-06T09:00:00"},
+            ]
+        }
+        obj = TrackingService.processar_objeto("AE000000012BR", dados)
+        self.assertFalse(obj.is_retirada)
+
     def test_processar_objeto_sem_eventos(self):
         """Valida que objeto sem eventos é classificado como 'nao_enviado'."""
         obj = TrackingService.processar_objeto("AA444444444BR", None)

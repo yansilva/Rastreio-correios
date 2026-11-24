@@ -168,12 +168,12 @@ class TestRegerarSemRede(unittest.TestCase):
         self.assertGreaterEqual(ocultos, 1)
         self.assertEqual(total_cartoes, len(pedidos) - ocultos)
         # Aguardando retirada não entra nos cartões de resumo: aparece na faixa "Precisam de ação"
-        retiradas = int(re.search(r"<strong>(\d+)</strong> Aguardando retirada", html).group(1))
+        retiradas = int(re.search(r"<strong>(\d+)</strong> (?:<span[^>]*>)?Aguardando retirada", html).group(1))
         self.assertEqual(retiradas, 1)
         self.assertEqual(sum(numeros_resumo) + retiradas, total_cartoes)
 
         self.assertRegex(html, r'data-filter="atrasado"[^>]*>.*?<strong>1</strong> Atrasados')
-        self.assertRegex(html, r'data-filter="aguardando_retirada"[^>]*>.*?<strong>1</strong> Aguardando retirada')
+        self.assertRegex(html, r'data-filter="aguardando_retirada"[^>]*>.*?<strong>1</strong> (?:<span[^>]*>)?Aguardando retirada')
 
         # Uma categoria por pedido: quem aguarda retirada sai de "Em trânsito" e aparece só em "Aguardando retirada"
         categorias = {"em_transito", "aguardando_retirada", "nao_enviado", "entregue", "devolvido"}

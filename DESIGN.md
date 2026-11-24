@@ -316,7 +316,7 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 ### Selos (`.badge`, `.dias-badge`)
 - **Style:** bolinha de 6px na cor do texto (`::before`, `border-radius: 50%`) e o texto; 12px peso 600, caixa normal, 2×8px, raio de 6px, `white-space: nowrap`, fundo tingido e borda da mesma família.
 - **Texto:** sempre diz o estado; o atraso diz o nível ("Atrasado · 6 dias · Alto"). A cor nunca é o único sinal.
-- **Variants:** `badge-red` (Crítico, devolvido em alerta), `badge-orange` (Alto), `badge-yellow` (Atenção, aguardando retirada, Tiny desatualizado), `badge-green` (entregue), `badge-purple` (devolvido), `badge-blue` (em trânsito, postado).
+- **Variants:** `badge-red` (Crítico, devolvido em alerta), `badge-orange` (Alto), `badge-yellow` (Atenção, aguardando retirada, Tiny desatualizado), `badge-green` (entregue), `badge-purple` (devolvido; com `badge-aviso`, o selo curto "Aviso" das visões Compacta e Tabela), `badge-blue` (em trânsito, postado).
 - **Descrição:** a explicação fica num `<span class="sr-only">` logo depois do selo.
 
 ### Cartões de pedido (`.order-card`)
@@ -327,6 +327,27 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 - **Timeline:** trilho de 3px em `--color-border`, bolinha de 10px. Evento crítico pinta bolinha e trilho na cor do status, sem fundo tingido.
 - **Encerrados (`.order-closed`):** título em Tinta Discreta, no fim da lista.
 - A ordem por urgência, o "Tiny desatualizado" e o histórico em `<details class="order-history">` continuam.
+
+### Aviso dos Correios (`.order-aviso`, definido em 2026-11-24)
+Evento informativo dos Correios, como "Sua entrega ou retirada nos Correios pode levar mais tempo do que o previsto". **Não é status:** o selo de status continua o real (por exemplo, Em trânsito), e o aviso é uma informação a mais. Aparece enquanto o objeto não foi entregue. Em pedido entregue ou devolvido, não aparece.
+- **Cor:** família roxa (`--color-purple-text`, `--color-purple-bg`, `--color-purple-border`). Não use âmbar, laranja nem vermelho, que são da escala de urgência. O azul (info) também fica de fora, porque o status que mais acompanha o aviso é "Em trânsito", que já é azul, e os dois virariam uma coisa só. O roxo também é o do "Devolvido", mas a forma é outra: no cartão, o aviso é uma linha com rótulo, não um selo, e não aparece em devolvido.
+- **Contraste (AA):**
+  - Claro: #7e22ce sobre #f3e8ff dá 5,92:1, e sobre branco dá 6,98:1.
+  - Escuro: #c084fc sobre o fundo a 15% dá 5,91:1 sobre #151a21 e 5,48:1 sobre #1b212a.
+  - A borda roxa no escuro (`rgba(192, 132, 252, .35)`) dá 1,9:1. É decorativa: quem separa a linha da superfície é o fundo tingido, e o texto identifica a linha.
+- **No cartão:** uma linha própria, logo abaixo do `.order-header` e acima da "Situação no Tiny" e da timeline.
+  - Caixa: fundo `--color-purple-bg`, borda de 1px `--color-purple-border`, raio de 6px, 8×12px de espaço interno, 12px de margem lateral, 8px de margem acima.
+  - Conteúdo: ícone `i-info` de 16px (círculo com "i", que não é o triângulo de alerta), na cor do texto; rótulo "Aviso dos Correios" em 13px peso 600; depois o texto do aviso em 13px peso 400. Tudo em `--color-purple-text`.
+  - O texto vai **inteiro**, quebrando linha, sem reticências. Os avisos têm menos de 100 caracteres.
+  - Se o backend mandar a data do evento, ela vai no fim em Secondary tabular, por exemplo "· 22/11".
+  - No celular, o mesmo, ocupando a largura do cartão.
+- **Na visão Compacta e na Tabela:** selo curto `badge badge-purple badge-aviso` com o texto "Aviso", ao lado do selo de status (depois dele). O texto completo vai no `title` e num `.sr-only` logo depois do selo ("Aviso dos Correios: …").
+- **Faixa de ação:** um chip roxo `.action-chip[data-filter="com_aviso"]`, depois de "Aguardando retirada", com "**N** Com aviso" (singular e plural iguais). O `title` é "Pedidos em aberto com aviso dos Correios, como atraso previsto na entrega".
+  - O chip só aparece com N > 0. Aviso é informação, não ação, e não deve ocupar a faixa zerado.
+  - A linha calma ("Nada atrasado nem aguardando retirada") só aparece quando atrasados, retiradas e avisos são todos zero. Se só houver aviso, a faixa normal aparece com os dois chips zerados e o chip de aviso.
+- **Filtro:** `.filter-pill[data-filter="com_aviso"]` com o rótulo "Com aviso", o ícone `i-info` e `.pill-count`, logo depois de "Aguardando retirada". O estilo é o mesmo dos outros filtros (neutro, com Azul Ação quando ativo), sem roxo.
+  - Zerado: borda tracejada e não filtra (The Zero Is Calm Rule).
+  - Estado vazio: o `.empty-state` padrão, com check verde e o texto "Nenhum pedido em aberto com aviso dos Correios."
 
 ### Tabelas (`.orders-table`, `.table-wrapper`)
 - Contêiner com fundo Superfície, borda `--color-border`, raio de 10px.

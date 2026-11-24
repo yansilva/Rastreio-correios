@@ -46,6 +46,10 @@ class ObjetoRastreio:
     is_devolvido: bool = False
     is_postado: bool = False
     is_retirada: bool = False
+    # Texto do aviso mais recente dos Correios (aviso não muda o status); '' quando não há
+    aviso_texto: str = ""
+    # Data (ISO, como vem da API) do aviso mais recente; '' quando não há
+    aviso_data: str = ""
     data_postagem_dt: datetime | None = None
     data_entrega_dt: datetime | None = None
     data_devolucao_dt: datetime | None = None

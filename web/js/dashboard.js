@@ -13,6 +13,7 @@ var STATUS_LABELS = {
     'entregue': 'Entregues',
     'atrasado': 'Atrasados',
     'aguardando_retirada': 'Aguardando retirada',
+    'com_aviso': 'Com aviso',
     'devolvido': 'Devolvidos ao Remetente',
 };
 
@@ -30,6 +31,7 @@ function updateClearButton() {
 var MENSAGENS_VAZIO = {
     'atrasado': 'Nenhum pedido atrasado. Tudo dentro do prazo.',
     'aguardando_retirada': 'Nenhum objeto aguardando retirada.',
+    'com_aviso': 'Nenhum pedido em aberto com aviso dos Correios.',
 };
 
 function preencherVazio(caixa, termo) {
@@ -99,6 +101,8 @@ function definirVisao(modo) {
     marcarVisao(modo);
     listaPedidos.classList.toggle('is-compact', modo === 'compacta');
     listaPedidos.hidden = modo === 'tabela';
+    // Selo "Aviso" só nas visões Compacta e Tabela: na de cartões o aviso já aparece na própria linha
+    sincronizarSelosAviso(modo !== 'cartoes');
     // Na tabela a ordem vem dos cabeçalhos: o select "Ordenar por" some para não haver dois controles de ordem
     document.body.classList.toggle('view-tabela', modo === 'tabela');
     // Na compacta o histórico fica escondido (CSS): o controle "Expandir históricos" também some ali
@@ -122,6 +126,38 @@ function textoDe(elemento) {
     return elemento ? elemento.textContent.replace(/\s+/g, ' ').trim() : '';
 }
 
+// Aviso dos Correios: nas visões Compacta e Tabela, o cartão com aviso ganha um selo curto "Aviso" depois do
+// selo de status. O texto completo vai no title e num .sr-only (o selo sozinho não diz o que é o aviso).
+function criarSeloAviso(texto) {
+    var selo = document.createElement('span');
+    selo.className = 'badge badge-purple badge-aviso';
+    selo.textContent = 'Aviso';
+    selo.setAttribute('title', texto);
+    var descricao = document.createElement('span');
+    descricao.className = 'sr-only';
+    descricao.textContent = 'Aviso dos Correios: ' + texto;
+    return [selo, descricao];
+}
+
+function sincronizarSelosAviso(mostrar) {
+    document.querySelectorAll('.order-card[data-aviso="1"]').forEach(function(card) {
+        var seloAntigo = card.querySelector('.badge-aviso');
+        if (seloAntigo) {
+            var descricaoAntiga = seloAntigo.nextElementSibling;
+            if (descricaoAntiga && descricaoAntiga.classList.contains('sr-only')) descricaoAntiga.parentNode.removeChild(descricaoAntiga);
+            seloAntigo.parentNode.removeChild(seloAntigo);
+        }
+        var seloStatus = card.querySelector('.badge');
+        if (!mostrar || !seloStatus) return;
+        // Depois do selo de status e da descrição dele (.sr-only), para a leitura seguir: status, aviso
+        var ancora = seloStatus.nextElementSibling;
+        if (!(ancora && ancora.classList.contains('sr-only'))) ancora = seloStatus;
+        var partes = criarSeloAviso(textoDe(card.querySelector('.order-aviso-texto')));
+        ancora.insertAdjacentElement('afterend', partes[0]);
+        partes[0].insertAdjacentElement('afterend', partes[1]);
+    });
+}
+
 function linhasDaTabela() {
     var linhas = [];
     document.querySelectorAll('.order-card:not(.order-hidden)').forEach(function(card) {
@@ -137,6 +173,7 @@ function linhasDaTabela() {
             status: textoDe(selo),
             urgencia: urgenciaDe(card),
             classeSelo: selo ? selo.className : 'badge',
+            avisoTexto: card.getAttribute('data-aviso') === '1' ? textoDe(card.querySelector('.order-aviso-texto')) : null,
             idade: isNaN(dias) ? null : dias,
             idadeTexto: textoDe(card.querySelector('.order-age')) || '—',
             tiny: tiny,
@@ -265,6 +302,9 @@ function atualizarTabela() {
         selo.className = l.classeSelo;
         selo.textContent = l.status || '—';
         tdStatus.appendChild(selo);
+        if (l.avisoTexto !== null) {
+            criarSeloAviso(l.avisoTexto).forEach(function(no) { tdStatus.appendChild(no); });
+        }
         tr.appendChild(tdStatus);
         tr.appendChild(celula(l.idadeTexto.replace(/^Último evento\s*/, '') || '—', 'Último evento'));
         tr.appendChild(celula(l.tiny || '—', 'Tiny'));
@@ -405,7 +445,7 @@ function restaurarFiltro() {
     try {
         var salvo = JSON.parse(sessionStorage.getItem('painel.filtro') || 'null');
         if (!salvo) return;
-        var statusValidos = ['nao_enviado', 'em_transito', 'entregue', 'atrasado', 'aguardando_retirada', 'devolvido'];
+        var statusValidos = ['nao_enviado', 'em_transito', 'entregue', 'atrasado', 'aguardando_retirada', 'com_aviso', 'devolvido'];
         if (statusValidos.indexOf(salvo.status) !== -1) activeStatusFilter = salvo.status;
         if (typeof salvo.busca === 'string') {
             currentSearchTerm = salvo.busca;
