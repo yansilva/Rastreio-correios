@@ -377,7 +377,7 @@ class FreteReportGenerator:
         h1 {{
             margin: 0;
             font-size: 1.75rem;
-            font-weight: 800;
+            font-weight: 600;
             letter-spacing: -0.025em;
             color: var(--color-primary);
         }}
@@ -413,7 +413,7 @@ class FreteReportGenerator:
         /* Navegação por abas: mesmo markup e estilo do painel (.nav-tabs/.nav-tab) */
         .nav-tabs {{
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 10px;
             margin: 18px 0 16px 0;
             flex-wrap: wrap;
@@ -618,7 +618,7 @@ class FreteReportGenerator:
             animation: fadeIn 0.4s ease forwards;
         }}
         .summary-card:nth-child(2) {{ animation-delay: 0.1s; }}
-        .summary-number {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; }}
+        .summary-number {{ font-size: 1.75rem; font-weight: 600; line-height: 1.1; }}
         .summary-label {{ font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; margin-top: 6px; }}
         .num-blue {{ color: var(--color-primary); }}
         [data-theme="dark"] .num-blue {{ color: var(--color-link); }}
@@ -653,8 +653,8 @@ class FreteReportGenerator:
         }}
         .pedido-left {{ display: flex; flex-direction: column; gap: 4px; }}
         .pedido-linha {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }}
-        .pedido-numero {{ font-weight: 700; font-size: 1.25rem; }}
-        .pedido-valor {{ font-size: 1rem; font-weight: 700; color: var(--color-text-main); }}
+        .pedido-numero {{ font-weight: 600; font-size: 1.25rem; }}
+        .pedido-valor {{ font-size: 1rem; font-weight: 600; color: var(--color-text-main); }}
         .pedido-cliente {{ color: var(--color-text-muted); font-size: 0.875rem; }}
         .pedido-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }}
         .pedido-badge {{
@@ -662,10 +662,10 @@ class FreteReportGenerator:
             color: var(--color-badge-fg);
             border: 1px solid var(--color-badge-border);
             padding: 2px 10px;
-            border-radius: var(--radius-full);
+            border-radius: var(--radius-sm);
             font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
+            font-weight: 600;
+            text-transform: none;
             letter-spacing: 0.05em;
         }}
         .pedido-destino {{
@@ -701,14 +701,14 @@ class FreteReportGenerator:
         .servicos-grid + .servicos-indisponiveis {{ padding-top: 0; }}
         .pedido-header + .servicos-indisponiveis {{ padding-top: 16px; }}
         .servico-nome {{
-            font-weight: 800;
+            font-weight: 600;
             font-size: 1rem;
             margin-bottom: 8px;
             color: var(--color-text-main);
         }}
         .servico-preco {{
             font-size: 1.25rem;
-            font-weight: 800;
+            font-weight: 600;
             color: var(--color-text-main);
             margin-bottom: 4px;
         }}
@@ -1201,11 +1201,11 @@ _ALERT_JS_TEMPLATE = r"""(function() {
         'margin-bottom:14px;border-radius:9999px;background:var(--af-warn-bg);color:var(--af-warn);}',
         '.af-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.75;',
         'stroke-linecap:round;stroke-linejoin:round;}',
-        '.af-title{margin:0 0 8px;font-size:1.25rem;font-weight:700;line-height:1.6;color:var(--af-text);}',
+        '.af-title{margin:0 0 8px;font-size:1.25rem;font-weight:600;line-height:1.6;color:var(--af-text);}',
         '.af-text{margin:0 0 22px;font-size:1rem;line-height:1.6;color:var(--af-muted);}',
         '.af-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}',
         '.af-btn{box-sizing:border-box;min-height:44px;min-width:44px;padding:10px 22px;',
-        'border-radius:9999px;font:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;',
+        'border-radius:9999px;font:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;',
         'border:1px solid var(--af-border);background:transparent;color:var(--af-text);}',
         '.af-btn:hover{background:var(--af-hover);}',
         '.af-btn-primary{border-color:var(--af-primary);background:var(--af-primary);color:var(--af-on-primary);}',

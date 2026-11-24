@@ -330,7 +330,8 @@ class TestDescricoesStatus(unittest.TestCase):
             with self.subTest(chave=chave):
                 self.assertTrue(texto.strip())
                 self.assertLessEqual(len(texto), 70)
-                self.assertTrue(texto.endswith("."))
+                # O título do chip de aviso segue o DESIGN.md, sem ponto final
+                self.assertTrue(texto.endswith(".") or chave == "com_aviso")
 
     def test_legenda_e_faixa_usam_o_mesmo_texto(self):
         self.assertIn(DESCRICAO_STATUS["atrasado"], faixa_acao(1, 1))

@@ -162,9 +162,21 @@ class TestFaixaComAviso(unittest.TestCase):
     def test_chip_so_aparece_com_avisos_positivos(self):
         self.assertNotIn("com_aviso", faixa_acao(3, 1, 0))
 
-    def test_linha_calma_so_quando_os_tres_sao_zero(self):
+    def test_linha_calma_sem_atraso_nem_retirada(self):
         self.assertIn("Nada atrasado nem aguardando retirada", faixa_acao(0, 0, 0))
-        self.assertNotIn("Nada atrasado", faixa_acao(0, 0, 1))
+        self.assertNotIn("com_aviso", faixa_acao(0, 0, 0))
+
+    def test_so_aviso_mostra_linha_calma_com_chip_e_sem_precisam_de_acao(self):
+        # Decisão do usuário (17ª crítica): aviso não pede ação, então não há "Precisam de ação"
+        faixa = faixa_acao(0, 0, 1)
+        self.assertIn("Nada atrasado nem aguardando retirada", faixa)
+        self.assertIn('data-filter="com_aviso"', faixa)
+        self.assertNotIn("Precisam de ação", faixa)
+        self.assertNotIn("action-strip-title", faixa)
+
+    def test_com_atraso_ou_retirada_mantem_precisam_de_acao(self):
+        self.assertIn("Precisam de ação", faixa_acao(1, 0, 1))
+        self.assertIn("Precisam de ação", faixa_acao(0, 2, 0))
 
 
 class TestPainelComCache(unittest.TestCase):
@@ -195,7 +207,7 @@ class TestPainelComCache(unittest.TestCase):
 
         self.assertRegex(html, r"<strong>1</strong> (?:<span[^>]*>)?Com aviso")
         # O filtro fica na barra depois de "Aguardando retirada" (zerado, quando não há aviso)
-        self.assertRegex(html, r'data-filter="aguardando_retirada".*?data-filter="com_aviso"')
+        self.assertRegex(html, r'(?s)data-filter="aguardando_retirada".*?data-filter="com_aviso"')
         cartoes = {}
         for bloco in re.split(r'(?=<div class="order-card)', html)[1:]:
             cartoes[re.search(r'data-pedido="(\d+)"', bloco).group(1)] = bloco

@@ -30,7 +30,7 @@ No cartão do pedido com aviso, e enquanto ele não foi entregue nem devolvido:
    - texto em `var(--color-purple-text)`, 13px; `strong` em peso 600; quebra normal, sem `text-overflow`;
    - `.order-aviso-data` em Secondary e `tabular-nums`;
    - nada de valor fixo de cor: o tema escuro vem dos tokens.
-2. `.action-chip[data-filter="com_aviso"]`: fundo, borda e texto da família roxa, com o mesmo tamanho e raio dos outros chips (32px; 44px no celular).
+2. `.action-chip[data-filter="com_aviso"]`: **substituído na 17ª crítica.** Agora vale o DESIGN.md, seção "Faixa de ação": chip contornado, roxo só no ícone e no número, fundo roxo só quando ativo, `title` "Pedidos ainda não entregues com aviso dos Correios".
 3. `.filter-pill[data-filter="com_aviso"]`: nenhum CSS novo; o estilo é o mesmo dos outros filtros.
 4. JS:
    - `STATUS_LABELS.com_aviso = 'Com aviso'`;

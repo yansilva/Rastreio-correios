@@ -907,7 +907,7 @@ class TestFreteReportGenerator(unittest.TestCase):
         self.assertIn('<span class="pedido-valor">R$ 150,00</span>', html)
         regra = re.search(r"\n\s*\.pedido-valor \{([^}]*)\}", html)
         self.assertIsNotNone(regra)
-        self.assertIn("font-weight: 700", regra.group(1))
+        self.assertIn("font-weight: 600", regra.group(1))
         self.assertIn("font-size: 1rem", regra.group(1))
         self.assertIn("var(--color-text-main)", regra.group(1))
 

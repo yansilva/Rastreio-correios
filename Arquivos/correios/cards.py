@@ -31,7 +31,7 @@ DESCRICAO_STATUS = {
     "nao_enviado": "Pedido ainda não foi postado.",
     "entregue": "Objeto entregue ao destinatário.",
     "devolvido": "Objeto voltou ao remetente.",
-    "com_aviso": "Pedido com aviso dos Correios que ainda não foi entregue.",
+    "com_aviso": "Pedidos ainda não entregues com aviso dos Correios",
 }
 
 
@@ -211,13 +211,10 @@ def zero(numero: int) -> str:
 
 
 def faixa_acao(atrasados: int, retiradas: int, avisos: int = 0) -> str:
-    """Faixa 'Precisam de ação': botões de filtro, ou uma linha calma quando não há nada a fazer."""
-    if atrasados == 0 and retiradas == 0 and avisos == 0:
-        return (
-            '<section class="action-strip action-strip-ok" aria-label="Pedidos que precisam de ação">'
-            '<svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg>'
-            "<span>Nada atrasado nem aguardando retirada</span></section>"
-        )
+    """Faixa de ação: 'Precisam de ação' com os chips quando há atraso ou retirada; sem isso, uma linha calma.
+
+    Aviso não pede ação: com só aviso, a faixa é a linha calma e o chip "Com aviso" fica ao lado dela.
+    """
 
     def chip(filtro: str, icone: str, titulo: str, numero: int, rotulo: str, curto: str = "") -> str:
         # Com rótulo curto, o longo fica num trecho que o CSS esconde no celular (sr-only): o leitor de tela lê o nome completo
@@ -234,12 +231,27 @@ def faixa_acao(atrasados: int, retiradas: int, avisos: int = 0) -> str:
             f"<strong>{numero}</strong> {texto}</button>"
         )
 
+    chip_aviso = (
+        chip("com_aviso", "info", DESCRICAO_STATUS["com_aviso"], avisos, "Com aviso", "Aviso") if avisos > 0 else ""
+    )
+
+    if atrasados == 0 and retiradas == 0:
+        return (
+            '<section class="action-strip action-strip-ok" aria-label="Situação dos pedidos">'
+            '<svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg>'
+            # No celular cabe só "Nada atrasado" (o longo fica para o leitor de tela), para o chip de aviso caber na linha
+            '<span class="rotulo-longo">Nada atrasado nem aguardando retirada</span>'
+            '<span class="rotulo-curto" aria-hidden="true">Nada atrasado</span>'
+            + chip_aviso
+            + "</section>"
+        )
+
     return (
         '<section class="action-strip" aria-label="Pedidos que precisam de ação">'
         '<span class="action-strip-title">Precisam de ação</span>'
         + chip("atrasado", "clock", DESCRICAO_STATUS["atrasado"], atrasados, "Atrasados")
         + chip("aguardando_retirada", "building", DESCRICAO_STATUS["aguardando_retirada"], retiradas, "Aguardando retirada", "Retirada")
-        + (chip("com_aviso", "info", DESCRICAO_STATUS["com_aviso"], avisos, "Com aviso", "Aviso") if avisos > 0 else "")
+        + chip_aviso
         + "</section>"
     )
 

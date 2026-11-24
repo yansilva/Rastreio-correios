@@ -296,8 +296,22 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 
 ### Faixa de ação (`.action-strip`)
 - Fundo Superfície, borda `--color-border`, raio de 10px, 8×12px de espaço interno. Título "Precisam de ação" em Secondary, Tinta Discreta, sem caixa-alta.
-- **Chips (`.action-chip`):** raio de 6px, 32px (44px no celular), fundo e borda da cor do status com o número em peso 600.
+- **Borda sempre neutra** (decisão de 2026-11-24, 17ª crítica): a faixa nunca fica com borda vermelha, nem com atraso. Quem mostra a urgência é o chip de atraso, com ícone e número em vermelho. Uma borda de alarme no contêiner repete o chip e, quando fica fixa, dá alarme falso (acontecia com 0 atrasados).
+- **Chips (`.action-chip`), todos no mesmo molde contornado:**
+  - fundo transparente, borda de 1px `--color-border-strong`, raio de 6px;
+  - rótulo em Secondary (13px, peso 500, Tinta);
+  - número em 13px, peso 600, tabular;
+  - altura de 38px no desktop (aceita pelo coordenador) e 44px no celular.
+- **Cor só no ícone e no número:** vermelho (`--color-danger`) no atraso, âmbar (`--color-warning-text`) na retirada e roxo (`--color-purple-text`) no aviso.
+  - Zerado: Tinta Sutil e borda tracejada.
+  - Nenhum chip tem fundo tingido em repouso, para a informação (aviso) não pesar mais que a urgência (atraso).
+- **Ativo:** fundo tingido da família do chip, com borda na cor do texto.
+  - O atraso e a retirada seguem o Azul Ação de hoje (`--color-primary-light` e `--color-primary`).
+  - O aviso usa `--color-purple-bg` e borda `--color-purple-text`.
+  - Hover: fundo Superfície 2.
 - **Calma:** "Nada atrasado nem aguardando retirada" numa linha, fundo `--color-success-bg`, texto `--color-success-text`, ícone de check, 8×12px.
+  - Com aviso (decisão do usuário, 2026-11-24): a linha calma continua e o chip "**N** Com aviso" fica na mesma linha, encostado à direita (`margin-left: auto`) no desktop. É o mesmo chip contornado, sobre o fundo Superfície, para não se misturar ao verde.
+  - No celular, para caber numa linha só, o texto calmo usa o padrão de rótulo longo e curto dos chips: longo em `.sr-only`, curto "Nada atrasado" com `aria-hidden`, e o chip "**N** Aviso" ao lado.
 - **Celular:** o título sai da tela (sr-only) e os chips ficam lado a lado, cada um do tamanho do texto.
 
 ### Resumo (`.dash-card`, `.summary-card`)
@@ -340,11 +354,15 @@ Evento informativo dos Correios, como "Sua entrega ou retirada nos Correios pode
   - Conteúdo: ícone `i-info` de 16px (círculo com "i", que não é o triângulo de alerta), na cor do texto; rótulo "Aviso dos Correios" em 13px peso 600; depois o texto do aviso em 13px peso 400. Tudo em `--color-purple-text`.
   - O texto vai **inteiro**, quebrando linha, sem reticências. Os avisos têm menos de 100 caracteres.
   - Se o backend mandar a data do evento, ela vai no fim em Secondary tabular, por exemplo "· 22/11".
+  - No celular (até 640px), a data vai logo depois do rótulo: "Aviso dos Correios · 24/11" na primeira linha e o texto do aviso inteiro na linha de baixo, alinhado ao rótulo. A data não fica solta à direita.
   - No celular, o mesmo, ocupando a largura do cartão.
 - **Na visão Compacta e na Tabela:** selo curto `badge badge-purple badge-aviso` com o texto "Aviso", ao lado do selo de status (depois dele). O texto completo vai no `title` e num `.sr-only` logo depois do selo ("Aviso dos Correios: …").
-- **Faixa de ação:** um chip roxo `.action-chip[data-filter="com_aviso"]`, depois de "Aguardando retirada", com "**N** Com aviso" (singular e plural iguais). O `title` é "Pedidos em aberto com aviso dos Correios, como atraso previsto na entrega".
+- **Faixa de ação:** o chip `.action-chip[data-filter="com_aviso"]` fica depois de "Aguardando retirada", com "**N** Com aviso" (no celular, "**N** Aviso"; singular e plural iguais).
+  - Segue o molde contornado da faixa: roxo só no ícone e no número, e fundo roxo só quando ativo.
+  - `title` final, que vale para o frontend: **"Pedidos ainda não entregues com aviso dos Correios"**.
   - O chip só aparece com N > 0. Aviso é informação, não ação, e não deve ocupar a faixa zerado.
-  - A linha calma ("Nada atrasado nem aguardando retirada") só aparece quando atrasados, retiradas e avisos são todos zero. Se só houver aviso, a faixa normal aparece com os dois chips zerados e o chip de aviso.
+  - Sem atraso e sem retirada, a faixa é a linha calma com o chip de aviso ao lado (ver "Faixa de ação"). Com atraso ou retirada, a faixa normal aparece com o chip de aviso no fim.
+- **Ordem da lista:** o aviso não muda a ordem por urgência (decisão do usuário, 2026-11-24).
 - **Filtro:** `.filter-pill[data-filter="com_aviso"]` com o rótulo "Com aviso", o ícone `i-info` e `.pill-count`, logo depois de "Aguardando retirada". O estilo é o mesmo dos outros filtros (neutro, com Azul Ação quando ativo), sem roxo.
   - Zerado: borda tracejada e não filtra (The Zero Is Calm Rule).
   - Estado vazio: o `.empty-state` padrão, com check verde e o texto "Nenhum pedido em aberto com aviso dos Correios."
@@ -367,14 +385,14 @@ Evento informativo dos Correios, como "Sua entrega ou retirada nos Correios pode
 
 ### Controles da lista (`.search-row`, `.list-meta`, `.filters-row`)
 - **Desktop:** busca e contador; filtros; "Limpar filtros", visão (Cartões, Compacta, Tabela) e Opções. Alvos de 32–40px.
-- **Visão (segmentado):** contêiner com raio de 8px e borda `--color-border-strong`; segmento ativo com fundo Superfície 2, texto Tinta e anel interno de 1px em `--color-border-strong`, sem azul. No celular, a Tabela fica desativada com borda tracejada.
+- **Visão (segmentado):** contêiner com raio de 8px (`--radius-md`), 2px de espaço interno e borda `--color-border-strong`; cada segmento com raio de 6px (`--radius-sm`), nunca pílula (`--radius-full`). No celular, o segmento tem pelo menos 44×44px e 0×8px de espaço interno, para o texto não encostar no contorno. Segmento ativo com fundo Superfície 2, texto Tinta e anel interno de 1px em `--color-border-strong`, sem azul. No celular, a Tabela fica desativada com borda tracejada.
 - **Celular:** a mesma grade de hoje (busca recolhida, contador, visão e Opções numa linha; ao abrir, a busca ocupa a linha).
 - **Opções:** menu com raio de 10px e borda `--color-border`; seletor de ordem, "Recarregar dados salvos de HH:MM" e "Expandir históricos".
 - **Atalhos:** `/` foca a busca e Esc limpa.
 
 ### Página Entregues (`entregues_semana.html`)
 - Semana atual e anterior do histórico local (`Arquivos/entregas_historico.json`, fora do git), gerada por `Arquivos/correios/pagina_entregues.py`.
-- **Seletor de semana (`.entregues-seletor`):** controle segmentado da Visão; o intervalo "(dd/mm–dd/mm)" não quebra.
+- **Seletor de semana (`.entregues-seletor`):** controle segmentado da Visão, com os mesmos raios (8px no contêiner e 6px no segmento); o intervalo "(dd/mm–dd/mm)" não quebra.
 - **Resumo:** três cartões (total, média de dias, mais demorado). O rótulo do mais demorado quebra depois de "Mais demorado"; só "10,0&nbsp;dias" fica junto.
 - **Lista:** tabela com Pedido, Cliente, Rastreio (mono, com "Copiar rastreio"), Cidade, Postado em, Entregue em e Dias. No celular vira cartões, com Cidade e Postado em ocultos na tela e presentes para o leitor de tela.
 - **Dias:** acima de 7 dias, `.dias-badge.urgencia-baixa` (âmbar, decisão do usuário).

@@ -91,7 +91,7 @@
     margin-bottom: 14px;
     padding: 8px 12px;
     background: var(--color-surface);
-    border: 1px solid var(--color-danger-border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
 }
 
@@ -107,11 +107,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 36px;
+    min-height: 38px;
     padding: 6px 14px;
     font: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.8125rem;
+    font-weight: 500;
     color: var(--color-text-main);
     background: transparent;
     border: 1px solid var(--color-border-strong);
@@ -124,9 +124,10 @@
     color: var(--color-danger);
 }
 
+/* Número com o tamanho do rótulo e peso 600 (DESIGN.md: peso máximo 600) */
 .action-chip strong {
-    font-size: 1rem;
-    font-weight: 800;
+    font-size: inherit;
+    font-weight: 600;
     color: var(--color-danger);
 }
 
@@ -150,6 +151,12 @@
     font-weight: 600;
 }
 
+/* Calma com aviso: o chip fica sobre a Superfície (não se mistura ao verde) e encostado à direita */
+.action-strip-ok .action-chip {
+    background: var(--color-surface);
+    margin-left: auto;
+}
+
 .action-chip:hover {
     border-color: var(--color-primary);
     background: var(--color-primary-light);
@@ -165,19 +172,13 @@
     background: var(--color-primary-light);
 }
 
-/* Aviso dos Correios: família roxa, nunca âmbar nem vermelho (é informação, não alarme) */
-.action-chip[data-filter="com_aviso"] {
-    background: var(--color-purple-bg);
-    border-color: var(--color-purple-border);
-    color: var(--color-purple-text);
-}
-
+/* Aviso dos Correios: mesmo molde contornado dos outros chips. Roxo só no ícone e no número (família do aviso,
+   nunca âmbar nem vermelho). O fundo roxo aparece só quando o filtro está ativo. */
 .action-chip[data-filter="com_aviso"] .icon,
 .action-chip[data-filter="com_aviso"] strong {
     color: var(--color-purple-text);
 }
 
-.action-chip[data-filter="com_aviso"]:hover,
 .action-chip[data-filter="com_aviso"].active {
     background: var(--color-purple-bg);
     border-color: var(--color-purple-text);
@@ -1651,6 +1652,20 @@ h1 .icon {
         gap: 4px;
         padding: 6px 8px;
     }
+
+    /* Aviso no celular: a data fica logo depois do rótulo ("Aviso dos Correios · 24/11") e o texto desce para a linha de baixo */
+    .order-aviso-texto {
+        order: 2;
+        flex-basis: 100%;
+    }
+
+    .order-aviso-data {
+        order: 1;
+    }
+
+    .order-aviso-data::before {
+        content: "· ";
+    }
 }
 
 /* Desktop: o rótulo curto não aparece */
@@ -2055,14 +2070,14 @@ h1 .icon {
     padding: 2px;
     background: var(--color-surface);
     border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-md);
 }
 
 .view-option {
     min-height: 40px;
     padding: 6px 14px;
     border: 0;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--color-text-muted);
     font: inherit;
@@ -2400,14 +2415,14 @@ main.orders-list {
     margin-bottom: 20px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-md);
 }
 
 .entregues-seletor button {
     min-height: 40px;
     padding: 8px 16px;
     border: 0;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--color-text-muted);
     font: inherit;
@@ -2657,6 +2672,22 @@ main.orders-list {
     font-weight: 500;
 }
 
+/* Desktop: as oito pílulas cabem numa linha sem rolagem (1440px). Os zeradas, no fim, levam o menor espaçamento */
+@media (min-width: 641px) {
+    .filter-pills {
+        gap: 4px;
+    }
+
+    .filter-pill {
+        gap: 4px;
+        padding: 6px 9px;
+    }
+
+    .filter-pill[aria-disabled="true"] {
+        padding: 6px 6px;
+    }
+}
+
 /* Busca: 40px, raio de 8px e borda forte */
 .search-input {
     min-height: 40px;
@@ -2792,6 +2823,15 @@ b,
     }
 
     .search-input {
+        min-height: 44px;
+    }
+}
+
+/* Segmentados no celular (Visão e Entregues): cada segmento com alvo de toque de 44×44 (DESIGN.md) */
+@media (max-width: 640px) {
+    .view-option,
+    .entregues-seletor button {
+        min-width: 44px;
         min-height: 44px;
     }
 }
