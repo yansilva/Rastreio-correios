@@ -322,6 +322,7 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 ### Cartões de pedido (`.order-card`)
 - Fundo Superfície, borda `--color-border`, raio de 10px, sem sombra; hover com borda forte e `--shadow-md`.
 - **Cabeçalho (`.order-header`):** fundo Superfície (não mais cinza) e borda inferior de 1px; 14×16px. À esquerda, "#43122" e o cliente em Title; abaixo, o rastreio em mono 13px. À direita, o selo, "Último evento hoje" e "Copiar rastreio".
+- **Situação no Tiny (`.order-tiny-status`):** só aparece quando a situação do Tiny diverge do status dos Correios (decisão do usuário, 2026-11-24). Quando confirma o que os Correios já dizem (por exemplo, "Enviado" com o pedido em trânsito), a linha não é renderizada. Quem decide se diverge é o backend (`Arquivos/correios/cards.py`); o frontend não esconde por CSS. O selo "Tiny desatualizado" continua para a divergência que pede ação.
 - **Evento:** data em Secondary tabular, texto em Body, local em peso 600.
 - **Timeline:** trilho de 3px em `--color-border`, bolinha de 10px. Evento crítico pinta bolinha e trilho na cor do status, sem fundo tingido.
 - **Encerrados (`.order-closed`):** título em Tinta Discreta, no fim da lista.
@@ -396,6 +397,8 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 Superfícies em grafite frio: `--color-bg` #0e1116, `--color-surface` #151a21, `--color-surface-hover` e `--color-header-bg` #1b212a, `--color-border` #262d38, `--color-border-strong` #6b7585 (3,75:1 na superfície; 4,06:1 no fundo), `--color-text-main` #e8ebf0 (14,6:1), `--color-text-muted` #a3adbb (7,70:1; 7,13:1 na Superfície 2), `--color-text-subtle` #8a94a3 (5,70:1), `--color-primary` #2f62e6 (5,24:1 com branco), `--color-primary-hover` #2552c4, `--color-primary-light` #1b2333, `--color-link` #8db0ff (8,14:1).
 
 Status (sem mudança): textos `--color-warning-text` #fbbf24, `--color-high-text` #fb923c, `--color-danger` #f87171, `--color-success-text` #4ade80, `--color-info-text` #38bdf8, `--color-purple-text` #c084fc sobre fundos a 15% de opacidade. Medido sobre #151a21: 8,63, 6,56, 5,72, 8,25, 6,92 e 5,91:1; sobre #1b212a, o menor é 5,32:1 (vermelho).
+
+Bordas de status no escuro (definidas em 2026-11-24, 16ª crítica): a cor do texto do mesmo status a 35%, para a borda nunca ficar mais clara que o texto. `--color-success-border: rgba(74, 222, 128, .35)`, `--color-warning-border: rgba(251, 191, 36, .35)`, `--color-danger-border: rgba(248, 113, 113, .35)`, `--color-info-border: rgba(56, 189, 248, .35)`, `--color-purple-border: rgba(192, 132, 252, .35)`. Valem para selos, chips da faixa de ação e a faixa calma. Antes, esses tokens não tinham valor no escuro e herdavam o pastel do claro (#bbf7d0, #fde68a, #fecaca, #bae6fd, #e9d5ff), o que fazia um halo claro em volta do selo. Regra: todo token usado no claro precisa de valor próprio no escuro.
 
 Console fica escuro nos dois temas (`--console-*`, `--log-*`).
 

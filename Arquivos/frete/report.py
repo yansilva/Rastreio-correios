@@ -246,7 +246,7 @@ class FreteReportGenerator:
                 </div>
                 <div class="pedido-right">
                     {badge_html}
-                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP {cep_fmt}</span>
+                    <span class="pedido-destino">{icone("map-pin")} {pedido.get('destino_label', '—')} · CEP <span class="cep">{cep_fmt}</span></span>
                 </div>
             </div>
             {grid_html}{nota_html}
@@ -373,7 +373,7 @@ class FreteReportGenerator:
         .skip-link:focus {{ top: 12px; }}
         .skip-link:focus-visible {{ outline: 2px solid #ffffff; outline-offset: 2px; }}
         #conteudo:focus {{ outline: none; }}
-        header {{ position: relative; text-align: center; margin-bottom: 30px; }}
+        header {{ position: relative; text-align: left; margin-bottom: 30px; }}
         h1 {{
             margin: 0;
             font-size: 1.75rem;
@@ -419,9 +419,9 @@ class FreteReportGenerator:
             flex-wrap: wrap;
         }}
         .nav-tab {{
-            padding: 9px 18px;
-            min-height: 44px;
-            border-radius: var(--radius-full);
+            padding: 0 12px;
+            min-height: 40px;
+            border-radius: 0;
             text-decoration: none;
             font-weight: 600;
             font-size: 0.875rem;
@@ -579,11 +579,12 @@ class FreteReportGenerator:
         }}
         .search-input {{
             width: 100%;
-            padding: 14px 18px 14px 46px;
+            height: 40px;
+            padding: 10px 14px 10px 44px;
             font-size: 1rem;
             font-family: inherit;
             border: 1px solid var(--color-border-strong);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             background: var(--color-surface);
             color: var(--color-text-main);
             outline: none;
@@ -610,8 +611,8 @@ class FreteReportGenerator:
         .summary-card {{
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: 18px 20px;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
             box-shadow: var(--shadow-sm);
             text-align: center;
             animation: fadeIn 0.4s ease forwards;
@@ -630,7 +631,7 @@ class FreteReportGenerator:
         .pedido-card {{
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             margin-bottom: 20px;
             overflow: hidden;
             box-shadow: var(--shadow-md);
@@ -725,12 +726,12 @@ class FreteReportGenerator:
             background: var(--color-badge-bg);
             color: var(--color-badge-fg);
             border: 1px solid var(--color-badge-border);
-            padding: 2px 10px;
-            border-radius: var(--radius-full);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
             font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: 0;
         }}
         /* Selo com ícone: etiqueta = mais barato, raio = mais rápido (cor do texto, sem verde) */
         .servico-selo .icon {{ width: 0.95em; height: 0.95em; vertical-align: 0; }}
@@ -849,7 +850,7 @@ class FreteReportGenerator:
                 min-height: 44px;
                 padding: 6px 14px;
                 text-align: left;
-                border-radius: var(--radius-sm);
+                border-radius: var(--radius-md);
             }}
             /* Mais barato: realce sutil na borda esquerda, na cor de destaque (sem verde) */
             .servico-nome {{ margin: 0; font-size: 0.875rem; }}
@@ -909,12 +910,16 @@ class FreteReportGenerator:
         .nav-tab.active, .nav-tab.active:hover {{ color: var(--color-text-main); font-weight: 600; background: transparent; box-shadow: inset 0 -2px 0 var(--color-primary); }}
         .nav-tab.active::after {{ display: none; }}
         .btn-theme, .btn-limpar {{ border-radius: var(--radius-md); box-shadow: none; transform: none; }}
-        .summary-card {{ border-radius: var(--radius-lg); box-shadow: none; animation: none; }}
+        .summary-card {{ border-radius: var(--radius-md); box-shadow: none; animation: none; }}
         .summary-card:hover {{ border-color: var(--color-border-strong); box-shadow: var(--shadow-md); transform: none; }}
         .summary-number {{ font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }}
         .summary-label {{ font-size: 0.8125rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--color-text-muted); }}
         .rotulo-curto {{ display: none; }}
-        .pedido-card {{ border-radius: var(--radius-lg); box-shadow: none; animation: none; }}
+        .pedido-card {{ border-radius: var(--radius-md); box-shadow: none; animation: none; }}
+        /* CEP em monoespaçada (Mesa Limpa): dados de rastreio e endereço ficam com a fonte de código */
+        .cep {{ font-family: var(--font-mono); }}
+        /* Pesos: no máximo 600 (DESIGN.md, "Hierarchy") */
+        strong, b {{ font-weight: 600; }}
         .pedido-card:hover {{ border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }}
         .servico-card {{ border-radius: var(--radius-md); }}
         .servico-preco {{ font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }}

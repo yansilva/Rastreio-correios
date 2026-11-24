@@ -24,4 +24,5 @@
 - 2026-11-13 · Sanitização de corpo de erro: a regra "chave: valor" não basta para `Bearer <segredo>` dentro de um JSON; o valor depois de `Bearer` vaza. Aplique primeiro a regra de `Bearer <valor>` e depois a de chave. Teste com o caso real que vaza: `"authorization":"Bearer ABC.def-9"`.
 - 2026-11-13 · Resposta de API que não é dict quebra o `.get` antes de qualquer `except FreteError`; valide o tipo antes de usar `.get` e converta em erro tratado.
 - 2026-11-13 · Cuidado com teste que escreve sequência de tokens: confira que o servidor fake aceita exatamente o token que a rodada deveria usar. Escrevi um caso que reaproveitava a mesma lista e quase testou o contrário.
+- 2026-11-24 · Regra de divergência do Tiny: a linha "Situação no Tiny" some quando concorda e fica quando diverge. Uma regra nova não pode esconder um conflito que a regra antiga (`divergencia_tiny`) já aponta; use a união das duas (`situacao_tiny_visivel`).
 - 2026-11-12 · Correção pedida pelo coordenador: o `processar()` não tem `try/except ImportError` para módulos do próprio projeto; import direto. Falha ao gerar uma página secundária vira aviso com `print`, e não devolve False.

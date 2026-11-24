@@ -113,6 +113,13 @@
     --color-link: #8db0ff;
     --shadow-md: 0 0 0 1px #343c49;
 
+    /* Bordas de status no escuro: tons translúcidos (os pastéis do claro fazem halo sobre a superfície escura) */
+    --color-success-border: rgba(74, 222, 128, 0.35);
+    --color-warning-border: rgba(251, 191, 36, 0.35);
+    --color-danger-border: rgba(248, 113, 113, 0.35);
+    --color-info-border: rgba(56, 189, 248, 0.35);
+    --color-purple-border: rgba(192, 132, 252, 0.35);
+
     /* Texto de status mais claro sobre superfícies escuras (≥ 4.5:1) */
     --color-success: #4ade80;
     --color-warning: #fbbf24;
@@ -206,7 +213,7 @@ h1 {
 /* Links de Navegação de Abas */
 .nav-tabs {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 10px;
     margin: 18px 0 32px 0;
     flex-wrap: wrap;
@@ -257,7 +264,7 @@ h1 {
         z-index: 20;
         flex-wrap: nowrap;
         gap: 6px;
-        margin: 10px 0 14px 0;
+        margin: 8px 0 8px 0;
         padding: 0;
         background: var(--color-surface);
         border-bottom: 1px solid var(--color-border);

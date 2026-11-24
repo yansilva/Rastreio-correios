@@ -7,6 +7,8 @@ from html import escape
 # Dias com só a etiqueta nos Correios antes de avisar que o pedido "enviado" no Tiny não foi postado
 DIAS_SEM_POSTAGEM = 2
 
+ROTULO_SITUACAO_TINY = "Situação no Tiny"
+
 PRIORIDADE_STATUS = {
     "aguardando_retirada": 0,
     "atrasado": 1,
@@ -46,6 +48,19 @@ def divergencia_tiny(categoria: str, situacao_tiny: str) -> str:
     if categoria == "devolvido" and tiny in ("enviado", "entregue"):
         return f"Devolvido nos Correios, mas o Tiny mostra '{situacao_tiny}'"
     return ""
+
+
+def situacao_tiny_concorda(categoria: str, situacao_tiny: str) -> bool:
+    """Regra simples: Correios entregue com Tiny entregue, ou Correios não entregue com Tiny enviado."""
+    tiny = _normalizar(situacao_tiny)
+    if categoria == "entregue":
+        return tiny == "entregue"
+    return tiny == "enviado"
+
+
+def situacao_tiny_visivel(categoria: str, situacao_tiny: str, divergencia: str) -> bool:
+    """A linha 'Situação no Tiny' aparece quando diverge, ou quando a regra de divergência já aponta algo."""
+    return bool(divergencia) or not situacao_tiny_concorda(categoria, situacao_tiny)
 
 
 def sem_postagem(categoria: str, situacao_tiny: str, dias_etiqueta: int | None) -> bool:
@@ -227,6 +242,7 @@ def montar_card_pedido(
     cliente: str = "",
     numero_txt: str = "",
     chave_descricao: str = "",
+    mostrar_situacao_tiny: bool = True,
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido.
 
@@ -249,6 +265,11 @@ def montar_card_pedido(
     divergencia_html = (
         f'<span class="badge badge-yellow badge-divergencia" title="{escape(divergencia, quote=True)}">Tiny desatualizado</span>'
         if divergencia
+        else ""
+    )
+    tiny_html = (
+        f'<span class="order-tiny-status">{ROTULO_SITUACAO_TINY}: {escape(situacao_tiny or "—")}</span>'
+        if mostrar_situacao_tiny
         else ""
     )
     copiar_html = (
@@ -292,7 +313,7 @@ def montar_card_pedido(
                         <span class="badge {classe_selo}">{escape(selo)}</span>{descricao_selo_sr}
                         {divergencia_html}
                         {idade_html}
-                        <span class="order-tiny-status">Situação no Tiny: {escape(situacao_tiny or "—")}</span>
+                        {tiny_html}
                         {copiar_html}
                     </div>
                 </div>
