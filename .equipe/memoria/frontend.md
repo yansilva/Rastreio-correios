@@ -27,3 +27,8 @@
 - 2026-11-13 · Nome de ator que muda de posição: `:has()` no seletor do cartão do lote (ex.: `.servico-card:has(.servico-msg-prazo)`) funciona bem no Chrome do pane, mas a medição de faixa precisa conferir o resultado (`grid-column`), não só o seletor.
 - 2026-11-13 · Cartão de Entregues no celular: o rótulo inline quebra a data em duas linhas (cada célula tem ~129px de conteúdo). Para chegar a 180px, mexa no formato da data ou no rótulo, não no padding.
 - 2026-11-13 · Botão flutuante (FAB) de consulta: `padding-bottom` da lista só afeta o fim da rolagem. O FAB é `position: fixed`, então cobre cartões no meio da rolagem; isso não se resolve com padding.
+
+- 2026-11-24 · Mesa Limpa no CSS: quando uma regra antiga e uma nova têm a mesma especificidade, a última vence. Por isso a camada nova fica no fim do arquivo, como 'camada final'; a limpeza das regras antigas é pendência. Não use 	ransition: all; o 	ransitionAll do navegador conta elementos sem transição, não é problema.
+- 2026-11-24 · Medição de .nav-tabs no celular: a aba precisa de height: 44px além de min-height, senão a regra de desktop (40px) vence no cálculo de altura.
+- 2026-11-24 · Ao gerar o frete de teste com FreteReportGenerator, o print de 'Sucesso!' do gerador aparece mesmo com o mock de open; ele não grava o arquivo real. Confira a data de escrita de opcoes_frete.html antes de concluir que foi tocado.
+- 2026-11-24 · O painel roda no Docker com .:/app: depois de mudar Python, docker compose exec já usa o código novo, mas o processo do servidor só carrega o módulo novo com docker compose restart, que é do coordenador.

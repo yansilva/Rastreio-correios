@@ -276,7 +276,8 @@ class FreteReportGenerator:
             pedido_menor_txt = ""
         # O número do pedido fica dentro do link: o nome acessível diz de qual pedido é
         rotulo_menor_html = (
-            f'<a class="summary-link" id="sumMenorLink"{ancora_menor}>Menor frete do lote'
+            f'<a class="summary-link" id="sumMenorLink"{ancora_menor}>'
+            f'<span class="rotulo-longo">Menor frete do lote</span><span class="rotulo-curto" aria-hidden="true">Menor frete</span>'
             f'<span id="sumMenorPedido">{pedido_menor_txt}</span></a>'
         )
 
@@ -287,7 +288,6 @@ class FreteReportGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Opções de Frete — Correios</title>
     <style>
-        @font-face {{ font-family: 'Inter'; src: url('web/fonts/InterVariable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }}
         :root {{
             --color-primary: #2563eb;
             --color-primary-hover: #1d4ed8;
@@ -346,7 +346,7 @@ class FreteReportGenerator:
         }}
         *, *::before, *::after {{ box-sizing: border-box; }}
         body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: var(--font-sans);
             background: var(--color-bg);
             color: var(--color-text-main);
             margin: 0;
@@ -860,6 +860,75 @@ class FreteReportGenerator:
             .servico-msg-prazo {{ grid-column: 1 / -1; margin-top: 4px; }}
             .servicos-indisponiveis {{ padding: 0 24px 14px; }}
         }}
+        /* ===== Mesa Limpa (lote C): tokens iguais aos de web/css/main.css; ver DESIGN.md ===== */
+        :root {{
+            --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "Cascadia Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Consolas, monospace;
+            --color-primary: #2554d9;
+            --color-primary-hover: #1d44b8;
+            --color-primary-light: #eef2fd;
+            --color-link: #2554d9;
+            --color-bg: #f6f7f9;
+            --color-surface: #ffffff;
+            --color-surface-hover: #f1f3f6;
+            --color-header-bg: #f1f3f6;
+            --color-border: #e3e6ea;
+            --color-border-strong: #7b8594;
+            --color-text-main: #101828;
+            --color-text-muted: #475467;
+            --color-text-subtle: #667085;
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 10px;
+            --shadow-sm: none;
+            --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px -2px rgba(16, 24, 40, 0.08);
+            --motion: 120ms ease-out;
+            --transition: color var(--motion), background-color var(--motion), border-color var(--motion), box-shadow var(--motion);
+        }}
+        [data-theme="dark"] {{
+            --color-bg: #0e1116;
+            --color-surface: #151a21;
+            --color-surface-hover: #1b212a;
+            --color-header-bg: #1b212a;
+            --color-border: #262d38;
+            --color-border-strong: #6b7585;
+            --color-text-main: #e8ebf0;
+            --color-text-muted: #a3adbb;
+            --color-text-subtle: #8a94a3;
+            --color-primary: #2f62e6;
+            --color-primary-hover: #2552c4;
+            --color-primary-light: #1b2333;
+            --color-link: #8db0ff;
+            --shadow-md: 0 0 0 1px #343c49;
+        }}
+        body {{ font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.5; }}
+        h1, [data-theme="dark"] h1 {{ font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text-main); }}
+        .nav-tab {{ height: 40px; padding: 0 12px; border: 0; border-radius: 0; background: transparent; font-weight: 500; font-size: 0.8125rem; color: var(--color-text-muted); }}
+        .nav-tab:hover {{ color: var(--color-text-main); background: var(--color-surface-hover); }}
+        .nav-tab.active, .nav-tab.active:hover {{ color: var(--color-text-main); font-weight: 600; background: transparent; box-shadow: inset 0 -2px 0 var(--color-primary); }}
+        .nav-tab.active::after {{ display: none; }}
+        .btn-theme, .btn-limpar {{ border-radius: var(--radius-md); box-shadow: none; transform: none; }}
+        .summary-card {{ border-radius: var(--radius-lg); box-shadow: none; animation: none; }}
+        .summary-card:hover {{ border-color: var(--color-border-strong); box-shadow: var(--shadow-md); transform: none; }}
+        .summary-number {{ font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }}
+        .summary-label {{ font-size: 0.8125rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--color-text-muted); }}
+        .rotulo-curto {{ display: none; }}
+        .pedido-card {{ border-radius: var(--radius-lg); box-shadow: none; animation: none; }}
+        .pedido-card:hover {{ border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }}
+        .servico-card {{ border-radius: var(--radius-md); }}
+        .servico-preco {{ font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }}
+        @media (max-width: 640px) {{
+            h1, [data-theme="dark"] h1 {{ font-size: 1.25rem; }}
+            .nav-tab {{ height: 44px; min-height: 44px; padding: 0 10px; }}
+            .summary-number {{ font-size: 1.25rem; }}
+            .summary-label {{ font-size: 0.75rem; margin-top: 2px; }}
+            /* Celular: o rótulo longo sai da tela, mas continua na árvore de acessibilidade (sr-only);
+               o curto é o visível e fica com aria-hidden no HTML */
+            .rotulo-longo {{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }}
+            .rotulo-curto {{ display: inline; }}
+            #sumMenorPedido {{ display: none; }}
+        }}
     </style>
 </head>
 <body>
@@ -882,7 +951,7 @@ class FreteReportGenerator:
         <div class="summary" id="resumo" aria-live="polite">
             <div class="summary-card">
                 <div class="summary-number num-blue" id="sumMostrados">{total_pedidos}</div>
-                <div class="summary-label">Pedidos mostrados</div>
+                <div class="summary-label"><span class="rotulo-longo">Pedidos mostrados</span><span class="rotulo-curto" aria-hidden="true">Pedidos</span></div>
             </div>
             <div class="summary-card">
                 <div class="summary-number num-neutral" id="sumMenor">{_fmt_brl(min(total_menores)) if total_menores else "—"}</div>
@@ -890,7 +959,7 @@ class FreteReportGenerator:
             </div>
             <div class="summary-card" id="sumLongoCard"{"" if total_longos else " hidden"}>
                 <div class="summary-number num-neutral" id="sumLongo">{total_longos}</div>
-                <div class="summary-label">Com prazo acima de 3 dias</div>
+                <div class="summary-label"><span class="rotulo-longo">Com prazo acima de 3 dias</span><span class="rotulo-curto" aria-hidden="true">Prazo &gt; 3 dias</span></div>
             </div>
         </div>
 

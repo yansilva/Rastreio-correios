@@ -58,15 +58,20 @@ class TestMaisDemoradoSemQuebra(unittest.TestCase):
         # Postado 09/11 12:24, entregue 11/11 10:00: exatamente 1,9 dias
         historico = _historico(_item("9001", "2026-11-11T10:00:00", postado_em="2026-11-09T12:24:00"))
         html = montar_html_entregues(historico, AGORA, dados_em=AGORA)
-        self.assertIn("Mais demorado&nbsp;·&nbsp;1,9&nbsp;dias", html)
-        self.assertNotIn("Mais demorado · ", html)
+        # Mesa Limpa: número e "dias" juntos; a quebra pode vir depois de "Mais demorado"
+        self.assertIn("Mais demorado · 1,9&nbsp;dias", html)
+        self.assertNotIn("&nbsp;·&nbsp;", html)
         self.assertIn("1,9&nbsp;dias</td>", html)
+
+    def test_intervalo_do_seletor_fica_numa_linha(self):
+        html = montar_html_entregues(_historico(), AGORA, dados_em=AGORA)
+        self.assertIn('Esta semana <span class="intervalo">(09/11–15/11)</span>', html)
 
 
 class TestPaginaEntregues(unittest.TestCase):
     def test_pagina_tem_duas_semanas_e_seletor(self):
         html = montar_html_entregues(_historico(_item("42934", "2026-11-11T10:15:00")), AGORA, dados_em=AGORA)
-        self.assertIn("Esta semana (09/11–15/11)", html)
+        self.assertIn('Esta semana <span class="intervalo">(09/11–15/11)</span>', html)
         self.assertIn("Semana anterior", html)
         self.assertIn('aria-pressed="true"', html)
         self.assertIn('aria-pressed="false"', html)

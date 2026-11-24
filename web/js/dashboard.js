@@ -250,6 +250,14 @@ function atualizarTabela() {
         var tr = corpo.insertRow();
         tr.appendChild(celula(isNaN(l.pedido) ? '—' : '#' + l.pedido, 'Pedido'));
         tr.appendChild(celula(l.cliente || '—', 'Cliente'));
+        // O nome fica num span com 2 linhas no máximo (o td continua célula de tabela); o title traz o nome completo
+        var tdCliente = tr.lastChild;
+        var nomeCliente = document.createElement('span');
+        nomeCliente.className = 'cliente-nome';
+        nomeCliente.textContent = l.cliente || '—';
+        tdCliente.textContent = '';
+        tdCliente.appendChild(nomeCliente);
+        if (l.cliente) { tdCliente.setAttribute('title', l.cliente); }
         tr.appendChild(celula(l.rastreio || '—', 'Rastreio'));
         var tdStatus = document.createElement('td');
         tdStatus.setAttribute('data-label', 'Status');

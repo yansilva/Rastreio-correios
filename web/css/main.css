@@ -2,33 +2,31 @@
    Design Tokens & Estilos Globais — Rastreio Correios Web
    ========================================================================== */
 
-/* Inter variável embutida (licença SIL OFL em web/fonts/Inter-LICENSE.txt); sem ela vale o fallback do sistema */
-@font-face {
-    font-family: 'Inter';
-    src: url('../fonts/InterVariable.woff2') format('woff2');
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
-}
+/* Mesa Limpa: a fonte é a do sistema (sem @font-face). Ver DESIGN.md, "Typography". */
 
 :root {
+    /* Fontes: pilha do sistema; códigos de rastreio, CEP e console em monoespaçada */
+    --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "Cascadia Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Consolas, monospace;
+
     /* Paleta Principal */
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
-    --color-primary-light: #eff6ff;
+    --color-primary: #2554d9;
+    --color-primary-hover: #1d44b8;
+    --color-primary-light: #eef2fd;
     --color-link: var(--color-primary);
 
     /* Superfícies & Fundos (Light Mode) */
-    --color-bg: #f8fafc;
+    --color-bg: #f6f7f9;
     --color-surface: #ffffff;
-    --color-surface-hover: #f1f5f9;
-    --color-header-bg: #f1f5f9;
-    --color-border: #e2e8f0;
-    
+    --color-surface-hover: #f1f3f6;
+    --color-header-bg: #f1f3f6;
+    --color-border: #e3e6ea;
+
     /* Tipografia & Textos */
-    --color-text-main: #0f172a;
-    --color-text-muted: #475569;
-    --color-text-subtle: #64748b;
+    --color-text-main: #101828;
+    --color-text-muted: #475467;
+    --color-text-subtle: #667085;
 
     /* Estados & Semântica (cores de texto com contraste ≥ 4.5:1 sobre o fundo claro) */
     --color-success: #15803d;
@@ -51,7 +49,7 @@
     --color-purple-text: #7e22ce;
     --color-high-text: #9a3412;
     /* Borda de campos e botões: 3:1 contra o fundo, como pede o WCAG 1.4.11 */
-    --color-border-strong: #64748b;
+    --color-border-strong: #7b8594;
     --color-info-bg: #e0f2fe;
     --color-info-border: #bae6fd;
     
@@ -80,34 +78,40 @@
     --dot-yellow: #ffbd2e;
     --dot-green: #27c93f;
 
-    /* Métricas & Efeitos */
+    /* Métricas & Efeitos (Mesa Limpa): cantos discretos, plano em repouso, movimento só de cor e borda */
     --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
     --radius-full: 9999px;
-    
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+    --shadow-sm: none;
+    --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px -2px rgba(16, 24, 40, 0.08);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 
-    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --motion: 120ms ease-out;
+    --transition: color var(--motion), background-color var(--motion), border-color var(--motion), box-shadow var(--motion);
 }
 
 /* Modo Escuro (Dark Mode) */
 [data-theme="dark"] {
-    --color-bg: #0b0f19;
-    --color-surface: #151c2c;
-    --color-surface-hover: #1e283d;
-    --color-header-bg: #192237;
-    --color-border: #26334d;
-    
-    --color-text-main: #f8fafc;
-    --color-text-muted: #b6c2d2;
-    --color-text-subtle: #94a3b8;
-    
-    --color-primary-light: #1e293b;
-    --color-link: #93c5fd;
+    /* Mesa Limpa no escuro: grafite frio (DESIGN.md, "Dark Mode") */
+    --color-bg: #0e1116;
+    --color-surface: #151a21;
+    --color-surface-hover: #1b212a;
+    --color-header-bg: #1b212a;
+    --color-border: #262d38;
+    --color-border-strong: #6b7585;
+
+    --color-text-main: #e8ebf0;
+    --color-text-muted: #a3adbb;
+    --color-text-subtle: #8a94a3;
+
+    --color-primary: #2f62e6;
+    --color-primary-hover: #2552c4;
+    --color-primary-light: #1b2333;
+    --color-link: #8db0ff;
+    --shadow-md: 0 0 0 1px #343c49;
 
     /* Texto de status mais claro sobre superfícies escuras (≥ 4.5:1) */
     --color-success: #4ade80;
@@ -133,13 +137,13 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
     background-color: var(--color-bg);
     color: var(--color-text-main);
     margin: 0;
     padding: 24px 20px 120px 20px;
-    line-height: 1.6;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -150,19 +154,21 @@ body {
     position: relative;
 }
 
-/* Cabeçalho */
+/* Cabeçalho (Mesa Limpa): alinhado à esquerda; o título não é mais azul */
 header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 0;
     position: relative;
 }
 
 h1 {
     margin: 0;
-    font-size: 1.75rem;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    color: var(--color-primary);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--color-text-main);
     display: inline-flex;
     align-items: center;
     gap: 12px;
@@ -170,7 +176,7 @@ h1 {
 
 .meta {
     color: var(--color-text-muted);
-    font-size: 1rem;
+    font-size: 0.8125rem;
     margin-top: 8px;
 }
 
@@ -183,18 +189,17 @@ h1 {
     background: var(--color-surface);
     color: var(--color-link);
     text-decoration: none;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
     font-weight: 600;
     font-size: 0.875rem;
     margin-top: 14px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     transition: var(--transition);
 }
 
 .back-link:hover {
-    transform: translateY(-1px);
-    background: var(--color-primary-light);
+    background: var(--color-surface-hover);
     border-color: var(--color-primary);
 }
 
@@ -207,15 +212,17 @@ h1 {
     flex-wrap: wrap;
 }
 
+/* Abas (Mesa Limpa): texto sublinhado, sem borda nem pílula. 40px, 13px peso 500. */
 .nav-tab {
-    padding: 9px 18px;
-    border-radius: var(--radius-full);
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 0;
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.875rem;
+    font-weight: 500;
+    font-size: 0.8125rem;
     color: var(--color-text-muted);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: transparent;
+    border: 0;
     transition: var(--transition);
     display: inline-flex;
     align-items: center;
@@ -227,36 +234,18 @@ h1 {
     outline-offset: 2px;
 }
 
-[data-theme="dark"] h1 {
-    color: var(--color-link);
-}
-
 .nav-tab:hover {
-    color: var(--color-link);
-    border-color: var(--color-primary);
+    color: var(--color-text-main);
+    background: var(--color-surface-hover);
 }
 
+/* Aba atual: texto em Tinta, peso 600 e sublinhado de 2px em Azul Ação (sem fundo) */
+.nav-tab.active,
 .nav-tab.active:hover {
     color: var(--color-text-main);
-    border-color: var(--color-border);
-}
-
-/* Aba atual: estado neutro de "selecionado" (navegação, não decisão). Sem brilho. */
-.nav-tab.active {
-    position: relative;
-    background: var(--color-surface-hover);
-    color: var(--color-text-main);
-    border-color: var(--color-border);
-}
-
-.nav-tab.active::after {
-    content: "";
-    position: absolute;
-    left: 14px;
-    right: 14px;
-    bottom: -1px;
-    height: 2px;
-    background: var(--color-link);
+    font-weight: 600;
+    background: transparent;
+    box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 /* Celular: uma faixa de 44px, fixa no topo ao rolar, com as três abas numa linha só.
@@ -271,11 +260,13 @@ h1 {
         margin: 10px 0 14px 0;
         padding: 0;
         background: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
     }
 
     .nav-tab {
         flex: 1 1 auto;
         justify-content: center;
+        height: 44px;
         min-height: 44px;
         min-width: 0;
         padding: 0 10px;
@@ -285,5 +276,13 @@ h1 {
 
     .nav-tab .icon {
         display: none;
+    }
+}
+
+/* Movimento reduzido: sem transição nem animação em nenhum elemento (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
     }
 }

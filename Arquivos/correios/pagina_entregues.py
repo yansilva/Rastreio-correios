@@ -63,7 +63,8 @@ def _resumo_html(itens: list[dict]) -> str:
     else:
         numero_mais = f"#{escape(mais['pedido'])}"
         # Espaços não separáveis: o "·" não fica no início da linha quando o rótulo quebra
-        rotulo_mais = f"Mais demorado&nbsp;·&nbsp;{_fmt_dias(dias_ate_entrega(mais))}&nbsp;dias"
+        # Só o número e "dias" ficam juntos: a quebra pode acontecer depois de "Mais demorado" (cabe em 375px)
+        rotulo_mais = f"Mais demorado · {_fmt_dias(dias_ate_entrega(mais))}&nbsp;dias"
     return f"""
             <div class="summary">
                 <div class="summary-card">
@@ -151,7 +152,7 @@ def montar_html_entregues(
 
     seg_atual, dom_atual = _intervalo_semana(agora, 0)
     seg_anterior, dom_anterior = _intervalo_semana(agora, -1)
-    rotulo_atual = f"Esta semana ({seg_atual:%d/%m}–{dom_atual:%d/%m})"
+    rotulo_atual = f'Esta semana <span class="intervalo">({seg_atual:%d/%m}–{dom_atual:%d/%m})</span>'
     titulo_atual = f"Entregas desta semana ({seg_atual:%d/%m}–{dom_atual:%d/%m})"
     titulo_anterior = f"Entregas da semana anterior ({seg_anterior:%d/%m}–{dom_anterior:%d/%m})"
     versao = int(time.time())

@@ -892,12 +892,14 @@ class TestFreteReportGenerator(unittest.TestCase):
         html = self._renderizar({"03220": self._servico(20.0, 2)})
         self.assertIn("grid-template-columns: repeat(auto-fit, minmax(0, 1fr))", html)
 
-    def test_skip_link_main_e_fonte_inter(self):
+    def test_skip_link_main_e_fonte_do_sistema(self):
+        # Mesa Limpa: sem fonte web; a pilha do sistema vem do token --font-sans
         html = self._renderizar({"03220": self._servico(20.0, 2)})
         self.assertIn('<a class="skip-link" href="#conteudo">Pular para os pedidos</a>', html)
         self.assertIn('<main id="conteudo" tabindex="-1">', html)
-        self.assertIn("src: url('web/fonts/InterVariable.woff2') format('woff2')", html)
-        self.assertIn("font-weight: 100 900", html)
+        self.assertIn("font-family: var(--font-sans);", html)
+        self.assertNotIn("InterVariable", html)
+        self.assertNotIn("@font-face", html)
 
     def test_valor_do_pedido_em_destaque(self):
         import re
@@ -981,8 +983,15 @@ class TestFreteReportGenerator(unittest.TestCase):
     def test_menor_frete_do_lote_aponta_para_o_pedido(self):
         html = self._gerar_com_menores([30.0, 11.94, 25.0])
         # Número do pedido dentro do link (nome acessível) e cartão focável para receber o foco
-        self.assertIn('<a class="summary-link" id="sumMenorLink" href="#pedido-1002">Menor frete do lote'
+        # Mesa Limpa: o rótulo tem versão longa e curta; o curto é só visual (aria-hidden) e o longo fica na árvore
+        self.assertIn('<a class="summary-link" id="sumMenorLink" href="#pedido-1002">'
+                      '<span class="rotulo-longo">Menor frete do lote</span>'
+                      '<span class="rotulo-curto" aria-hidden="true">Menor frete</span>'
                       '<span id="sumMenorPedido"> · Pedido #1002</span></a>', html)
+        # Celular: o longo sai da tela (sr-only), nunca display:none; o curto aparece; o número some
+        self.assertNotIn(".rotulo-longo { display: none", html)
+        self.assertIn(".rotulo-longo { position: absolute; width: 1px;", html)
+        self.assertIn(".rotulo-curto { display: inline; }", html)
         self.assertIn('id="pedido-1002" tabindex="-1" data-pedido="1002"', html)
         self.assertIn("alvo.focus({ preventScroll: true })", html)
         self.assertIn('id="sumMenor">R$ 11,94<', html)
