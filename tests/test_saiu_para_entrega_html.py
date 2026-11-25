@@ -199,6 +199,40 @@ class TestPainelSaiu(unittest.TestCase):
         self.assertEqual(len(linhas), 1)
         self.assertIn("Saiu para entrega", linhas[0])
 
+    @staticmethod
+    def _retirada(postado_em, retirada_em):
+        return {
+            "eventos": [
+                {"codigo": "LDI", "tipo": "01", "descricao": "Objeto aguardando retirada no endereço indicado",
+                 "dtHrCriado": retirada_em},
+                {"codigo": "PO", "tipo": "01", "descricao": "Objeto postado", "dtHrCriado": postado_em},
+            ]
+        }
+
+    def test_retirada_atrasada_mostra_a_linha_de_atraso(self):
+        agora = datetime.now()
+        postado = (agora - timedelta(days=10)).replace(microsecond=0).isoformat()
+        retirada = (agora - timedelta(days=2)).replace(microsecond=0).isoformat()
+        cache = {"AE000000431BR": self._retirada(postado, retirada)}
+        csv = "Número do Pedido no Tiny,Situação,Código de Rastreio\n43249,Enviado,AE000000431BR\n"
+        relatorio, _ = self._gerar(cache, csv)
+        cartao = self._cartoes(relatorio)["43249"]
+        self.assertIn('data-status="aguardando_retirada atrasado"', cartao)
+        self.assertIn('badge-yellow">Aguardando retirada</span>', cartao)
+        self.assertIn('class="order-atraso urgencia-alta"', cartao)
+        self.assertIn("Atrasado · 10 dias · Crítico", cartao)
+
+    def test_retirada_sem_atraso_nao_mostra_a_linha(self):
+        agora = datetime.now()
+        postado = (agora - timedelta(days=1)).replace(microsecond=0).isoformat()
+        retirada = (agora - timedelta(hours=5)).replace(microsecond=0).isoformat()
+        cache = {"AE000000432BR": self._retirada(postado, retirada)}
+        csv = "Número do Pedido no Tiny,Situação,Código de Rastreio\n43250,Enviado,AE000000432BR\n"
+        relatorio, _ = self._gerar(cache, csv)
+        cartao = self._cartoes(relatorio)["43250"]
+        self.assertIn("Aguardando retirada", cartao)
+        self.assertNotIn("order-atraso", cartao)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -43,7 +43,7 @@ from correios.cards import (
 )
 from correios.exceptions import CorreiosAuthError, CorreiosError
 from correios.icons import ICON_SPRITE
-from correios.navegacao import ferramentas_html, nav_html
+from correios.navegacao import ferramentas_html, nav_html, salvar_contagem_atrasados
 from correios.pagina_entregues import gerar_pagina_entregues
 
 # Carrega variáveis de ambiente do .env na raiz do projeto ou em Arquivos/
@@ -127,7 +127,7 @@ def formatar_evento_html(evento, selo_cabecalho=""):
         texto_badge, classe_badge = "DEVOLVIDO", "badge-purple"
     elif "POSTADO" in desc_upper:
         # Verde é "entregue" (One Meaning Per Color): postagem é etapa de trânsito, então azul
-        texto_badge, classe_badge = "POSTADO", "badge-blue"
+        texto_badge, classe_badge = "Postado", "badge-blue"
 
     # O selo do evento some quando repete o do cabeçalho (ex.: "Aguardando retirada" nos dois)
     badge = ""
@@ -452,8 +452,8 @@ def processar(usar_cache=False):
             chave_descricao = "sem_postagem" if semp else chave_selo(
                 status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado, saiu=saiu
             )
-            # Pedido que saiu para entrega e está atrasado: o atraso vai numa linha ao lado do selo
-            atraso_html = linha_atraso(dias_atraso) if saiu and esta_atrasado else ""
+            # Pedido atrasado cujo selo não é o de atraso (aguardando retirada, saiu para entrega): o atraso vai numa linha ao lado do selo
+            atraso_html = linha_atraso(dias_atraso) if esta_atrasado and chave_descricao != "atrasado" else ""
             # Eventos depois do selo do cabeçalho, para o selo do evento não repetir o dele
             events_html = []
             if obj_data and "eventos" in obj_data:
@@ -603,6 +603,9 @@ def processar(usar_cache=False):
         # "Dados de" mostra a hora dos dados consultados, a mesma do painel (não a hora desta geração)
         data_curta_atrasados = momento_dados.strftime("%d/%m %H:%M")
         total_atrasados = len(atrasados_data)
+        # A página de Frete mostra o mesmo número na aba Atrasados
+        # Pasta lida no momento da chamada (como o cache), para os testes poderem desviar a gravação
+        salvar_contagem_atrasados(os.path.dirname(os.path.abspath(__file__)), total_atrasados)
 
         # Calcula contagens por urgência
         niveis = [urgencia_atraso(x["dias_transito"])[1] for x in atrasados_data]

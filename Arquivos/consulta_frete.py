@@ -25,6 +25,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # --- Módulos refatorados ---
 from correios import CorreiosClient
+from correios.navegacao import ler_contagem_atrasados
 from frete import (
     FreteClient,
     FreteConfig,
@@ -158,7 +159,7 @@ def processar():
 
         if not pedidos:
             print("Nenhum pedido em aberto encontrado.")
-            report_generator.gerar_html([])
+            report_generator.gerar_html([], atrasados=ler_contagem_atrasados(_dir_atual))
             return
 
         # 3. Para cada pedido, obter CEP e consultar fretes
@@ -205,7 +206,7 @@ def processar():
             pedidos_com_frete.append(pedido)
 
         # 4. Gerar HTML
-        report_generator.gerar_html(pedidos_com_frete)
+        report_generator.gerar_html(pedidos_com_frete, atrasados=ler_contagem_atrasados(_dir_atual))
 
     except Exception as e:
         import traceback

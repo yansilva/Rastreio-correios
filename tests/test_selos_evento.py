@@ -33,7 +33,7 @@ def _evento(descricao, detalhe=""):
 class TestSeloDoEventoUnitario(unittest.TestCase):
     def test_postado_usa_azul_e_nunca_verde(self):
         html = consulta_correios.formatar_evento_html(_evento("Objeto postado"), selo_cabecalho="Em trânsito")
-        self.assertIn('<span class="badge badge-blue">POSTADO</span>', html)
+        self.assertIn('<span class="badge badge-blue">Postado</span>', html)
         self.assertNotIn("badge-green", html)
 
     def test_selo_igual_ao_do_cabecalho_some_e_mantem_o_destaque(self):
@@ -83,8 +83,8 @@ class TestSeloDoEventoNoRelatorio(unittest.TestCase):
             self.assertIsNot(resultado, False)
             html = Path(pasta, "relatorio_rastreio.html").read_text(encoding="utf-8")
 
-        self.assertNotIn('badge-green">POSTADO', html)
-        self.assertIn('badge-blue">POSTADO', html)
+        self.assertNotIn('badge-green">Postado', html)
+        self.assertIn('badge-blue">Postado', html)
         # Cabeçalho do cartão mostra "Aguardando retirada"; o primeiro evento não repete o selo
         self.assertIn(">Aguardando retirada</span>", html)
         self.assertNotIn("AGUARDANDO RETIRADA", html)
@@ -97,7 +97,7 @@ class TestSeloDaDemonstracao(unittest.TestCase):
             conteudo = "".join(Path(c).read_text(encoding="utf-8") for c in caminhos.values() if Path(c).is_file())
 
         self.assertTrue(conteudo)
-        self.assertNotIn('badge-green">POSTADO', conteudo)
+        self.assertNotIn('badge-green">Postado', conteudo)
         self.assertNotIn("AGUARDANDO RETIRADA", conteudo)
         self.assertNotIn("ENTREGUE</span>", conteudo)
         # A demo usa o mesmo gerador do painel: selo com descrição (title/sr-only) e nenhum selo de evento repetido

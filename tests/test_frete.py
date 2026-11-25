@@ -1142,9 +1142,11 @@ class TestChamadasTinyDoFrete(unittest.TestCase):
             "tiny.client.requests.get", return_value=self._resposta(vazio)
         ), patch.object(consulta_frete, "CorreiosClient"), patch.object(consulta_frete, "FreteClient"), patch.object(
             consulta_frete, "FreteService"
-        ), patch.object(consulta_frete, "FreteReportGenerator", return_value=report), self._silencio():
+        ), patch.object(consulta_frete, "FreteReportGenerator", return_value=report), patch.object(
+            consulta_frete, "ler_contagem_atrasados", return_value=None
+        ), self._silencio():
             consulta_frete.processar()
-        report.gerar_html.assert_called_once_with([])
+        report.gerar_html.assert_called_once_with([], atrasados=None)
 
 
 class TestFreteExceptions(unittest.TestCase):

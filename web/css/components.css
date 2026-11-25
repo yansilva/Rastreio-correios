@@ -2687,8 +2687,8 @@ main.orders-list {
     transition: var(--transition);
 }
 
-/* Até 1099px a faixa segue numa linha com rolagem. De 1100px para cima, as pílulas quebram em duas linhas, sem rolagem nem esmaecimento */
-@media (min-width: 1100px) {
+/* Até 640px (celular) a faixa segue numa linha com rolagem. De 641px para cima, as pílulas quebram em linhas, sem rolagem nem esmaecimento */
+@media (min-width: 641px) {
     .filter-pills {
         flex-wrap: wrap;
         row-gap: 8px;

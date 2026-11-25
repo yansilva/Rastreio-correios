@@ -5,7 +5,16 @@ O número ao lado do rótulo só aparece quando a página recebe a contagem e el
 (Zero Is Calm). Páginas que não recebem a contagem mostram a aba sem número.
 """
 
+import json
+import logging
+import os
+
 from correios.icons import icone
+
+logger = logging.getLogger("correios.navegacao")
+
+# Contagem de atrasados gravada pelo painel, para a página de Frete (que roda sem os dados do Tiny/CSV)
+CONTAGEM_ARQUIVO = "atrasados_contagem.json"
 
 # Ordem única do menu: (chave, arquivo, rótulo, ícone)
 ABAS = (
@@ -42,6 +51,28 @@ def ferramentas_html(com_consulta: bool) -> str:
         "                </button>\n"
     )
     return tema + consulta + "            </div>"
+
+
+def salvar_contagem_atrasados(pasta: str, total: int) -> None:
+    """Grava a contagem de atrasados que o painel mostra (mesma fonte do número das outras abas)."""
+    try:
+        with open(os.path.join(pasta, CONTAGEM_ARQUIVO), mode="w", encoding="utf-8") as arquivo:
+            json.dump({"atrasados": total}, arquivo)
+    except OSError as exc:
+        logger.warning("Não foi possível gravar a contagem de atrasados (%s).", exc)
+
+
+def ler_contagem_atrasados(pasta: str) -> int | None:
+    """Última contagem gravada pelo painel; None quando não existe ou é inválida (a aba sai sem número)."""
+    try:
+        with open(os.path.join(pasta, CONTAGEM_ARQUIVO), encoding="utf-8") as arquivo:
+            dados = json.load(arquivo)
+    except (OSError, ValueError):
+        return None
+    valor = dados.get("atrasados") if isinstance(dados, dict) else None
+    if isinstance(valor, bool) or not isinstance(valor, int):
+        return None
+    return valor
 
 
 def nav_html(ativa: str, atrasados: int | None = None) -> str:

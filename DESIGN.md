@@ -37,6 +37,9 @@ colors:
   purple-bg: "#f3e8ff"
   purple-border: "#e9d5ff"
   purple-text: "#7e22ce"
+  teal-text: "#0f766e"
+  teal-bg: "#f0fdfa"
+  teal-border: "#99f6e4"
   console-bg: "#0f172a"
   console-header: "#1e293b"
   console-text: "#f8fafc"
@@ -327,8 +330,8 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 - **Ativo:** fundo Azul Ação, texto e contador brancos.
 - **Zerado:** borda tracejada em `--color-border`, sem filtrar.
 - **Layout:** ativas primeiro e zeradas no fim.
-  - Até 1099px: uma linha só, com rolagem horizontal; com Tab, o filtro rola até ficar visível.
-  - De 1100px para cima (desde 2026-11-25, com a 9ª pílula): os filtros **quebram em duas linhas**, com 8px entre elas, sem rolagem nem esmaecimento. Nove pílulas não cabem nos 1040px do contêiner (estouram 133px).
+  - Até 640px (celular): uma linha só, com rolagem horizontal; com Tab, o filtro rola até ficar visível.
+  - De 641px para cima (desde 2026-11-25, com a 9ª pílula; aprovado pelo usuário na 18ª crítica): os filtros **quebram em linhas**, com 8px entre elas, sem rolagem nem esmaecimento. Nove pílulas não cabem nos 1040px do contêiner (estouram 133px), e em 1024px a rolagem escondia 228px.
 
 ### Selos (`.badge`, `.dias-badge`)
 - **Style:** bolinha de 6px na cor do texto (`::before`, `border-radius: 50%`) e o texto; 12px peso 600, caixa normal, 2×8px, raio de 6px, `white-space: nowrap`, fundo tingido e borda da mesma família.
@@ -375,6 +378,7 @@ Status de quando o último evento (ignorando os avisos) é "Objeto saiu para ent
 - **Selo:** `badge badge-teal` com o texto "Saiu para entrega", no lugar de "Em trânsito". Bolinha de 6px como os outros selos, sem ícone.
 - **Cor:** família teal, o degrau entre o azul (Em trânsito) e o verde (Entregue). Não é azul (ficaria igual a Em trânsito), não é roxo (o aviso aparece no mesmo cartão), não é índigo (perto do Azul Ação) e não é quente (urgência). O fundo é quase branco, e não pastel cheio como o do verde, para não parecer "Entregue".
 - **Contraste (AA):** claro 5,25:1; escuro #2dd4bf sobre o fundo a 15% dá 7,33:1 sobre #151a21 e 6,73:1 sobre #1b212a.
+- **Linha de atraso (`.order-atraso`), regra geral:** aparece **sempre que o pedido está atrasado e o selo não é o de atraso**, ou seja, em "Aguardando retirada" e em "Saiu para entrega" (retirada aprovada pelo usuário na 18ª crítica, 2026-11-25). O selo continua o de status; a linha mostra o atraso. Quando o selo já é o de atraso, a linha não aparece.
 - **Atrasado e saiu para entrega:** o selo é "Saiu para entrega" (decisão do usuário). O atraso aparece numa linha `.order-atraso` logo depois do selo: ícone `i-clock` e "Atrasado · 8 dias · Crítico", em 13px peso 500 tabular, na cor da escala (`--color-danger`, `--color-high-text` ou `--color-warning-text`), sem fundo nem borda. O pedido continua em Atrasados (faixa e filtro). No celular, a linha fica abaixo do selo.
 - **Filtro:** `.filter-pill[data-filter="saiu_para_entrega"]`, "Saiu para entrega", ícone `i-map-pin`, logo depois de "Em trânsito". Estilo neutro como os outros. Vazio: "Nenhum pedido saiu para entrega."
 - **Faixa de ação e resumo:** não mudam. O status não pede ação.

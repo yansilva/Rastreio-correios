@@ -134,11 +134,13 @@ class FreteReportGenerator:
     def gerar_html(
         self,
         pedidos_com_frete: list[dict[str, Any]],
+        atrasados: int | None = None,
     ) -> str:
         """Gera e salva a página HTML premium com opções de frete.
 
         Args:
             pedidos_com_frete: Lista de dicts com dados do pedido e servicos (formato legado).
+            atrasados: Contagem de atrasados que o painel mostra, para a aba Atrasados (None: sem número).
 
         Returns:
             Caminho absoluto do arquivo HTML gerado.
@@ -945,7 +947,7 @@ class FreteReportGenerator:
             <div class="meta"><span class="so-desk">Consulta de serviços disponíveis para pedidos em aberto · </span>Dados de {data_curta}</div>
             <div class="config-info">{icone("package")} Pacote<span class="so-desk"> padrão</span>: {f'{config.peso_gramas/1000:.1f}'.replace('.', ',')} kg · {config.comprimento}x{config.largura}x{config.altura} cm · <span class="so-desk">Origem CEP: </span><span class="so-cel">Origem </span>{_fmt_cep(config.cep_origem)}</div>
         </header>
-        {nav_html('frete')}
+        {nav_html('frete', atrasados)}
 <div class="header-tools">
                 <button type="button" class="btn-theme" onclick="toggleTheme()">
                     {icone("moon")}{icone("sun")}
