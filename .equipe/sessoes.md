@@ -10,7 +10,8 @@ Só o coordenador escreve aqui. Uma linha por especialista. Definições dos age
 | qa | haiku | local_6c4ed6aa-7829-49a7-962e-ec803ca97bad | 2026-11-12 | — |
 | acessibilidade | haiku | local_0eb0f973-482c-4e92-b44a-86613e79bb30 | 2026-11-12 | — |
 | revisao-codigo | opus | local_2cf277ae-dfb4-497f-ba56-d4acf9f0c1f5 | 2026-11-12 | — |
-
 | devops | haiku | local_d4140cde-b68a-47c7-911c-bf2841a86539 | 2026-11-23 | 2026-11-23 · Docker neste PC (Dockerfile, compose, README) |
+| integracoes | haiku | local_53625015-0ba4-42d0-9861-f523abda5236 | 2026-11-25 | 2026-11-25 · eventos dos Correios por código (saiu para entrega, "não entregue" não é entregue) |
+| documentacao | haiku | local_48cd2a9f-2e2f-48a2-b0c2-cd21ca794404 | 2026-11-25 | 2026-11-25 · status "Saiu para entrega" no README, PRODUCT.md e docs/ |
 
-Sem sessão fixa (abrir só se precisar): seguranca, debugging, documentacao, integracoes, performance, git, produto, arquiteto, dados, conteudo.
+Sem sessão fixa (abrir só se precisar): seguranca, debugging, performance, git, produto, arquiteto, dados, conteudo.

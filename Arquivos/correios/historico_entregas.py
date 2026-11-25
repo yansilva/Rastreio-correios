@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from .models import ObjetoRastreio
+from .tracking import marcas_do_evento
 
 ARQUIVO = "entregas_historico.json"
 
@@ -79,7 +80,7 @@ def salvar(caminho: str, dados: dict[str, Any]) -> None:
 def _cidade_entrega(objeto: ObjetoRastreio) -> str:
     """Cidade/UF do evento de entrega; sem ele, a cidade do último evento."""
     for evento in objeto.eventos:
-        if "ENTREGUE" in evento.descricao.upper():
+        if "entregue" in marcas_do_evento(evento):
             return evento.local
     return objeto.ultimo_local
 

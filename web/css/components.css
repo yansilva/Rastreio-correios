@@ -472,6 +472,30 @@
     color: var(--color-text-muted);
 }
 
+/* Atraso de pedido que saiu para entrega: linha de texto ao lado do selo, na cor da escala de urgência (sem fundo nem borda) */
+.order-atraso {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+}
+
+.order-atraso .icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* Mesmo peso da regra genérica .urgencia-* (que põe fundo de 5%): por isso o background vem de novo aqui, sem fundo */
+.order-atraso.urgencia-alta { color: var(--color-danger); background: none; }
+.order-atraso.urgencia-media { color: var(--color-high-text); background: none; }
+.order-atraso.urgencia-baixa { color: var(--color-warning-text); background: none; }
+
 .order-tiny-status {
     font-size: 0.875rem;
     color: var(--color-text-muted);
@@ -647,6 +671,13 @@
     background: var(--color-info-bg);
     color: var(--color-info-text);
     border: 1px solid var(--color-info-border);
+}
+
+/* Saiu para entrega: teal, o degrau entre o azul (Em trânsito) e o verde (Entregue) */
+.badge-teal {
+    background: var(--color-teal-bg);
+    color: var(--color-teal-text);
+    border: 1px solid var(--color-teal-border);
 }
 
 /* Status Highlights */
@@ -1012,10 +1043,13 @@ tbody tr:hover {
 
     .order-meta > .badge { grid-column: 1; grid-row: 1; justify-self: start; }
     /* Divergência do Tiny: é o badge que vem depois do selo (o selo amarelo de "Aguardando retirada" é o primeiro) */
-    .order-meta > .badge-divergencia { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+    /* grid-row auto: cai na primeira linha livre (2 sem atraso; 3 com a linha do atraso) */
+    .order-meta > .badge-divergencia { grid-column: 1 / -1; grid-row: auto; justify-self: start; }
     .order-meta > .order-age { grid-column: 2 / 4; grid-row: 1; justify-self: end; }
     .order-meta > .order-tiny-status { grid-column: 1 / 3; min-width: 0; }
     .order-meta > .btn-copy { grid-column: 3; justify-self: end; }
+    /* Atraso de "Saiu para entrega": linha própria abaixo do selo. Sem a linha 2 fixa, o "Tiny desatualizado" desce para a 3 quando os dois existem */
+    .order-meta > .order-atraso { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
 
     /* Nome do cliente: no máximo 2 linhas */
     .order-client {
@@ -2651,6 +2685,21 @@ main.orders-list {
     box-shadow: none;
     transform: none;
     transition: var(--transition);
+}
+
+/* Até 1099px a faixa segue numa linha com rolagem. De 1100px para cima, as pílulas quebram em duas linhas, sem rolagem nem esmaecimento */
+@media (min-width: 1100px) {
+    .filter-pills {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        overflow-x: visible;
+        padding-right: 4px;
+    }
+
+    .filter-pills.tem-rolagem {
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
 }
 
 .btn-action:not(.btn-update) {

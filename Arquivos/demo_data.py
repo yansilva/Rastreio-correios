@@ -212,6 +212,27 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
             ],
         },
         {
+            "pedido": "41733",
+            "rastreio": "AD112233445BR",
+            "cliente": "Marina Costa",
+            "situacao": "Enviado",
+            "status": "saiu_para_entrega",
+            "eventos": [
+                {
+                    "data": "11/09/2026 08:10",
+                    "desc": "Objeto saiu para entrega ao destinatário",
+                    "local": "SAO PAULO/SP",
+                    "detalhe": "",
+                },
+                {
+                    "data": "09/09/2026 16:00",
+                    "desc": "Objeto postado",
+                    "local": "SAO PAULO/SP",
+                    "detalhe": "",
+                },
+            ],
+        },
+        {
             "pedido": "41719",
             "rastreio": "NL443322110BR",
             "cliente": "Paulo Ricardo",
@@ -296,20 +317,21 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
 
     orders_cards = []
     for o in orders:
-        # Os status "atrasado" e "aguardando_retirada" da demonstração são derivados de "em_transito"
-        categoria = "em_transito" if o["status"] in ("atrasado", "aguardando_retirada") else o["status"]
+        # Os status "atrasado", "aguardando_retirada" e "saiu_para_entrega" da demonstração são derivados de "em_transito"
+        categoria = "em_transito" if o["status"] in ("atrasado", "aguardando_retirada", "saiu_para_entrega") else o["status"]
         retirada = o["status"] == "aguardando_retirada"
         atrasado = o["status"] == "atrasado"
+        saiu = o["status"] == "saiu_para_entrega"
         selo, classe_selo = selo_status(
-            categoria, retirada=retirada, atrasado=atrasado, dias_atraso=o.get("dias_atraso", 0)
+            categoria, retirada=retirada, atrasado=atrasado, dias_atraso=o.get("dias_atraso", 0), saiu=saiu
         )
-        chave_descricao = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+        chave_descricao = chave_selo(categoria, retirada=retirada, atrasado=atrasado, saiu=saiu)
         # Eventos passam pelo mesmo gerador do painel real, para a demo não divergir dele
         events_html = [formatar_evento_html(_evento_api(ev), selo_cabecalho=selo) for ev in o["eventos"]]
 
         card = montar_card_pedido(
             numero_txt=str(o["pedido"]),
-            tokens=status_tokens(categoria, retirada=retirada, atrasado=atrasado),
+            tokens=status_tokens(categoria, retirada=retirada, atrasado=atrasado, saiu=saiu),
             selo=selo,
             classe_selo=classe_selo,
             situacao_tiny=o["situacao"],
@@ -375,6 +397,7 @@ def gerar_dados_demonstracao(pasta_destino: Path | str | None = None) -> dict[st
                 <div class="filter-pills">
                     <button type="button" class="filter-pill active" data-filter="all">Todos</button>
                     <button type="button" class="filter-pill" data-filter="em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
+                    <button type="button" class="filter-pill" data-filter="saiu_para_entrega"><svg class="icon icon-map-pin" aria-hidden="true" focusable="false"><use href="#i-map-pin"></use></svg> Saiu para entrega</button>
                     <button type="button" class="filter-pill" data-filter="atrasado" title="Mais de 3 dias em trânsito desde a postagem"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
                     <button type="button" class="filter-pill" data-filter="aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
                     <button type="button" class="filter-pill" data-filter="entregue"><svg class="icon icon-check-circle" aria-hidden="true" focusable="false"><use href="#i-check-circle"></use></svg> Entregues</button>

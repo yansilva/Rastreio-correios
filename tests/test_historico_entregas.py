@@ -46,6 +46,45 @@ def _item(rastreio, entregue_em, postado_em=None):
 AGORA = datetime(2026, 11, 12, 15, 0, 0)
 
 
+class TestCidadeDaEntrega(unittest.TestCase):
+    """A cidade vem do evento de entrega (BDE/01), não de um "não entregue" mais recente."""
+
+    def test_nao_entregue_mais_recente_nao_troca_a_cidade(self):
+        from correios.tracking import TrackingService
+
+        dados = {
+            "eventos": [
+                {
+                    "codigo": "BDE",
+                    "tipo": "20",
+                    "descricao": "Objeto não entregue - destinatário ausente",
+                    "dtHrCriado": "2026-11-12T09:00:00",
+                    "unidade": {"endereco": {"cidade": "CAMPINAS", "uf": "SP"}},
+                },
+                {
+                    "codigo": "BDE",
+                    "tipo": "01",
+                    "descricao": "Objeto entregue ao destinatário",
+                    "dtHrCriado": "2026-11-11T14:00:00",
+                    "unidade": {"endereco": {"cidade": "RIO DE JANEIRO", "uf": "RJ"}},
+                },
+                {
+                    "codigo": "PO",
+                    "tipo": "01",
+                    "descricao": "Objeto postado",
+                    "dtHrCriado": "2026-11-09T10:00:00",
+                    "unidade": {"endereco": {"cidade": "SAO PAULO", "uf": "SP"}},
+                },
+            ]
+        }
+        objeto = TrackingService.processar_objeto("AE000000001BR", dados)
+        self.assertEqual(objeto.status_categoria, "entregue")
+
+        dicionario = hist._estrutura_vazia()
+        self.assertTrue(hist.registrar_entrega(dicionario, objeto, "43000", "Cliente", AGORA))
+        self.assertEqual(dicionario["entregas"]["AE000000001BR"]["cidade"], "RIO DE JANEIRO/RJ")
+
+
 class TestRegistro(unittest.TestCase):
     def test_registra_entregue_uma_vez(self):
         dados = hist.carregar("inexistente.json")

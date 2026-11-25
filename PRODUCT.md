@@ -27,10 +27,10 @@ Painel local, sem nuvem própria: roda na máquina do operador, consome diretame
 ## Capabilities and Constraints
 
 - Busca instantânea client-side por número do pedido (`#123`), cliente, código de rastreio ou cidade.
-- Filtros dinâmicos por status (entregue, aguardando retirada, devolvido, em trânsito, atrasado) com contadores.
+- Filtros dinâmicos por status (em trânsito, saiu para entrega, atrasados, aguardando retirada, com aviso, entregues, não enviados, devolvidos) com contadores.
 - Modo claro e escuro, alternância automática pela preferência do sistema e persistência em `localStorage`.
 - Servidor HTTP local em `127.0.0.1:8000`; sem backend público e sem autenticação de usuários.
-- Interface em português brasileiro. Termos fixos: pedido, rastreio, atrasado, aguardando retirada, frete, prazo.
+- Interface em português brasileiro. Termos fixos: pedido, rastreio, atrasado, aguardando retirada, saiu para entrega, aviso dos Correios, frete, prazo.
 - Frontend estático sem framework: HTML, CSS e JavaScript em `web/`, servido pelo Python.
 
 ## Evidence on Hand

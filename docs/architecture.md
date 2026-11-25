@@ -61,8 +61,21 @@ A arquitetura adota um design modular em camadas concêntricas com separação e
 
 ### 3.3 Camada Correios Rastreamento (`Arquivos/correios/`)
 - **`client.py` (`CorreiosClient`)**: Autenticação HTTP Basic para obtenção e auto-renovação de tokens Bearer em memória, chamadas GET ao SRO com timeout (30s) e tratamento de erros 401/403/429.
-- **`tracking.py` (`TrackingService`)**: Normalização de status (entregue, aguardando retirada, devolvido, em trânsito) e cálculo de urgência de atrasos.
+- **`tracking.py` (`TrackingService`)**: Normalização de status (entregue, devolvido, em trânsito, aguardando retirada, saiu para entrega) e cálculo de urgência de atrasos. As regras estão na subseção 3.3.1.
 - **`models.py` & `exceptions.py`**: Representações tipadas de eventos e exceções especializadas.
+
+#### 3.3.1 Regras de status (`tracking.py`)
+
+As regras leem o histórico de eventos dos Correios, do evento mais novo para o mais antigo. Cada evento é classificado pelo código `codigo/tipo` (ex.: BDE/01). O texto da descrição só vale quando o código não é conhecido. Avisos nunca decidem status.
+
+- **Devolvido:** evento de devolução ao remetente: BDE/23 (entregue ao remetente) e OEC/09 (saiu para entrega ao remetente, caminho de devolução). Sem código conhecido, vale o texto (`REMETENTE`, `DEVOLVIDO` ou `DEVOLUÇÃO`). Tem precedência sobre os demais. Some do painel quando é entregue ao remetente, ou 24 horas depois do evento de devolução.
+- **Entregue:** evento de entrega ao destinatário, BDE/01. Os códigos de não entrega (BDE/02, BDE/04, BDE/06, BDE/20, BDE/98 e BDI/26) nunca contam como entrega, mesmo que o texto diga "entregue".
+- **Aguardando retirada:** o evento de status mais recente é de retirada na agência: LDI/01 ou LDI/03 (sem código conhecido, o texto "AGUARDANDO RETIRADA" ou "PARA RETIRADA"). Qualquer outro evento de status depois dela, como transferência ou saída para entrega, desfaz a retirada.
+- **Saiu para entrega:** vale quando o evento de status mais recente (sem contar avisos) é OEC/01, "Objeto saiu para entrega ao destinatário". Um não entregue, uma transferência ou um "favor desconsiderar" depois dele desfaz o status. Nunca vale para entregue nem devolvido. No cartão, o selo "Saiu para entrega" aparece no lugar de "Em trânsito". O pedido continua contado em "Em trânsito" e tem filtro próprio. Não entra na faixa de ação, porque não pede ação.
+- **Em trânsito:** postado e sem nenhum dos status acima. **Não enviado:** ainda sem evento de postagem.
+- **Atrasado:** em trânsito (inclusive aguardando retirada) há mais de 3 dias desde a postagem. Não vale para entregue nem devolvido. Níveis: Atenção (4 dias), Alto (5 e 6 dias) e Crítico (7 dias ou mais). Um pedido atrasado que saiu para entrega continua em Atrasados e mostra o selo "Saiu para entrega" com a linha de atraso ao lado.
+- **Aviso dos Correios:** FC/08 ("pode levar mais tempo") e BDE/19 ("inconsistências no endereçamento") avisam, mas não mudam o status. Sem código conhecido, vale a lista `AVISOS_CORREIOS` em `tracking.py`. Enquanto o pedido está em andamento, o cartão mostra o aviso mais recente e o filtro "Com aviso" conta esses pedidos. Entregues e devolvidos não mostram aviso.
+- **Entregues no painel:** o pedido entregue fica no painel só no dia da entrega. Depois, aparece na aba Entregues, que guarda o histórico local.
 
 ### 3.4 Camada de Cotação de Frete (`Arquivos/frete/`)
 - **`client.py` (`FreteClient`)**: Comunicação com os endpoints oficiais de cálculo de preço e prazo nacional dos Correios.

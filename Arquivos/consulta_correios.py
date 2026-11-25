@@ -29,6 +29,7 @@ from correios.cards import (
     divergencia_tiny,
     esta_encerrado,
     faixa_acao,
+    linha_atraso,
     montar_card_pedido,
     prioridade,
     selo_status,
@@ -266,6 +267,7 @@ def processar(usar_cache=False):
                 <div class="filter-pills">
                     <button type="button" class="filter-pill active" data-filter="all">Todos</button>
                     <button type="button" class="filter-pill" data-filter="em_transito" title="{texto_em_transito}" aria-describedby="desc-status-em_transito"><svg class="icon icon-truck" aria-hidden="true" focusable="false"><use href="#i-truck"></use></svg> Em trânsito</button>
+                    <button type="button" class="filter-pill" data-filter="saiu_para_entrega" title="{texto_saiu_para_entrega}" aria-describedby="desc-status-saiu_para_entrega"><svg class="icon icon-map-pin" aria-hidden="true" focusable="false"><use href="#i-map-pin"></use></svg> Saiu para entrega</button>
                     <button type="button" class="filter-pill" data-filter="atrasado" title="{texto_atrasado}" aria-describedby="desc-status-atrasado"><svg class="icon icon-clock" aria-hidden="true" focusable="false"><use href="#i-clock"></use></svg> Atrasados</button>
                     <button type="button" class="filter-pill" data-filter="aguardando_retirada" title="{texto_aguardando_retirada}" aria-describedby="desc-status-aguardando_retirada"><svg class="icon icon-building" aria-hidden="true" focusable="false"><use href="#i-building"></use></svg> Aguardando retirada</button>
                     <button type="button" class="filter-pill" data-filter="com_aviso" title="{texto_com_aviso}" aria-describedby="desc-status-com_aviso"><svg class="icon icon-info" aria-hidden="true" focusable="false"><use href="#i-info"></use></svg> Com aviso</button>
@@ -282,7 +284,7 @@ def processar(usar_cache=False):
                     <button type="button" class="view-option" data-view="tabela" aria-pressed="false">Tabela</button>
                 </div>
                 <details class="options-menu"><summary>Opções</summary><div class="options-panel">
-                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> {texto_atrasado} <strong>Aguardando retirada:</strong> {texto_aguardando_retirada} <strong>Com aviso:</strong> {texto_com_aviso}</p></details>
+                <details class="status-legend-details"><summary>O que significam os status?</summary><p class="status-legend"><strong>Atrasado:</strong> {texto_atrasado} <strong>Aguardando retirada:</strong> {texto_aguardando_retirada} <strong>Saiu para entrega:</strong> {texto_saiu_para_entrega} Se estiver atrasado, o atraso aparece ao lado do selo. <strong>Com aviso:</strong> {texto_com_aviso}</p></details>
                 <div class="list-tools">
                 <label class="sort-label" for="sortSelect">Ordenar por</label>
                 <select id="sortSelect" class="sort-select">
@@ -414,7 +416,7 @@ def processar(usar_cache=False):
                         "dias_transito": atraso.dias_transito,
                         "ultimo_evento": atraso.ultimo_evento,
                         "ultimo_local": atraso.ultimo_local,
-                        "status": atraso.status,
+                        "status": "saiu_para_entrega" if obj_classificado.saiu_para_entrega else atraso.status,
                         "aviso": aviso,
                     }
                 )
@@ -425,11 +427,13 @@ def processar(usar_cache=False):
             if obj_classificado.is_retirada and status_category not in ("entregue", "devolvido"):
                 retiradas_count += 1
             dias_atraso = atraso.dias_transito if atraso else 0
+            saiu = obj_classificado.saiu_para_entrega
             selo, classe_selo = selo_status(
                 status_category,
                 retirada=obj_classificado.is_retirada,
                 atrasado=esta_atrasado,
                 dias_atraso=dias_atraso,
+                saiu=saiu,
             )
             ultimo_evento = obj_classificado.eventos[0].dt_hr_criado if obj_classificado.eventos else ""
             # A etiqueta é o evento mais antigo da lista; se o Tiny diz "enviado" e ela tem mais de N dias, avisa
@@ -446,8 +450,10 @@ def processar(usar_cache=False):
             )
 
             chave_descricao = "sem_postagem" if semp else chave_selo(
-                status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
+                status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado, saiu=saiu
             )
+            # Pedido que saiu para entrega e está atrasado: o atraso vai numa linha ao lado do selo
+            atraso_html = linha_atraso(dias_atraso) if saiu and esta_atrasado else ""
             # Eventos depois do selo do cabeçalho, para o selo do evento não repetir o dele
             events_html = []
             if obj_data and "eventos" in obj_data:
@@ -462,8 +468,9 @@ def processar(usar_cache=False):
                 numero_txt=str(pedido),
                 chave_descricao=chave_descricao,
                 tokens=status_tokens(
-                    status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado
+                    status_category, retirada=obj_classificado.is_retirada, atrasado=esta_atrasado, saiu=saiu
                 ),
+                atraso_html=atraso_html,
                 selo=selo,
                 classe_selo=classe_selo,
                 situacao_tiny=situacao_tiny,
@@ -615,7 +622,11 @@ def processar(usar_cache=False):
             # A cor de urgência vai no badge de dias; o rótulo (Crítico, Alto, Atenção) fica no próprio texto
             urgencia_class, urgencia_rotulo = urgencia_atraso(dias)
 
-            status_label = {"em_transito": "Em trânsito", "devolvido": "Devolvido"}.get(item["status"], item["status"])
+            status_label = {
+                "em_transito": "Em trânsito",
+                "devolvido": "Devolvido",
+                "saiu_para_entrega": "Saiu para entrega",
+            }.get(item["status"], item["status"])
             td_cliente = f'<td data-label="Cliente">{escape(item.get("cliente", ""))}</td>' if tem_cliente else ""
             td_status = f'<td data-label="Status" class="col-secundaria">{escape(status_label)}</td>' if tem_status else ""
             evento_completo = escape(str(item["ultimo_evento"]), quote=True)

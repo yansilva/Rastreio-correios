@@ -251,5 +251,38 @@ class TestTabelaDeAtrasados(unittest.TestCase):
         self.assertIn(f'<span class="order-aviso-texto">{AVISO_PRAZO}</span>', linhas[0])
 
 
+class TestAvisoNaoApagaRetirada(unittest.TestCase):
+    """Aviso nunca decide status: não apaga a retirada do evento LDI logo abaixo."""
+
+    LDI = {
+        "codigo": "LDI",
+        "tipo": "01",
+        "descricao": "Objeto aguardando retirada no endereço indicado",
+        "dtHrCriado": "2026-11-23T11:00:00",
+    }
+    POSTADO = {"codigo": "PO", "tipo": "01", "descricao": "Objeto postado", "dtHrCriado": "2026-11-20T10:00:00"}
+
+    @staticmethod
+    def _objeto(*eventos):
+        return TrackingService.processar_objeto("AE000000031BR", {"eventos": list(eventos)})
+
+    def test_bde19_por_cima_de_ldi_continua_retirada(self):
+        aviso = {
+            "codigo": "BDE",
+            "tipo": "19",
+            "descricao": "Inconsistências no endereçamento do objeto.",
+            "dtHrCriado": "2026-11-24T09:00:00",
+        }
+        obj = self._objeto(aviso, self.LDI, self.POSTADO)
+        self.assertTrue(obj.is_retirada)
+        self.assertEqual(obj.aviso_texto, "Inconsistências no endereçamento do objeto.")
+
+    def test_fc08_por_cima_de_ldi_continua_retirada(self):
+        aviso = {"codigo": "FC", "tipo": "08", "descricao": AVISO_PRAZO, "dtHrCriado": "2026-11-24T12:09:00"}
+        obj = self._objeto(aviso, self.LDI, self.POSTADO)
+        self.assertTrue(obj.is_retirada)
+        self.assertEqual(obj.aviso_texto, AVISO_PRAZO)
+
+
 if __name__ == "__main__":
     unittest.main()

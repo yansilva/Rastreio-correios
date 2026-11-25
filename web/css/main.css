@@ -57,6 +57,11 @@
     --color-purple-bg: #f3e8ff;
     --color-purple-border: #e9d5ff;
 
+    /* Saiu para entrega: degrau entre o azul (Em trânsito) e o verde (Entregue) */
+    --color-teal-text: #0f766e;
+    --color-teal-bg: #f0fdfa;
+    --color-teal-border: #99f6e4;
+
     /* Urgência (tabela de atrasados): texto e fundo claro; tags usam tons sólidos fixos */
     --color-high: #c2410c;
     --color-high-bg: #ffedd5;
@@ -136,6 +141,9 @@
     --color-high-text: #fb923c;
     --color-info-bg: rgba(2, 132, 199, 0.15);
     --color-purple-bg: rgba(147, 51, 234, 0.15);
+    --color-teal-text: #2dd4bf;
+    --color-teal-bg: rgba(20, 184, 166, 0.15);
+    --color-teal-border: rgba(45, 212, 191, 0.35);
 }
 
 /* Reset Básico */

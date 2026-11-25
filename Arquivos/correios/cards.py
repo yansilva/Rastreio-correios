@@ -31,6 +31,7 @@ DESCRICAO_STATUS = {
     "nao_enviado": "Pedido ainda não foi postado.",
     "entregue": "Objeto entregue ao destinatário.",
     "devolvido": "Objeto voltou ao remetente.",
+    "saiu_para_entrega": "Objeto com o carteiro, a caminho do destinatário.",
     "com_aviso": "Pedidos ainda não entregues com aviso dos Correios",
 }
 
@@ -79,11 +80,12 @@ def esta_encerrado(categoria: str, *, retirada: bool = False, atrasado: bool = F
     return categoria in ("entregue", "devolvido") and not retirada and not atrasado
 
 
-def status_tokens(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> str:
+def status_tokens(categoria: str, *, retirada: bool = False, atrasado: bool = False, saiu: bool = False) -> str:
     """Valor de `data-status`: a categoria principal mais as derivadas usadas pelos filtros.
 
     Quem aguarda retirada troca o token em_transito por aguardando_retirada: assim a pílula
     "Em trânsito" não conta nem mostra o pedido, e ele aparece só em "Aguardando retirada".
+    Quem saiu para entrega segue em_transito e ganha o token saiu_para_entrega (aparece também em "Em trânsito").
     """
     if retirada and categoria == "em_transito":
         tokens = ["aguardando_retirada"]
@@ -91,6 +93,8 @@ def status_tokens(categoria: str, *, retirada: bool = False, atrasado: bool = Fa
         tokens = [categoria]
         if retirada and categoria not in ("entregue", "devolvido"):
             tokens.append("aguardando_retirada")
+        if saiu and categoria == "em_transito":
+            tokens.append("saiu_para_entrega")
     if atrasado:
         tokens.append("atrasado")
     return " ".join(tokens)
@@ -114,6 +118,7 @@ ROTULO_SELO = {
     "aguardando_retirada": ("Aguardando retirada", "badge-yellow"),
     "atrasado": ("Atrasado", "badge-red"),
     "em_transito": ("Em trânsito", "badge-blue"),
+    "saiu_para_entrega": ("Saiu para entrega", "badge-teal"),
     "nao_enviado": ("Não enviado", "badge-yellow"),
 }
 
@@ -135,11 +140,28 @@ def urgencia_atraso(dias: int) -> tuple[str, str]:
 BADGE_URGENCIA = {"urgencia-alta": "badge-red", "urgencia-media": "badge-orange", "urgencia-baixa": "badge-yellow"}
 
 
+def linha_atraso(dias: int) -> str:
+    """Linha "Atrasado · N dias · Nível" que aparece ao lado do selo "Saiu para entrega" quando o pedido está atrasado.
+
+    A cor é da escala de urgência (mesma do selo de atraso e da tabela); o nível vai em texto (WCAG 1.4.1).
+    """
+    classe_urgencia, rotulo_urgencia = urgencia_atraso(dias)
+    return (
+        f'<span class="order-atraso {classe_urgencia}">{icone("clock")}'
+        f"Atrasado · {dias} dias · {rotulo_urgencia}</span>"
+    )
+
+
 def selo_status(
-    categoria: str, *, retirada: bool = False, atrasado: bool = False, dias_atraso: int = 0
+    categoria: str,
+    *,
+    retirada: bool = False,
+    atrasado: bool = False,
+    dias_atraso: int = 0,
+    saiu: bool = False,
 ) -> tuple[str, str]:
     """Texto e classe de badge do status atual do pedido, para o cabeçalho do cartão."""
-    chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado)
+    chave = chave_selo(categoria, retirada=retirada, atrasado=atrasado, saiu=saiu)
     texto, classe = ROTULO_SELO[chave]
     if chave == "atrasado":
         classe_urgencia, rotulo_urgencia = urgencia_atraso(dias_atraso)
@@ -149,12 +171,17 @@ def selo_status(
     return texto, classe
 
 
-def chave_selo(categoria: str, *, retirada: bool = False, atrasado: bool = False) -> str:
-    """Chave de DESCRICAO_STATUS para o selo que selo_status devolve (mesma ordem de precedência)."""
+def chave_selo(categoria: str, *, retirada: bool = False, atrasado: bool = False, saiu: bool = False) -> str:
+    """Chave de DESCRICAO_STATUS para o selo que selo_status devolve.
+
+    Ordem: devolvido/entregue, aguardando retirada, saiu para entrega, atrasado, em trânsito.
+    """
     if categoria in ("devolvido", "entregue"):
         return categoria
     if retirada:
         return "aguardando_retirada"
+    if saiu and categoria == "em_transito":
+        return "saiu_para_entrega"
     if atrasado:
         return "atrasado"
     if categoria == "em_transito":
@@ -277,6 +304,7 @@ def montar_card_pedido(
     mostrar_situacao_tiny: bool = True,
     aviso: str = "",
     aviso_data: str = "",
+    atraso_html: str = "",
 ) -> str:
     """Cartão de pedido: cabeçalho com status atual, último evento visível e histórico recolhido.
 
@@ -357,6 +385,7 @@ def montar_card_pedido(
                     <h2 class="order-title">{titulo_html}</h2>
                     <div class="order-meta">
                         <span class="badge {classe_selo}">{escape(selo)}</span>{descricao_selo_sr}
+                        {atraso_html}
                         {divergencia_html}
                         {idade_html}
                         {tiny_html}

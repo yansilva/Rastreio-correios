@@ -10,6 +10,7 @@ var initialRenderDone = false;
 var STATUS_LABELS = {
     'nao_enviado': 'Não enviados',
     'em_transito': 'Em trânsito',
+    'saiu_para_entrega': 'Saiu para entrega',
     'entregue': 'Entregues',
     'atrasado': 'Atrasados',
     'aguardando_retirada': 'Aguardando retirada',
@@ -32,6 +33,7 @@ var MENSAGENS_VAZIO = {
     'atrasado': 'Nenhum pedido atrasado. Tudo dentro do prazo.',
     'aguardando_retirada': 'Nenhum objeto aguardando retirada.',
     'com_aviso': 'Nenhum pedido em aberto com aviso dos Correios.',
+    'saiu_para_entrega': 'Nenhum pedido saiu para entrega.',
 };
 
 function preencherVazio(caixa, termo) {
@@ -174,6 +176,8 @@ function linhasDaTabela() {
             urgencia: urgenciaDe(card),
             classeSelo: selo ? selo.className : 'badge',
             avisoTexto: card.getAttribute('data-aviso') === '1' ? textoDe(card.querySelector('.order-aviso-texto')) : null,
+            // Atraso de "Saiu para entrega": a linha vai abaixo do selo na Tabela (cópia do nó, com ícone e classe de urgência)
+            atrasoNo: card.querySelector('.order-atraso') ? card.querySelector('.order-atraso').cloneNode(true) : null,
             idade: isNaN(dias) ? null : dias,
             idadeTexto: textoDe(card.querySelector('.order-age')) || '—',
             tiny: tiny,
@@ -304,6 +308,12 @@ function atualizarTabela() {
         tdStatus.appendChild(selo);
         if (l.avisoTexto !== null) {
             criarSeloAviso(l.avisoTexto).forEach(function(no) { tdStatus.appendChild(no); });
+        }
+        if (l.atrasoNo) {
+            // Linha própria abaixo do selo: o atraso aparece aqui, sem trocar o selo de status
+            var linhaAtraso = document.createElement('div');
+            linhaAtraso.appendChild(l.atrasoNo);
+            tdStatus.appendChild(linhaAtraso);
         }
         tr.appendChild(tdStatus);
         tr.appendChild(celula(l.idadeTexto.replace(/^Último evento\s*/, '') || '—', 'Último evento'));
@@ -445,7 +455,7 @@ function restaurarFiltro() {
     try {
         var salvo = JSON.parse(sessionStorage.getItem('painel.filtro') || 'null');
         if (!salvo) return;
-        var statusValidos = ['nao_enviado', 'em_transito', 'entregue', 'atrasado', 'aguardando_retirada', 'com_aviso', 'devolvido'];
+        var statusValidos = ['nao_enviado', 'em_transito', 'entregue', 'atrasado', 'aguardando_retirada', 'com_aviso', 'saiu_para_entrega', 'devolvido'];
         if (statusValidos.indexOf(salvo.status) !== -1) activeStatusFilter = salvo.status;
         if (typeof salvo.busca === 'string') {
             currentSearchTerm = salvo.busca;
@@ -705,6 +715,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.filter-pill[data-filter]').forEach(function(pill) {
         var filtro = pill.getAttribute('data-filter');
         var n = filtro === 'all' ? document.querySelectorAll('.order-card').length : (totais[filtro] || 0);
+        // Espaço de texto antes do contador: o leitor de tela lê "Saiu para entrega 2", não "entrega2". Em flex, o espaço não ocupa largura
+        pill.appendChild(document.createTextNode(' '));
         var marca = document.createElement('span');
         marca.className = 'pill-count';
         marca.textContent = String(n);

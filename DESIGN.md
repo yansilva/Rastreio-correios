@@ -192,6 +192,7 @@ A paleta é fria e neutra, com um único azul de ação e um conjunto de cores s
 - **Entregue**: `--color-success-text` #166534 sobre `--color-success-bg` #dcfce7 (6,49:1).
 - **Devolvido**: `--color-purple-text` #7e22ce sobre `--color-purple-bg` #f3e8ff (5,92:1).
 - **Em trânsito / informação**: `--color-info-text` #0369a1 sobre `--color-info-bg` #e0f2fe (5,17:1).
+- **Saiu para entrega** (novo, 2026-11-25): `--color-teal-text` #0f766e sobre `--color-teal-bg` #f0fdfa (5,25:1), borda `--color-teal-border` #99f6e4. O degrau entre o azul e o verde.
 - **Borda do selo "Mais barato"** (#bfdbfe, `--color-badge-border`): exceção de página em `Arquivos/frete/report.py`; no escuro, `rgba(147, 197, 253, 0.35)`.
 
 **Exceções do detector** (registradas em `.impeccable/config.json`, só para o arquivo indicado):
@@ -325,12 +326,14 @@ Bordas sempre de 1px. A timeline usa trilho de 3px em `--color-border`. Nenhum a
 - 32px de altura (44px no celular), 0×10px, 13px peso 500, fundo Superfície, borda `--color-border-strong`, texto Tinta Discreta. Contador (`.pill-count`) em 12px, Tinta Sutil, tabular.
 - **Ativo:** fundo Azul Ação, texto e contador brancos.
 - **Zerado:** borda tracejada em `--color-border`, sem filtrar.
-- **Layout:** uma linha só em qualquer largura, com rolagem horizontal; ativas primeiro e zeradas no fim; com Tab, o filtro rola até ficar visível.
+- **Layout:** ativas primeiro e zeradas no fim.
+  - Até 1099px: uma linha só, com rolagem horizontal; com Tab, o filtro rola até ficar visível.
+  - De 1100px para cima (desde 2026-11-25, com a 9ª pílula): os filtros **quebram em duas linhas**, com 8px entre elas, sem rolagem nem esmaecimento. Nove pílulas não cabem nos 1040px do contêiner (estouram 133px).
 
 ### Selos (`.badge`, `.dias-badge`)
 - **Style:** bolinha de 6px na cor do texto (`::before`, `border-radius: 50%`) e o texto; 12px peso 600, caixa normal, 2×8px, raio de 6px, `white-space: nowrap`, fundo tingido e borda da mesma família.
 - **Texto:** sempre diz o estado; o atraso diz o nível ("Atrasado · 6 dias · Alto"). A cor nunca é o único sinal.
-- **Variants:** `badge-red` (Crítico, devolvido em alerta), `badge-orange` (Alto), `badge-yellow` (Atenção, aguardando retirada, Tiny desatualizado), `badge-green` (entregue), `badge-purple` (devolvido; com `badge-aviso`, o selo curto "Aviso" das visões Compacta e Tabela), `badge-blue` (em trânsito, postado).
+- **Variants:** `badge-red` (Crítico, devolvido em alerta), `badge-orange` (Alto), `badge-yellow` (Atenção, aguardando retirada, Tiny desatualizado), `badge-green` (entregue), `badge-purple` (devolvido; com `badge-aviso`, o selo curto "Aviso" das visões Compacta e Tabela), `badge-blue` (em trânsito, postado), `badge-teal` (saiu para entrega).
 - **Descrição:** a explicação fica num `<span class="sr-only">` logo depois do selo.
 
 ### Cartões de pedido (`.order-card`)
@@ -366,6 +369,18 @@ Evento informativo dos Correios, como "Sua entrega ou retirada nos Correios pode
 - **Filtro:** `.filter-pill[data-filter="com_aviso"]` com o rótulo "Com aviso", o ícone `i-info` e `.pill-count`, logo depois de "Aguardando retirada". O estilo é o mesmo dos outros filtros (neutro, com Azul Ação quando ativo), sem roxo.
   - Zerado: borda tracejada e não filtra (The Zero Is Calm Rule).
   - Estado vazio: o `.empty-state` padrão, com check verde e o texto "Nenhum pedido em aberto com aviso dos Correios."
+
+### Saiu para entrega (`.badge-teal`, `.order-atraso`, definido em 2026-11-25)
+Status de quando o último evento (ignorando os avisos) é "Objeto saiu para entrega ao destinatário". É um subestado de Em trânsito: o pedido continua contando e filtrando em "Em trânsito". Brief: `.equipe/brief-saiu-para-entrega.md`.
+- **Selo:** `badge badge-teal` com o texto "Saiu para entrega", no lugar de "Em trânsito". Bolinha de 6px como os outros selos, sem ícone.
+- **Cor:** família teal, o degrau entre o azul (Em trânsito) e o verde (Entregue). Não é azul (ficaria igual a Em trânsito), não é roxo (o aviso aparece no mesmo cartão), não é índigo (perto do Azul Ação) e não é quente (urgência). O fundo é quase branco, e não pastel cheio como o do verde, para não parecer "Entregue".
+- **Contraste (AA):** claro 5,25:1; escuro #2dd4bf sobre o fundo a 15% dá 7,33:1 sobre #151a21 e 6,73:1 sobre #1b212a.
+- **Atrasado e saiu para entrega:** o selo é "Saiu para entrega" (decisão do usuário). O atraso aparece numa linha `.order-atraso` logo depois do selo: ícone `i-clock` e "Atrasado · 8 dias · Crítico", em 13px peso 500 tabular, na cor da escala (`--color-danger`, `--color-high-text` ou `--color-warning-text`), sem fundo nem borda. O pedido continua em Atrasados (faixa e filtro). No celular, a linha fica abaixo do selo.
+- **Filtro:** `.filter-pill[data-filter="saiu_para_entrega"]`, "Saiu para entrega", ícone `i-map-pin`, logo depois de "Em trânsito". Estilo neutro como os outros. Vazio: "Nenhum pedido saiu para entrega."
+- **Faixa de ação e resumo:** não mudam. O status não pede ação.
+- **Compacta e Tabela:** o selo; quando atrasado, o texto de atraso abaixo dele (na Tabela, na célula Status).
+- **Legenda:** entra em "O que significam os status?", depois de "Aguardando retirada".
+- **Ordem da lista:** não muda; segue a urgência.
 
 ### Tabelas (`.orders-table`, `.table-wrapper`)
 - Contêiner com fundo Superfície, borda `--color-border`, raio de 10px.
@@ -437,7 +452,7 @@ Superfícies em grafite frio: `--color-bg` #0e1116, `--color-surface` #151a21, `
 
 Status (sem mudança): textos `--color-warning-text` #fbbf24, `--color-high-text` #fb923c, `--color-danger` #f87171, `--color-success-text` #4ade80, `--color-info-text` #38bdf8, `--color-purple-text` #c084fc sobre fundos a 15% de opacidade. Medido sobre #151a21: 8,63, 6,56, 5,72, 8,25, 6,92 e 5,91:1; sobre #1b212a, o menor é 5,32:1 (vermelho).
 
-Bordas de status no escuro (definidas em 2026-11-24, 16ª crítica): a cor do texto do mesmo status a 35%, para a borda nunca ficar mais clara que o texto. `--color-success-border: rgba(74, 222, 128, .35)`, `--color-warning-border: rgba(251, 191, 36, .35)`, `--color-danger-border: rgba(248, 113, 113, .35)`, `--color-info-border: rgba(56, 189, 248, .35)`, `--color-purple-border: rgba(192, 132, 252, .35)`. Valem para selos, chips da faixa de ação e a faixa calma. Antes, esses tokens não tinham valor no escuro e herdavam o pastel do claro (#bbf7d0, #fde68a, #fecaca, #bae6fd, #e9d5ff), o que fazia um halo claro em volta do selo. Regra: todo token usado no claro precisa de valor próprio no escuro.
+Bordas de status no escuro (definidas em 2026-11-24, 16ª crítica): a cor do texto do mesmo status a 35%, para a borda nunca ficar mais clara que o texto. `--color-success-border: rgba(74, 222, 128, .35)`, `--color-warning-border: rgba(251, 191, 36, .35)`, `--color-danger-border: rgba(248, 113, 113, .35)`, `--color-info-border: rgba(56, 189, 248, .35)`, `--color-purple-border: rgba(192, 132, 252, .35)`, `--color-teal-border: rgba(45, 212, 191, .35)` (com `--color-teal-text: #2dd4bf` e `--color-teal-bg: rgba(20, 184, 166, .15)`, desde 2026-11-25). Valem para selos, chips da faixa de ação e a faixa calma. Antes, esses tokens não tinham valor no escuro e herdavam o pastel do claro (#bbf7d0, #fde68a, #fecaca, #bae6fd, #e9d5ff), o que fazia um halo claro em volta do selo. Regra: todo token usado no claro precisa de valor próprio no escuro.
 
 Console fica escuro nos dois temas (`--console-*`, `--log-*`).
 

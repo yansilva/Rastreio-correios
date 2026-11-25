@@ -14,6 +14,8 @@ class EventoRastreio:
     uf: str = ""
     codigo: str = ""
     tipo: str = ""
+    # True quando um "Favor desconsiderar" (EST/11) seguinte desfaz este evento: continua na lista, mas não conta
+    desconsiderado: bool = False
 
     @property
     def local(self) -> str:
@@ -46,6 +48,9 @@ class ObjetoRastreio:
     is_devolvido: bool = False
     is_postado: bool = False
     is_retirada: bool = False
+    # True quando o evento de status mais recente é "saiu para entrega ao destinatário" (avisos não contam);
+    # nunca para entregue ou devolvido. Continua em 'em_transito' (o pedido pode estar atrasado)
+    saiu_para_entrega: bool = False
     # Texto do aviso mais recente dos Correios (aviso não muda o status); '' quando não há
     aviso_texto: str = ""
     # Data (ISO, como vem da API) do aviso mais recente; '' quando não há
